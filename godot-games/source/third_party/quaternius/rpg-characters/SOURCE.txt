@@ -1,0 +1,11 @@
+Asset: RPG Characters - Nov 2020
+Author: Quaternius
+License: CC0 1.0 Universal
+Source: https://opengameart.org/content/lowpoly-rpg-characters
+Downloaded file: rpg_characters_-_nov_2020.zip
+
+Selected cast: Warrior (player), Rogue (guard), Monk (brute), Wizard
+(caster), and Cleric (boss). Each character keeps its native 44-bone
+skeleton, hand-painted texture, equipment, and original animations.
+No skeleton retargeting is used. The original FBX and texture inputs used
+by tools/build_rpg_cast.py are retained under upstream/.
