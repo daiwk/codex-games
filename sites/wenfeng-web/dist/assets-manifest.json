@@ -1,0 +1,20 @@
+{
+  "engine": "Godot 4.7.2",
+  "threaded": false,
+  "assets": {
+    "index.wasm": {
+      "file": "index.wasm.gz",
+      "type": "application/wasm",
+      "decoded_bytes": 39514754,
+      "download_bytes": 10054758,
+      "sha256": "fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0"
+    },
+    "index.pck": {
+      "file": "index.pck.gz",
+      "type": "application/octet-stream",
+      "decoded_bytes": 20678676,
+      "download_bytes": 18601742,
+      "sha256": "811db44396408a7ca48c04b769a9771038cfb50e08f43cfc860bcb3daddd39e8"
+    }
+  }
+}

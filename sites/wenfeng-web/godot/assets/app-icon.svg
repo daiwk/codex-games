@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs><linearGradient id="b" x2="0.8" y2="1"><stop stop-color="#202f38"/><stop offset="1" stop-color="#080f15"/></linearGradient><linearGradient id="g" x2="0.9" y2="1"><stop stop-color="#fff2b2"/><stop offset="0.5" stop-color="#dcb86a"/><stop offset="1" stop-color="#8b5f25"/></linearGradient></defs>
+<rect x="28" y="28" width="968" height="968" rx="205" fill="url(#b)"/>
+<path d="M222 213H802V811H222Z" fill="none" stroke="#b29250" stroke-width="7" opacity="0.38"/>
+<path d="M715 163 680 390 460 650 380 580 598 322Z" fill="url(#g)"/>
+<path d="M715 163 526 523 680 390Z" fill="#fff3c7" opacity="0.8"/>
+<path d="M329 577 348 557 493 682 474 706Z" fill="#d9b466"/>
+<path d="M381 646 424 683 305 821 267 786Z" fill="#785137" stroke="#d6ac60" stroke-width="9"/>
+<path d="M302 770 348 807M323 746 370 782M344 721 390 758" fill="none" stroke="#d6ac60" stroke-width="9"/>
+<path d="M246 786 303 836 274 866 218 817Z" fill="url(#g)"/>
+<path d="M238 417 330 439 320 484 392 467 400 502 293 524 278 474 226 461Z" fill="#76d5df" opacity="0.85"/>
+<path d="M622 679 732 641 762 684 807 657 824 698 745 741 715 696 641 724Z" fill="#e69b4e" opacity="0.85"/>
+</svg>

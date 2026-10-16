@@ -1,0 +1,6 @@
+Author: Quaternius
+Source: https://quaternius.itch.io/universal-animation-library
+Edition: free Standard
+License: CC0 1.0 Universal
+Retrieved: 2026-10-15
+Only the official non-root-motion Godot GLB, README and license are retained.

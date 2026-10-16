@@ -1,0 +1,94 @@
+{
+  "files": [
+    {
+      "path": "godot-games/3a-games/assets/characters/machao.glb",
+      "bytes": 25143920,
+      "sha256": "dd78c0c73ca6f1776e69bf1d51f1d05010e92eee177d306230c15f97cef65716"
+    },
+    {
+      "path": "godot-games/3a-games/assets/characters/zhaoyun.glb",
+      "bytes": 37843268,
+      "sha256": "c843b2849facb8dd53f9806acad81d6e21b2909e878ea2bc072839cefcc21bec"
+    },
+    {
+      "path": "godot-games/3a-games/machao_network.glb",
+      "bytes": 23803152,
+      "sha256": "03eda9db56d555c462af3aca03863bdb79baacff4a327d2cbdee9c7fc9056dde"
+    },
+    {
+      "path": "godot-games/3a-games/machao_rigged_v1.glb",
+      "bytes": 11268252,
+      "sha256": "6743c0860f558ce55f8ca8cb9701129b8dea004ad519ad6e7e3c479c2a718bb8"
+    },
+    {
+      "path": "godot-games/3a-games/machao_spear.glb",
+      "bytes": 7649692,
+      "sha256": "6355e0e8e5026ef4c7e62a06d048606abbf6579f22fda6e25ababc8b87ec7c5c"
+    },
+    {
+      "path": "godot-games/3a-games/onehand_saber.glb",
+      "bytes": 7340076,
+      "sha256": "b3e344a0a1b24f6188e2a3bbc02653c4642c9c368aea12cbdac169ed1047617d"
+    },
+    {
+      "path": "godot-games/3a-games/onehand_sword.glb",
+      "bytes": 7171820,
+      "sha256": "e66937676e0e691fb8269dba6152f3e09a0c9e3f2bf8cbe0ebd5d1ba83f038ef"
+    },
+    {
+      "path": "godot-games/3a-games/source/third_party/ual1/UAL1_Standard.glb",
+      "bytes": 7618436,
+      "sha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997"
+    },
+    {
+      "path": "godot-games/3a-games/source/third_party/ual2/UAL2_Standard.glb",
+      "bytes": 8091444,
+      "sha256": "8cee20ab1bc55130092447e810e26df22dd2803eccc54f52137a7d54d7ab88a8"
+    },
+    {
+      "path": "godot-games/3a-games/zhaoyun_network.glb",
+      "bytes": 36606388,
+      "sha256": "d244af4e4938cf4aa977e1bfe3ec6f40ac7a90b625f37af7874d31ecc34b1c19"
+    },
+    {
+      "path": "godot-games/3a-games/zhaoyun_network_2.glb",
+      "bytes": 36606392,
+      "sha256": "c1c38cf4382728cc9205a98a0792b50716664818603cbadd13a36259265c8239"
+    },
+    {
+      "path": "godot-games/3a-games/zhaoyun_rigged_v1.glb",
+      "bytes": 12483176,
+      "sha256": "4a3fd2626ab68743478ad18fa0ed18c212ba8558f1c75eba7e5fe3ce9e18ebcc"
+    },
+    {
+      "path": "godot-games/3a-games/zhaoyun_spear.glb",
+      "bytes": 6801036,
+      "sha256": "971715ebfd3e7d87a9e81cdcbdbef130de8776da6c4d34115fc35076187186e5"
+    },
+    {
+      "path": "godot-games/tianque-arena/assets/characters/enemies/boss_cleric.glb",
+      "bytes": 1300360,
+      "sha256": "fc3b06c679c7905fb8bdbf5cd684cedb57ac81e711172906cbadd73fb6a00bb9"
+    },
+    {
+      "path": "godot-games/tianque-arena/assets/characters/enemies/brute_monk.glb",
+      "bytes": 1292044,
+      "sha256": "afb5d61bbdaa99eb64fd1f4311963ba53ffe8460913dc34f66373e23a5f85461"
+    },
+    {
+      "path": "godot-games/tianque-arena/assets/characters/enemies/caster_wizard.glb",
+      "bytes": 1176532,
+      "sha256": "f1e0ff518adf53071e227479b9d62cda1d61b4600232a990f85b5717319a9799"
+    },
+    {
+      "path": "godot-games/tianque-arena/assets/characters/enemies/guard_rogue.glb",
+      "bytes": 1014572,
+      "sha256": "c91ab4498c527428f00516d3b0dfa258bdbfc135b77237a46d6e2a2b14fd85b1"
+    },
+    {
+      "path": "godot-games/tianque-arena/assets/characters/tianque_hero.glb",
+      "bytes": 1425228,
+      "sha256": "926287ca3e4bf2dae06da6d310243e83ae7d527a7709d7fb4ac7f3629ead7dd1"
+    }
+  ]
+}

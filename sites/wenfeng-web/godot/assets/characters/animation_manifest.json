@@ -1,0 +1,437 @@
+{
+  "zhaoyun": {
+    "source": {
+      "file": "zhaoyun_network.glb",
+      "sha256": "d244af4e4938cf4aa977e1bfe3ec6f40ac7a90b625f37af7874d31ecc34b1c19",
+      "bind_reconstructed": true,
+      "recovery": "Previous same-character Mixamo rest rig, fitted to new weighted regions",
+      "head_vertices": 6533,
+      "corrected_head_weights": 6195,
+      "neck_y": 0.8020023339027872,
+      "head_y": 0.8508361473217388
+    },
+    "clips": {
+      "Idle": {
+        "seconds": 1.6667,
+        "samples": 51,
+        "sources": [
+          "Sword_Idle"
+        ],
+        "rotation_tracks": 64
+      },
+      "Walk": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "WalkBack": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "StrafeLeft": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "StrafeRight": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "Run": {
+        "seconds": 0.9333,
+        "samples": 29,
+        "sources": [
+          "Jog_Fwd_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "TurnLeft": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "TurnRight": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "Attack1": {
+        "seconds": 1.4,
+        "samples": 43,
+        "sources": [
+          "Sword_Regular_A",
+          "Sword_Regular_A_Rec"
+        ],
+        "rotation_tracks": 64
+      },
+      "Attack2": {
+        "seconds": 1.5667,
+        "samples": 48,
+        "sources": [
+          "Sword_Regular_B",
+          "Sword_Regular_B_Rec"
+        ],
+        "rotation_tracks": 64
+      },
+      "Attack3": {
+        "seconds": 2.0,
+        "samples": 61,
+        "sources": [
+          "Sword_Regular_C"
+        ],
+        "rotation_tracks": 64
+      },
+      "Heavy": {
+        "seconds": 1.5333,
+        "samples": 47,
+        "sources": [
+          "Sword_Attack"
+        ],
+        "rotation_tracks": 64
+      },
+      "Block": {
+        "seconds": 1.2333,
+        "samples": 38,
+        "sources": [
+          "Sword_Block"
+        ],
+        "rotation_tracks": 64
+      },
+      "Dodge": {
+        "seconds": 0.8,
+        "samples": 25,
+        "sources": [
+          "Sword_Dash"
+        ],
+        "rotation_tracks": 64
+      },
+      "Hit": {
+        "seconds": 0.3333,
+        "samples": 11,
+        "sources": [
+          "Hit_Chest"
+        ],
+        "rotation_tracks": 64
+      },
+      "GuardBreak": {
+        "seconds": 0.8333,
+        "samples": 26,
+        "sources": [
+          "Hit_Knockback"
+        ],
+        "rotation_tracks": 64
+      },
+      "Death": {
+        "seconds": 2.4,
+        "samples": 73,
+        "sources": [
+          "Death01"
+        ],
+        "rotation_tracks": 64
+      },
+      "Victory": {
+        "seconds": 2.5,
+        "samples": 76,
+        "sources": [
+          "Yes"
+        ],
+        "rotation_tracks": 64
+      },
+      "DragonCharge": {
+        "seconds": 0.45,
+        "samples": 15,
+        "sources": [
+          "Sword_Idle"
+        ],
+        "rotation_tracks": 64
+      },
+      "DragonThrust": {
+        "seconds": 0.4,
+        "samples": 13,
+        "sources": [
+          "Sword_Regular_C"
+        ],
+        "rotation_tracks": 64
+      },
+      "DragonCross": {
+        "seconds": 0.4,
+        "samples": 13,
+        "sources": [
+          "Sword_Regular_A"
+        ],
+        "rotation_tracks": 64
+      },
+      "DragonBackCut": {
+        "seconds": 0.4,
+        "samples": 13,
+        "sources": [
+          "Sword_Regular_B"
+        ],
+        "rotation_tracks": 64
+      },
+      "CloudStep": {
+        "seconds": 0.8,
+        "samples": 25,
+        "sources": [
+          "Sword_Dash"
+        ],
+        "rotation_tracks": 64
+      }
+    },
+    "atlas": {
+      "surfaces_before": 1,
+      "surfaces_after": 1,
+      "texture_scale": 1.0,
+      "mode": "original_network_pbr",
+      "vertices": 25907
+    },
+    "grip": {
+      "rotation_xyzw": [
+        -0.5191755814473037,
+        -0.4519568768616764,
+        0.4782170206473658,
+        -0.5454357691327647
+      ],
+      "position": [
+        0.00016592438263006041,
+        0.04693517794738073,
+        -0.002462019526111608
+      ],
+      "mesh_scale": 0.0058,
+      "mesh_grip_y": -0.075
+    }
+  },
+  "machao": {
+    "source": {
+      "file": "machao_network.glb",
+      "sha256": "03eda9db56d555c462af3aca03863bdb79baacff4a327d2cbdee9c7fc9056dde",
+      "bind_reconstructed": false,
+      "head_vertices": 3317,
+      "corrected_head_weights": 2835,
+      "neck_y": 0.8257682632514104,
+      "head_y": 0.8843335291946639
+    },
+    "clips": {
+      "Idle": {
+        "seconds": 1.6667,
+        "samples": 51,
+        "sources": [
+          "Sword_Idle"
+        ],
+        "rotation_tracks": 64
+      },
+      "Walk": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "WalkBack": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "StrafeLeft": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "StrafeRight": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "Run": {
+        "seconds": 0.9333,
+        "samples": 29,
+        "sources": [
+          "Jog_Fwd_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "TurnLeft": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "TurnRight": {
+        "seconds": 1.3333,
+        "samples": 41,
+        "sources": [
+          "Walk_Loop"
+        ],
+        "rotation_tracks": 64
+      },
+      "Attack1": {
+        "seconds": 1.4,
+        "samples": 43,
+        "sources": [
+          "Sword_Regular_A",
+          "Sword_Regular_A_Rec"
+        ],
+        "rotation_tracks": 64
+      },
+      "Attack2": {
+        "seconds": 1.5667,
+        "samples": 48,
+        "sources": [
+          "Sword_Regular_B",
+          "Sword_Regular_B_Rec"
+        ],
+        "rotation_tracks": 64
+      },
+      "Attack3": {
+        "seconds": 2.0,
+        "samples": 61,
+        "sources": [
+          "Sword_Regular_C"
+        ],
+        "rotation_tracks": 64
+      },
+      "Heavy": {
+        "seconds": 1.5333,
+        "samples": 47,
+        "sources": [
+          "Sword_Attack"
+        ],
+        "rotation_tracks": 64
+      },
+      "Block": {
+        "seconds": 1.2333,
+        "samples": 38,
+        "sources": [
+          "Sword_Block"
+        ],
+        "rotation_tracks": 64
+      },
+      "Dodge": {
+        "seconds": 0.8,
+        "samples": 25,
+        "sources": [
+          "Sword_Dash"
+        ],
+        "rotation_tracks": 64
+      },
+      "Hit": {
+        "seconds": 0.3333,
+        "samples": 11,
+        "sources": [
+          "Hit_Chest"
+        ],
+        "rotation_tracks": 64
+      },
+      "GuardBreak": {
+        "seconds": 0.8333,
+        "samples": 26,
+        "sources": [
+          "Hit_Knockback"
+        ],
+        "rotation_tracks": 64
+      },
+      "Death": {
+        "seconds": 2.4,
+        "samples": 73,
+        "sources": [
+          "Death01"
+        ],
+        "rotation_tracks": 64
+      },
+      "Victory": {
+        "seconds": 2.5,
+        "samples": 76,
+        "sources": [
+          "Yes"
+        ],
+        "rotation_tracks": 64
+      },
+      "TigerSweep": {
+        "seconds": 0.8,
+        "samples": 25,
+        "sources": [
+          "Sword_Heavy_Combo"
+        ],
+        "rotation_tracks": 64
+      },
+      "TigerRoar": {
+        "seconds": 1.0667,
+        "samples": 33,
+        "sources": [
+          "Idle_Shield_Break"
+        ],
+        "rotation_tracks": 64
+      },
+      "TigerCharge": {
+        "seconds": 0.25,
+        "samples": 9,
+        "sources": [
+          "Sword_Heavy_Combo"
+        ],
+        "rotation_tracks": 64
+      },
+      "TigerSlam": {
+        "seconds": 1.3,
+        "samples": 40,
+        "sources": [
+          "Sword_Heavy_Combo"
+        ],
+        "rotation_tracks": 64
+      }
+    },
+    "atlas": {
+      "surfaces_before": 1,
+      "surfaces_after": 1,
+      "texture_scale": 1.0,
+      "mode": "original_network_pbr",
+      "vertices": 25145
+    },
+    "grip": {
+      "rotation_xyzw": [
+        0.19386971100640588,
+        0.6663328938463307,
+        -0.6872327182761012,
+        0.21477011119685224
+      ],
+      "position": [
+        -0.0009282294346012489,
+        0.04695893941870216,
+        -0.0017310109148707367
+      ],
+      "mesh_scale": 0.0058,
+      "mesh_grip_y": -0.075
+    }
+  }
+}

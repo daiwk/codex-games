@@ -1,0 +1,373 @@
+extends Control
+class_name DuelHUD
+
+const INK = Color("142e38")
+const PAPER = Color("eee9d8")
+const GOLD = Color("d7bb83")
+const JADE = Color("9ccfc9")
+const MUTED = Color("9aafb0")
+var game: Node
+var body_font: Font
+var display_font: Font
+var menu: Control
+var pause_panel: Control
+var result_panel: Control
+var buttons: Dictionary = {}
+var displayed_hp = [120.0, 120.0]
+var menu_enemy: Label
+var menu_role_title: Label
+var menu_role_identity: Label
+var menu_role_skills: Array[Label] = []
+var pause_skills: Label
+var result_title: Label
+var result_subtitle: Label
+var last_phase = ""
+var top_veil: GradientTexture2D
+var bottom_veil: GradientTexture2D
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body_font = load("res://assets/fonts/WenfengSans.otf")
+	display_font = load("res://assets/fonts/WenfengSerif.otf")
+	top_veil = _gradient(false)
+	bottom_veil = _gradient(true)
+	_build_menu()
+	_build_pause()
+	_build_results()
+
+func _gradient(reverse: bool) -> GradientTexture2D:
+	var gradient = Gradient.new()
+	gradient.offsets = PackedFloat32Array([0.0, 0.52, 1.0])
+	gradient.colors = PackedColorArray([Color(0.025, 0.065, 0.08, 0.95), Color(0.025, 0.065, 0.08, 0.60), Color(0.025, 0.065, 0.08, 0.0)])
+	var texture = GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.width = 16
+	texture.height = 256
+	texture.fill_from = Vector2(0, 1 if reverse else 0)
+	texture.fill_to = Vector2(0, 0 if reverse else 1)
+	return texture
+
+func _label(parent: Node, text: String, at: Vector2, font_size: int, color: Color = PAPER, width = 400.0, display = false) -> Label:
+	var label = Label.new()
+	label.text = text
+	label.position = at
+	label.size.x = width
+	label.add_theme_font_override("font", display_font if display else body_font)
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(label)
+	return label
+
+func _style(color: Color, border: Color) -> StyleBoxFlat:
+	var style = StyleBoxFlat.new()
+	style.bg_color = color
+	style.border_color = border
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	return style
+
+func _button(parent: Node, text: String, rect: Rect2, callback: Callable, prominent = false) -> Button:
+	var button = Button.new()
+	button.text = text
+	button.position = rect.position
+	button.size = rect.size
+	button.add_theme_font_override("font", body_font)
+	button.add_theme_font_size_override("font_size", 18 if prominent else 16)
+	button.add_theme_color_override("font_color", INK if prominent else PAPER)
+	button.add_theme_color_override("font_hover_color", INK if prominent else Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", INK if prominent else GOLD)
+	button.add_theme_stylebox_override("normal", _style(GOLD if prominent else Color(0.11, 0.20, 0.23, 0.92), Color("4e6568")))
+	button.add_theme_stylebox_override("hover", _style(Color("ead4a4") if prominent else Color("2d4c52"), GOLD))
+	button.add_theme_stylebox_override("pressed", _style(Color("c4a66b") if prominent else Color("2a474c"), GOLD))
+	button.add_theme_stylebox_override("focus", _style(Color(0, 0, 0, 0), GOLD))
+	button.pressed.connect(callback)
+	parent.add_child(button)
+	return button
+
+func _full_rect(parent: Node, color: Color) -> ColorRect:
+	var panel = ColorRect.new()
+	panel.color = color
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(panel)
+	return panel
+
+func _build_menu() -> void:
+	menu = Control.new()
+	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	menu.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(menu)
+	var veil = _full_rect(menu, Color.WHITE)
+	var shader = Shader.new()
+	shader.code = """shader_type canvas_item;void fragment(){float a=0.97*(1.0-smoothstep(0.28,0.66,UV.x));COLOR=vec4(0.028,0.070,0.087,a);}"""
+	var mat = ShaderMaterial.new()
+	mat.shader = shader
+	veil.material = mat
+	_label(menu, "一 对 一  ·  刀 剑 决 斗", Vector2(50, 48), 13, JADE)
+	_label(menu, "问锋", Vector2(44, 77), 90, PAPER, 400, true)
+	_label(menu, "DUEL OF BLADES", Vector2(53, 185), 16, GOLD)
+	_label(menu, "一招有进退，一刃定胜负。", Vector2(52, 230), 18, PAPER)
+	_label(menu, "出战武将", Vector2(52, 290), 13, MUTED)
+	buttons.zhaoyun = _button(menu, "赵云   /   子龙", Rect2(52, 320, 176, 48), func(): game.select_character("zhaoyun"))
+	buttons.machao = _button(menu, "马超   /   孟起", Rect2(240, 320, 176, 48), func(): game.select_character("machao"))
+	buttons.zhaoyun.toggle_mode = true
+	buttons.machao.toggle_mode = true
+	_label(menu, "掌中兵刃", Vector2(52, 389), 13, MUTED)
+	buttons.sword = _button(menu, "剑  ·  灵巧", Rect2(52, 418, 176, 48), func(): game.select_weapon("sword"))
+	buttons.saber = _button(menu, "刀  ·  刚猛", Rect2(240, 418, 176, 48), func(): game.select_weapon("saber"))
+	buttons.sword.toggle_mode = true
+	buttons.saber.toggle_mode = true
+	_label(menu, "对手强度", Vector2(52, 484), 13, MUTED)
+	for i in 3:
+		var index = i
+		var button = _button(menu, ["切磋", "争锋", "宗师"][i], Rect2(52 + i * 125, 512, 114, 39), func(): game.difficulty = index)
+		button.toggle_mode = true
+		buttons["difficulty" + str(i)] = button
+	menu_enemy = _label(menu, "", Vector2(52, 570), 13, MUTED)
+	_button(menu, "入场拔刃    →", Rect2(52, 605, 364, 57), func(): game.start_match(), true)
+	_label(menu, "WASD 移动    J 轻击    K 重击    Space 闪避", Vector2(52, 683), 12, PAPER)
+	_label(menu, "Q / E 武将技能    U 战意满时施展绝技", Vector2(52, 710), 12, GOLD)
+	_label(menu, "L / Shift 格挡  ·  及时格挡可招架  ·  Enter 开始", Vector2(52, 744), 11, MUTED)
+	_label(menu, "青石为界  ·  点到为止", Vector2(956, 742), 14, PAPER, 280, true)
+	var role_panel = Panel.new()
+	role_panel.position = Vector2(568, 40)
+	role_panel.size = Vector2(660, 198)
+	role_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	role_panel.add_theme_stylebox_override("panel", _style(Color(0.025, 0.065, 0.08, 0.90), Color("496669")))
+	menu.add_child(role_panel)
+	menu_role_title = _label(role_panel, "", Vector2(22, 14), 27, JADE, 616, true)
+	menu_role_identity = _label(role_panel, "", Vector2(22, 54), 13, PAPER, 616)
+	for i in 3:
+		var line = _label(role_panel, "", Vector2(22, 89 + i * 29), 12, MUTED, 616)
+		line.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		menu_role_skills.append(line)
+
+func _overlay() -> Control:
+	var overlay = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+	_full_rect(overlay, Color(0.015, 0.035, 0.045, 0.76))
+	return overlay
+
+func _build_pause() -> void:
+	pause_panel = _overlay()
+	_label(pause_panel, "暂歇", Vector2(525, 196), 64, PAPER, 300, true)
+	_label(pause_panel, "刀锋暂收，战意未尽。", Vector2(523, 280), 16, MUTED, 380)
+	_button(pause_panel, "继续决斗", Rect2(480, 346, 320, 52), func(): game.toggle_pause(), true)
+	_button(pause_panel, "重新对决", Rect2(480, 415, 320, 48), func(): game.start_match())
+	_button(pause_panel, "返回选将", Rect2(480, 481, 320, 48), func(): game.return_to_menu())
+	_button(pause_panel, "收刃休息", Rect2(480, 547, 320, 48), func(): game.get_node("WebBridge").close_game())
+	_label(pause_panel, "Esc 继续    ·    F 全屏    ·    M 静音", Vector2(484, 642), 13, MUTED)
+	pause_skills = _label(pause_panel, "", Vector2(400, 680), 12, GOLD, 560)
+	pause_skills.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+func _build_results() -> void:
+	result_panel = _overlay()
+	result_title = _label(result_panel, "胜", Vector2(556, 161), 100, GOLD, 300, true)
+	result_subtitle = _label(result_panel, "", Vector2(428, 300), 21, PAPER, 470)
+	result_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label(result_panel, "胜负已分，锋芒尚在。", Vector2(492, 354), 17, MUTED)
+	_button(result_panel, "再战一场   /   R", Rect2(480, 429, 320, 56), func(): game.start_match(), true)
+	_button(result_panel, "返回选将", Rect2(480, 506, 320, 48), func(): game.return_to_menu())
+	_button(result_panel, "收刃休息", Rect2(480, 571, 320, 44), func(): game.get_node("WebBridge").close_game())
+
+func _process(delta: float) -> void:
+	if not is_instance_valid(game) or not is_instance_valid(game.player):
+		return
+	menu.visible = game.phase == "menu"
+	pause_panel.visible = game.paused
+	result_panel.visible = game.phase == "match_end" and not game.paused
+	if menu.visible:
+		for id in ["zhaoyun", "machao"]:
+			buttons[id].set_pressed_no_signal(game.character_id == id)
+		for id in ["sword", "saber"]:
+			buttons[id].set_pressed_no_signal(game.weapon_id == id)
+		for i in 3:
+			buttons["difficulty" + str(i)].set_pressed_no_signal(game.difficulty == i)
+		menu_enemy.text = "对阵  %s · %s    /    九十息一回合" % [game.fighter_name(game.enemy.character_id), "刀" if game.enemy.weapon_id == "saber" else "剑"]
+		_update_role_preview()
+	if pause_panel.visible:
+		pause_skills.text = "Q %s   ·   E %s   ·   U %s" % [game.player.skill_name("rush"), game.player.skill_name("counter"), game.player.ultimate_name()]
+	if result_panel.visible:
+		result_title.text = "胜" if game.scores[0] == 2 else "惜败"
+		result_title.position.x = 556 if game.scores[0] == 2 else 490
+		result_subtitle.text = "%s  %d : %d  %s" % [game.fighter_name(game.player.character_id), game.scores[0], game.scores[1], game.fighter_name(game.enemy.character_id)]
+	for i in 2:
+		var fighter = game.player if i == 0 else game.enemy
+		displayed_hp[i] = lerpf(displayed_hp[i], fighter.hp, 1.0 - exp(-delta * 12.0))
+	queue_redraw()
+
+func _role_color(fighter) -> Color:
+	return Color("9bdde4") if fighter.character_id == "zhaoyun" else Color("efb276")
+
+func _update_role_preview() -> void:
+	var fighter = game.player
+	var agile: bool = fighter.character_id == "zhaoyun"
+	menu_role_title.text = "%s  ·  %s" % [game.fighter_name(fighter.character_id), "游斗追击" if agile else "刚猛压制"]
+	menu_role_title.add_theme_color_override("font_color", _role_color(fighter))
+	menu_role_identity.text = "以退为进，窄角突刺；连环追击考验距离与时机。" if agile else "横扫压近，震阵破防；蓄势重砸封锁近身区域。"
+	for i in 2:
+		var id = "rush" if i == 0 else "counter"
+		menu_role_skills[i].text = "%s  %s  ·  %s  /  %d 体力 · %.1f 秒冷却" % ["Q" if i == 0 else "E", fighter.skill_name(id), fighter.skill_description(id), int(fighter.skill_cost(id)), fighter.skill_cooldown(id)]
+	menu_role_skills[2].text = "U  %s  ·  %s  /  100 战意" % [fighter.ultimate_name(), fighter.skill_description("ultimate")]
+	menu_role_skills[2].add_theme_color_override("font_color", _role_color(fighter))
+
+func _text(at: Vector2, text: String, font_size: int, color: Color = PAPER, serif = false) -> void:
+	draw_string(display_font if serif else body_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+
+func _fit_copy(text: String, font_size: int, width: float) -> String:
+	if body_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= width:
+		return text
+	var clipped = text
+	while not clipped.is_empty() and body_font.get_string_size(clipped + "…", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > width:
+		clipped = clipped.substr(0, clipped.length() - 1)
+	return clipped + "…"
+
+func _skill_card(rect: Rect2, key: String, id: String) -> void:
+	var fighter = game.player
+	var cost: float = fighter.skill_cost(id)
+	var cooldown: float = float(fighter.cooldowns.get(id, 0.0))
+	var ready: bool = fighter.skill_ready(id) and game.phase == "fight" and not game.paused
+	var active: bool = fighter.state == "skill" and fighter.skill_id == id
+	var accent = _role_color(fighter) if ready or active else MUTED
+	var border = Color(accent, 0.65 if ready or active else 0.23)
+	draw_rect(rect, Color(0.025, 0.07, 0.085, 0.90))
+	draw_rect(rect, border, false, 1.0)
+	draw_line(rect.position, rect.position + Vector2(36, 0), accent, 2.0, true)
+	var key_rect = Rect2(rect.position + Vector2(13, 15), Vector2(31, 32))
+	draw_rect(key_rect, Color(accent, 0.12 if ready or active else 0.05))
+	draw_rect(key_rect, Color(accent, 0.55), false, 1.0)
+	_text(key_rect.position + Vector2(9, 23), key, 18, accent)
+	_text(rect.position + Vector2(56, 29), fighter.skill_name(id), 16, PAPER if ready or active else MUTED)
+	_text(rect.position + Vector2(13, 56), _fit_copy(fighter.skill_description(id), 11, rect.size.x - 26), 11, PAPER if ready or active else MUTED)
+	var status = "就绪 · %d 体力" % int(cost) if ready else "伺机 · %d 体力" % int(cost)
+	if cooldown > 0.05:
+		status = "冷却  %.1f 秒" % cooldown
+	elif fighter.stamina < cost:
+		status = "体力不足 · 需 %d" % int(cost)
+	if active:
+		status = "收势中" if fighter.skill_stage == "recovery" else "施展中"
+	_text(rect.position + Vector2(13, 76), status, 11, accent if ready or active else MUTED)
+	var progress: float = clampf(1.0 - cooldown / maxf(fighter.skill_cooldown(id), 0.01), 0.0, 1.0)
+	var bar = Rect2(rect.position + Vector2(13, rect.size.y - 12), Vector2(rect.size.x - 26, 3))
+	draw_rect(bar, Color(0.18, 0.28, 0.29, 0.8))
+	draw_rect(Rect2(bar.position, Vector2(bar.size.x * progress, bar.size.y)), Color(accent, 0.9 if ready or active else 0.4))
+
+func _ultimate_card(rect: Rect2) -> void:
+	var fighter = game.player
+	var energy: float = clampf(fighter.energy, 0.0, 100.0)
+	var charged: bool = energy >= 99.99
+	var ready: bool = fighter.skill_ready("ultimate") and game.phase == "fight" and not game.paused
+	var active: bool = fighter.state == "ultimate"
+	var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.005)
+	var accent = _role_color(fighter)
+	draw_rect(rect.grow(3), Color(accent, 0.05 + pulse * 0.10) if charged else Color.TRANSPARENT)
+	draw_rect(rect, Color(0.035, 0.07, 0.085, 0.94))
+	draw_rect(rect, Color(accent, 0.55 + pulse * 0.35 if charged else 0.3), false, 1.0)
+	draw_line(rect.position, rect.position + Vector2(48, 0), accent, 2.0, true)
+	var key_rect = Rect2(rect.position + Vector2(14, 15), Vector2(32, 32))
+	draw_rect(key_rect, Color(accent, 0.22 if charged else 0.07))
+	draw_rect(key_rect, Color(accent, 0.85 if charged else 0.35), false, 1.0)
+	_text(key_rect.position + Vector2(9, 23), "U", 18, accent)
+	_text(rect.position + Vector2(59, 29), fighter.ultimate_name(), 18, PAPER if charged or active else MUTED, true)
+	_text(rect.position + Vector2(14, 56), _fit_copy(fighter.skill_description("ultimate"), 11, rect.size.x - 28), 11, PAPER if charged or active else MUTED)
+	var status = "战意 %d / 100 · 攻防积攒" % int(energy)
+	if charged:
+		status = "战意已满 · 按 U 施展" if ready else "战意已满 · 伺机出招"
+	if active:
+		status = "蓄势" if fighter.skill_stage == "windup" else "绝技施展中"
+	_text(rect.position + Vector2(14, 76), status, 11, accent if charged or active else MUTED)
+	var bar = Rect2(rect.position + Vector2(14, rect.size.y - 12), Vector2(rect.size.x - 28, 4))
+	draw_rect(bar, Color(0.18, 0.28, 0.29, 0.8))
+	draw_rect(Rect2(bar.position, Vector2(bar.size.x * energy / 100.0, bar.size.y)), accent)
+	for tick in [0.25, 0.5, 0.75]:
+		var x: float = bar.position.x + bar.size.x * tick
+		draw_line(Vector2(x, bar.position.y), Vector2(x, bar.end.y), Color(0.03, 0.07, 0.08, 0.8), 1.0)
+
+func _ultimate_warning() -> void:
+	if game.phase != "fight" or game.paused:
+		return
+	var fighter = game.enemy if game.enemy.state == "ultimate" and game.enemy.skill_stage == "windup" else game.player
+	if fighter.state != "ultimate" or fighter.skill_stage != "windup":
+		return
+	var hostile: bool = fighter == game.enemy
+	var accent = _role_color(fighter)
+	var rect = Rect2(438, 215, 404, 76)
+	draw_rect(rect, Color(0.035, 0.065, 0.08, 0.90))
+	draw_line(rect.position, rect.position + Vector2(rect.size.x, 0), Color(accent, 0.75), 1.5, true)
+	draw_line(Vector2(rect.position.x, rect.end.y), rect.end, Color(accent, 0.35), 1.0, true)
+	var title: String = fighter.ultimate_name()
+	var width = display_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 27).x
+	_text(Vector2((1280 - width) * 0.5, 250), title, 27, accent, true)
+	var tactic = "连续追击 · 可打断" if fighter.character_id == "zhaoyun" else "重击蓄势 · 离开震圈 / 闪避"
+	var subtitle = ("对手 · " if hostile else "己方 · ") + tactic
+	var subtitle_width = body_font.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+	_text(Vector2((1280 - subtitle_width) * 0.5, 276), subtitle, 12, PAPER)
+
+func _draw() -> void:
+	if not is_instance_valid(game) or not is_instance_valid(game.player) or game.phase == "menu":
+		return
+	# The shallow top veil makes the duel readable against sky and gate alike.
+	draw_texture_rect(top_veil, Rect2(0, 0, 1280, 182), false)
+	for i in 2:
+		var fighter = game.player if i == 0 else game.enemy
+		var x = 52.0 if i == 0 else 796.0
+		var color = JADE if i == 0 else GOLD
+		var name_text = game.fighter_name(fighter.character_id)
+		_text(Vector2(x, 57), name_text, 29, PAPER, true)
+		_text(Vector2(x + 85, 55), ("你  /  " if i == 0 else "对手  /  ") + ("剑 · 灵巧" if fighter.weapon_id == "sword" else "刀 · 刚猛"), 12, MUTED)
+		draw_rect(Rect2(x, 80, 432, 13), Color(0.02, 0.06, 0.075, 0.83))
+		var width = 432 * displayed_hp[i] / 120.0
+		var fill_x = x if i == 0 else x + 432 - width
+		draw_rect(Rect2(fill_x, 80, width, 13), color)
+		draw_rect(Rect2(x, 102, 432, 4), Color(0.02, 0.06, 0.075, 0.8))
+		var sw = 432 * fighter.stamina / 100.0
+		draw_rect(Rect2(x if i == 0 else x + 432 - sw, 102, sw, 4), Color("d0bd8b") if fighter.stamina > 25 else Color("c77d62"))
+		var energy_width: float = 432 * clampf(fighter.energy, 0.0, 100.0) / 100.0
+		draw_rect(Rect2(x, 113, 432, 3), Color(0.02, 0.06, 0.075, 0.8))
+		draw_rect(Rect2(x if i == 0 else x + 432 - energy_width, 113, energy_width, 3), _role_color(fighter))
+		_text(Vector2(x, 138), "体力 %d    战意 %d%s" % [fighter.stamina, fighter.energy, " · 绝技就绪" if fighter.energy >= 99.99 else ""], 11, GOLD if fighter.energy >= 99.99 else MUTED)
+		for point in 2:
+			draw_circle(Vector2(x + 403 + point * 22, 133), 4.0, color if game.scores[i] > point else Color("445c60"))
+	_text(Vector2(616, 31), "问 锋", 13, GOLD, true)
+	_text(Vector2(603, 83), "%02d" % int(ceil(game.round_time)), 43, PAPER)
+	_text(Vector2(590, 113), "第 %d 回合" % game.round_number, 13, MUTED)
+	if game.phase in ["countdown", "round_end"]:
+		var title = ""
+		var subtitle = ""
+		if game.phase == "countdown":
+			title = str(int(ceil(game.phase_clock))) if game.phase_clock > 0.7 else "拔刃"
+			subtitle = "第 %d 回合  /  三局两胜" % game.round_number
+		else:
+			title = "此局得胜" if game.last_winner == 0 else "此局落败"
+			subtitle = "%d  :  %d" % [game.scores[0], game.scores[1]]
+		var width = display_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 64).x
+		_text(Vector2((1280 - width) / 2.0, 314), title, 64, GOLD, true)
+		var subwidth = body_font.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+		_text(Vector2((1280 - subwidth) / 2.0, 350), subtitle, 16, PAPER)
+	if game.toast_time > 0.0 and game.phase == "fight":
+		var text: String = game.toast
+		var width = body_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 19).x
+		_text(Vector2((1280 - width) / 2.0, 191), text, 19, GOLD)
+	if game.phase == "fight" and is_instance_valid(game.camera):
+		var target = game.enemy.global_position + Vector3.UP * 1.08
+		if not game.camera.is_position_behind(target):
+			var screen = game.camera.unproject_position(target)
+			var color = Color(0.88, 0.79, 0.54, 0.8)
+			for side in [-1, 1]:
+				draw_line(screen + Vector2(side * 26, -7), screen + Vector2(side * 31, 0), color, 1.5, true)
+				draw_line(screen + Vector2(side * 31, 0), screen + Vector2(side * 26, 7), color, 1.5, true)
+	_ultimate_warning()
+	draw_texture_rect(bottom_veil, Rect2(0, 650, 1280, 150), false)
+	_text(Vector2(52, 721), "WASD  移动    J  连斩    K  重击", 12, PAPER)
+	_text(Vector2(52, 747), "L / Shift  格挡    Space  闪避", 12, PAPER)
+	_text(Vector2(52, 777), "Esc  暂停    F  全屏    M  静音", 11, MUTED)
+	_skill_card(Rect2(460, 682, 210, 98), "Q", "rush")
+	_skill_card(Rect2(682, 682, 210, 98), "E", "counter")
+	_ultimate_card(Rect2(904, 682, 324, 98))

@@ -1,1 +1,14 @@
 *.dmg
+.DS_Store
+Thumbs.db
+__pycache__/
+*.py[cod]
+.godot/
+*.import
+*.uid
+.cache/
+node_modules/
+**/qa/*
+!sites/wenfeng-web/godot/qa/.gdignore
+*.log
+.cleanup-backup-location
