@@ -8,6 +8,9 @@ const ULTIMATE_RADIUS = 3.8
 const PALETTES = {
 	"zhaoyun": [Color("49d5ee"), Color("e7fcff"), Color("2c8aa4")],
 	"machao": [Color("ff9844"), Color("fff0ca"), Color("d44224")],
+	"guanyu": [Color("78ddb2"), Color("f0ffda"), Color("248768")],
+	"zhangfei": [Color("bc8ff0"), Color("f4e9ff"), Color("69419c")],
+	"lubu": [Color("f17e8c"), Color("ffdf9e"), Color("a82b49")],
 }
 
 var active_effects: Dictionary = {}
@@ -92,6 +95,36 @@ void fragment() {
 """
 
 
+func _play_polearm_skill(fighter: DuelFighter, skill: String, stage: String, palette: Array) -> void:
+	var crescent = fighter.character_id in ["guanyu", "lubu"]
+	if stage == "finish":
+		_remove_followers(fighter.get_instance_id())
+	if skill == "ultimate":
+		if stage == "start":
+			_spawn(fighter, "charge_wisps" if crescent else "chase_guides", palette, 1.55, 0.9, Vector3.ONE * 0.8, Vector3.ONE, true)
+			if crescent:
+				_spawn(fighter, "charge_threat", palette, 1.3, 0.8, Vector3.ONE * 0.92, Vector3.ONE * 0.92, true)
+		elif stage in ["strike", "finish"]:
+			_spawn(fighter, "sweeping_cleave" if crescent else "forward_thrust", palette, 0.38, 0.045, Vector3.ONE, Vector3.ONE * (1.25 if crescent else 1.40))
+			if stage == "finish":
+				_spawn(fighter, "chase_finish", palette, 0.48, 0.06, Vector3.ONE * 0.9, Vector3.ONE * 1.15)
+	elif skill == "rush":
+		if stage == "start":
+			_spawn(fighter, "armor_heat" if crescent else "thrust_wake", palette, 0.55, 0.10, Vector3.ONE * 0.7, Vector3.ONE, false)
+		elif stage == "release":
+			_spawn(fighter, "sweeping_cleave" if crescent else "forward_thrust", palette, 0.38, 0.04, Vector3.ONE, Vector3.ONE * 1.28)
+	elif skill == "counter":
+		if fighter.character_id == "lubu":
+			if stage == "release":
+				_spawn(fighter, "forward_thrust", palette, 0.38, 0.04, Vector3.ONE, Vector3.ONE * 1.35)
+			return
+		if stage == "start" and crescent:
+			_spawn(fighter, "evade_echo", palette, 0.5, 0.04, Vector3.ONE, Vector3.ONE)
+		elif stage == "release":
+			_spawn(fighter, "sweeping_cleave" if crescent else "roar_wave", palette, 0.48, 0.04, Vector3.ONE * (0.8 if crescent else 0.25), Vector3.ONE)
+			if not crescent:
+				_spawn(fighter, "roar_core", palette, 0.18, 0.025, Vector3.ONE * 0.7, Vector3.ONE)
+
 func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 	if not is_instance_valid(fighter):
 		return
@@ -101,6 +134,9 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 		_ultimate_strikes.erase(owner_id)
 		return
 	var palette: Array = PALETTES.get(fighter.character_id, PALETTES.zhaoyun)
+	if fighter.is_two_handed():
+		_play_polearm_skill(fighter, skill, stage, palette)
+		return
 	var is_zhaoyun = fighter.character_id == "zhaoyun"
 	# Ma Chao's ground warning stays visible between his raised blade and impact.
 	if stage == "finish" or (stage == "release" and (skill != "ultimate" or is_zhaoyun)):

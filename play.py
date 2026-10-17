@@ -50,13 +50,25 @@ def verify_assets(full=False):
     manifest = json.loads((DIST / "assets-manifest.json").read_text(encoding="utf-8"))
     for name in ("index.wasm", "index.pck"):
         asset = manifest["assets"][name]
-        file = (DIST / asset["file"]).resolve()
-        if file.parent != DIST.resolve() or not file.is_file():
-            raise ValueError("Missing game asset: " + name)
-        if file.stat().st_size != asset["download_bytes"]:
-            raise ValueError("Incomplete game asset: " + name + ". Download it again.")
+        chunks = asset.get("chunks") or [{"file": asset["file"], "bytes": asset["download_bytes"]}]
+        packed = bytearray() if full else None
+        downloaded = 0
+        for chunk in chunks:
+            file = (DIST / chunk["file"]).resolve()
+            if file.parent != DIST.resolve() or not file.is_file():
+                raise ValueError("Missing game asset: " + chunk["file"])
+            if file.stat().st_size != chunk["bytes"]:
+                raise ValueError("Incomplete game asset: " + chunk["file"] + ". Download it again.")
+            downloaded += file.stat().st_size
+            if full:
+                data = file.read_bytes()
+                if chunk.get("sha256") and hashlib.sha256(data).hexdigest() != chunk["sha256"]:
+                    raise ValueError("Game asset checksum mismatch: " + chunk["file"])
+                packed.extend(data)
+        if downloaded != asset["download_bytes"]:
+            raise ValueError("Incomplete game asset: " + name)
         if full:
-            data = gzip.decompress(file.read_bytes())
+            data = gzip.decompress(packed)
             if len(data) != asset["decoded_bytes"] or hashlib.sha256(data).hexdigest() != asset["sha256"]:
                 raise ValueError("Game asset checksum mismatch: " + name)
 

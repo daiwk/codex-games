@@ -36,6 +36,31 @@
       "sha256": "e66937676e0e691fb8269dba6152f3e09a0c9e3f2bf8cbe0ebd5d1ba83f038ef"
     },
     {
+      "path": "godot-games/3a-games/source/originals/吕布.glb",
+      "bytes": 21620132,
+      "sha256": "0fa393110309994e5904066de0526273ff5729232923aee1d0a315d0fcf5173e"
+    },
+    {
+      "path": "godot-games/3a-games/source/third_party/kaykit/Rig_Medium_CombatMelee.glb",
+      "bytes": 999416,
+      "sha256": "c55e6ec1c79e83ae21d46fe1cd921c1b64be8b9a524a24517e51c6ba99231459"
+    },
+    {
+      "path": "godot-games/3a-games/source/third_party/kaykit/Rig_Medium_General.glb",
+      "bytes": 828240,
+      "sha256": "5f725c0f745f36078c7238968cd5c04843cbc6260689eb6e7f5e2bbd7ffdd7ad"
+    },
+    {
+      "path": "godot-games/3a-games/source/third_party/kaykit/Rig_Medium_MovementAdvanced.glb",
+      "bytes": 719628,
+      "sha256": "8b2317cf81e3f24149e4b791c27e1932bebd46cd378ed962e7d27d642fad8c56"
+    },
+    {
+      "path": "godot-games/3a-games/source/third_party/kaykit/Rig_Medium_MovementBasic.glb",
+      "bytes": 689624,
+      "sha256": "11422afd50abf7e8c92ea107e2e0bc94abd38023d6d15f55ad580347efbfa29e"
+    },
+    {
       "path": "godot-games/3a-games/source/third_party/ual1/UAL1_Standard.glb",
       "bytes": 7618436,
       "sha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997"
@@ -66,6 +91,36 @@
       "sha256": "971715ebfd3e7d87a9e81cdcbdbef130de8776da6c4d34115fc35076187186e5"
     },
     {
+      "path": "godot-games/3a-games/丈八蛇矛.glb",
+      "bytes": 4886144,
+      "sha256": "f3c13e29622974cdc1d03025eee6404f4a4297b6a7ed4f571edf938cba011355"
+    },
+    {
+      "path": "godot-games/3a-games/关羽.glb",
+      "bytes": 22136080,
+      "sha256": "8a3eec371c6b959e5a92b2d4eb0a25ca83d5bf4e9e3d4dee6651c89521c16310"
+    },
+    {
+      "path": "godot-games/3a-games/吕布.glb",
+      "bytes": 21620156,
+      "sha256": "f52a3bbdca491a9b92861e1c3d31f8bfbe4fe97489eaee577d5d18ec35e2582e"
+    },
+    {
+      "path": "godot-games/3a-games/张飞.glb",
+      "bytes": 22149068,
+      "sha256": "60fe6eab6dce29d8df4b2214d6643322c14f3f107da54a6825dd52210d42f975"
+    },
+    {
+      "path": "godot-games/3a-games/方天画戟.glb",
+      "bytes": 4377928,
+      "sha256": "006fc8db811882aaed1e3c8520524bfa2127c6f4c94991f0c19d6e177928105d"
+    },
+    {
+      "path": "godot-games/3a-games/青龙刀.glb",
+      "bytes": 4779816,
+      "sha256": "6f1ce94b1da174a6b9703be76d3c8ee41f014c144c554bb47740ed7a462fcfee"
+    },
+    {
       "path": "godot-games/tianque-arena/assets/characters/enemies/boss_cleric.glb",
       "bytes": 1300360,
       "sha256": "fc3b06c679c7905fb8bdbf5cd684cedb57ac81e711172906cbadd73fb6a00bb9"
@@ -90,5 +145,6 @@
       "bytes": 1425228,
       "sha256": "926287ca3e4bf2dae06da6d310243e83ae7d527a7709d7fb4ac7f3629ead7dd1"
     }
-  ]
+  ],
+  "notes": "吕布.glb is the corrected mesh; its untouched original is under source/originals/. Other user GLBs remain byte-for-byte unchanged."
 }

@@ -1,0 +1,7 @@
+Author: Kay Lousberg / KayKit
+Source: https://kaylousberg.itch.io/kaykit-character-animations
+Edition: Free 1.1 (official anonymous free download)
+License: CC0 1.0 Universal
+Retrieved: 2026-10-18
+Original ZIP SHA256: 65882f31f905ad2e953819648a59287cdeab8f623908d5ef701971d3758be20f
+Only the medium-rig melee, general and movement GLBs and original license retained.

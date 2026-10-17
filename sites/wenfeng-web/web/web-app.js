@@ -83,9 +83,30 @@
       const key = url.pathname.split('/').pop();
       const asset = url.origin === location.origin ? manifest.assets[key] : null;
       if (!asset) return nativeFetch(input, init);
-      const compressed = await nativeFetch(new URL(asset.file, url), init);
-      if (!compressed.ok || !compressed.body) throw new Error('游戏资源下载失败，请检查网络后重试。');
-      const decoded = compressed.body.pipeThrough(new DecompressionStream('gzip'));
+      const chunks = asset.chunks || [{ file: asset.file }];
+      let index = 0;
+      let reader;
+      // One gzip stream split into hosting-sized files. Read sequentially so
+      // neither mobile browsers nor the local server need a second full copy.
+      const compressed = new ReadableStream({
+        async pull(controller) {
+          while (index < chunks.length) {
+            if (!reader) {
+              const response = await nativeFetch(new URL(chunks[index].file, url), init);
+              if (!response.ok || !response.body) throw new Error('游戏资源下载失败，请检查网络后重试。');
+              reader = response.body.getReader();
+            }
+            const { value, done } = await reader.read();
+            if (!done) { controller.enqueue(value); return; }
+            reader.releaseLock();
+            reader = undefined;
+            index++;
+          }
+          controller.close();
+        },
+        async cancel(reason) { if (reader) await reader.cancel(reason); },
+      });
+      const decoded = compressed.pipeThrough(new DecompressionStream('gzip'));
       return new Response(decoded, {
         status: 200,
         headers: { 'Content-Type': asset.type, 'Content-Length': String(asset.decoded_bytes) },

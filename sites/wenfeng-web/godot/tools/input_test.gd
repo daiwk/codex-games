@@ -57,12 +57,16 @@ func position_pair(gap = 1.30) -> void:
 
 func run(target: Node) -> void:
 	game = target
+	if DisplayServer.get_name() == "headless":
+		push_error("The GUI input suite needs a rendered window. Run Godot --path godot -- --input-test without --headless.")
+		get_tree().quit(2)
+		return
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	game.ai_enabled = false
 	game.fx.muted = true
 	await RenderingServer.frame_post_draw
 	await frames(40)
-	await click(Vector2(320, 345))
+	await click(Vector2(234, 333))
 	check(game.character_id == "machao" and game.player.character_id == "machao", "menu mouse selects Ma Chao")
 	await click(Vector2(320, 443))
 	check(game.weapon_id == "saber" and game.player.weapon_id == "saber", "menu mouse selects saber")

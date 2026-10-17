@@ -3,18 +3,34 @@
   "threaded": false,
   "assets": {
     "index.wasm": {
-      "file": "index.wasm.gz",
       "type": "application/wasm",
       "decoded_bytes": 39514754,
       "download_bytes": 10054758,
-      "sha256": "fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0"
+      "sha256": "fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0",
+      "file": "index.wasm.gz"
     },
     "index.pck": {
-      "file": "index.pck.gz",
       "type": "application/octet-stream",
-      "decoded_bytes": 20678676,
-      "download_bytes": 18601742,
-      "sha256": "811db44396408a7ca48c04b769a9771038cfb50e08f43cfc860bcb3daddd39e8"
+      "decoded_bytes": 49509036,
+      "download_bytes": 47232826,
+      "sha256": "aca867c99d14739a998162c9d26f58ab13e7736568da2bfda5a8e49725bcfc57",
+      "chunks": [
+        {
+          "file": "index.pck.gz.part00",
+          "bytes": 16777216,
+          "sha256": "db088deb3d4db1fd6bb79f85656649714d1fc05c6b54bd86d6ca2578277bb50a"
+        },
+        {
+          "file": "index.pck.gz.part01",
+          "bytes": 16777216,
+          "sha256": "ac0e1cec9b20479c4779a87f2261d88685c86e95bf05af6c8426f12a0ef30fac"
+        },
+        {
+          "file": "index.pck.gz.part02",
+          "bytes": 13678394,
+          "sha256": "9637f3f7eb81c4cab4a1f305c9af9c0e3f69a8dbbeeb6153d614e6cc010c87da"
+        }
+      ]
     }
   }
 }

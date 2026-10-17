@@ -1,5 +1,6 @@
 extends Control
 class_name DuelHUD
+const Roster = preload("res://scripts/roster.gd")
 
 const INK = Color("142e38")
 const PAPER = Color("eee9d8")
@@ -112,23 +113,25 @@ func _build_menu() -> void:
 	_label(menu, "问锋", Vector2(44, 77), 90, PAPER, 400, true)
 	_label(menu, "DUEL OF BLADES", Vector2(53, 185), 16, GOLD)
 	_label(menu, "一招有进退，一刃定胜负。", Vector2(52, 230), 18, PAPER)
-	_label(menu, "出战武将", Vector2(52, 290), 13, MUTED)
-	buttons.zhaoyun = _button(menu, "赵云   /   子龙", Rect2(52, 320, 176, 48), func(): game.select_character("zhaoyun"))
-	buttons.machao = _button(menu, "马超   /   孟起", Rect2(240, 320, 176, 48), func(): game.select_character("machao"))
-	buttons.zhaoyun.toggle_mode = true
-	buttons.machao.toggle_mode = true
-	_label(menu, "掌中兵刃", Vector2(52, 389), 13, MUTED)
-	buttons.sword = _button(menu, "剑  ·  灵巧", Rect2(52, 418, 176, 48), func(): game.select_weapon("sword"))
-	buttons.saber = _button(menu, "刀  ·  刚猛", Rect2(240, 418, 176, 48), func(): game.select_weapon("saber"))
+	_label(menu, "出战武将  /  1—5", Vector2(52, 282), 13, MUTED)
+	for i in Roster.IDS.size():
+		var id: String = Roster.IDS[i]
+		var role: Dictionary = Roster.character(id)
+		buttons[id] = _button(menu, "%s / %s" % [role.name, role.courtesy], Rect2(52 + (i % 3) * 125, 312 + (i / 3) * 49, 114, 41), func(): game.select_character(id))
+		buttons[id].add_theme_font_size_override("font_size", 14)
+		buttons[id].toggle_mode = true
+	_label(menu, "掌中兵刃", Vector2(52, 414), 13, MUTED)
+	buttons.sword = _button(menu, "剑  ·  灵巧", Rect2(52, 441, 176, 44), func(): _select_weapon_slot(0))
+	buttons.saber = _button(menu, "刀  ·  刚猛", Rect2(240, 441, 176, 44), func(): _select_weapon_slot(1))
 	buttons.sword.toggle_mode = true
 	buttons.saber.toggle_mode = true
-	_label(menu, "对手强度", Vector2(52, 484), 13, MUTED)
+	_label(menu, "对手强度", Vector2(52, 505), 13, MUTED)
 	for i in 3:
 		var index = i
-		var button = _button(menu, ["切磋", "争锋", "宗师"][i], Rect2(52 + i * 125, 512, 114, 39), func(): game.difficulty = index)
+		var button = _button(menu, ["切磋", "争锋", "宗师"][i], Rect2(52 + i * 125, 532, 114, 36), func(): game.difficulty = index)
 		button.toggle_mode = true
 		buttons["difficulty" + str(i)] = button
-	menu_enemy = _label(menu, "", Vector2(52, 570), 13, MUTED)
+	menu_enemy = _label(menu, "", Vector2(52, 579), 12, MUTED)
 	_button(menu, "入场拔刃    →", Rect2(52, 605, 364, 57), func(): game.start_match(), true)
 	_label(menu, "WASD 移动    J 轻击    K 重击    Space 闪避", Vector2(52, 683), 12, PAPER)
 	_label(menu, "Q / E 武将技能    U 战意满时施展绝技", Vector2(52, 710), 12, GOLD)
@@ -146,6 +149,17 @@ func _build_menu() -> void:
 		var line = _label(role_panel, "", Vector2(22, 89 + i * 29), 12, MUTED, 616)
 		line.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		menu_role_skills.append(line)
+	_label(menu, "对阵武将", Vector2(568, 654), 12, MUTED)
+	for i in Roster.IDS.size():
+		var id: String = Roster.IDS[i]
+		var button = _button(menu, String(Roster.character(id).name), Rect2(568 + i * 134, 681, 124, 36), func(): game.select_opponent(id))
+		button.toggle_mode = true
+		buttons["enemy_" + id] = button
+
+func _select_weapon_slot(index: int) -> void:
+	var choices = Roster.weapon_choices(game.character_id)
+	if index < choices.size():
+		game.select_weapon(String(choices[index]))
 
 func _overlay() -> Control:
 	var overlay = Control.new()
@@ -184,13 +198,20 @@ func _process(delta: float) -> void:
 	pause_panel.visible = game.paused
 	result_panel.visible = game.phase == "match_end" and not game.paused
 	if menu.visible:
-		for id in ["zhaoyun", "machao"]:
+		for id in Roster.IDS:
 			buttons[id].set_pressed_no_signal(game.character_id == id)
-		for id in ["sword", "saber"]:
-			buttons[id].set_pressed_no_signal(game.weapon_id == id)
+			buttons["enemy_" + id].set_pressed_no_signal(game.enemy.character_id == id)
+		var choices = Roster.weapon_choices(game.character_id)
+		for i in 2:
+			var button: Button = buttons.sword if i == 0 else buttons.saber
+			button.visible = i < choices.size()
+			if button.visible:
+				button.text = Roster.weapon_name(String(choices[i]))
+				button.size.x = 364 if choices.size() == 1 else 176
+				button.set_pressed_no_signal(game.weapon_id == choices[i])
 		for i in 3:
 			buttons["difficulty" + str(i)].set_pressed_no_signal(game.difficulty == i)
-		menu_enemy.text = "对阵  %s · %s    /    九十息一回合" % [game.fighter_name(game.enemy.character_id), "刀" if game.enemy.weapon_id == "saber" else "剑"]
+		menu_enemy.text = "对阵  %s · %s  /  九十息一回合" % [game.fighter_name(game.enemy.character_id), Roster.weapon_name(game.enemy.weapon_id)]
 		_update_role_preview()
 	if pause_panel.visible:
 		pause_skills.text = "Q %s   ·   E %s   ·   U %s" % [game.player.skill_name("rush"), game.player.skill_name("counter"), game.player.ultimate_name()]
@@ -204,14 +225,14 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _role_color(fighter) -> Color:
-	return Color("9bdde4") if fighter.character_id == "zhaoyun" else Color("efb276")
+	return Color(Roster.character(fighter.character_id).color)
 
 func _update_role_preview() -> void:
 	var fighter = game.player
-	var agile: bool = fighter.character_id == "zhaoyun"
-	menu_role_title.text = "%s  ·  %s" % [game.fighter_name(fighter.character_id), "游斗追击" if agile else "刚猛压制"]
+	var role: Dictionary = Roster.character(fighter.character_id)
+	menu_role_title.text = "%s  ·  %s" % [game.fighter_name(fighter.character_id), role.style]
 	menu_role_title.add_theme_color_override("font_color", _role_color(fighter))
-	menu_role_identity.text = "以退为进，窄角突刺；连环追击考验距离与时机。" if agile else "横扫压近，震阵破防；蓄势重砸封锁近身区域。"
+	menu_role_identity.text = String(role.identity)
 	for i in 2:
 		var id = "rush" if i == 0 else "counter"
 		menu_role_skills[i].text = "%s  %s  ·  %s  /  %d 体力 · %.1f 秒冷却" % ["Q" if i == 0 else "E", fighter.skill_name(id), fighter.skill_description(id), int(fighter.skill_cost(id)), fighter.skill_cooldown(id)]
@@ -305,7 +326,7 @@ func _ultimate_warning() -> void:
 	var title: String = fighter.ultimate_name()
 	var width = display_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 27).x
 	_text(Vector2((1280 - width) * 0.5, 250), title, 27, accent, true)
-	var tactic = "连续追击 · 可打断" if fighter.character_id == "zhaoyun" else "重击蓄势 · 离开震圈 / 闪避"
+	var tactic = "连续追击 · 可打断" if fighter.skill_profile("ultimate").kind == "chase" else "重击蓄势 · 后撤脱离 / 闪避"
 	var subtitle = ("对手 · " if hostile else "己方 · ") + tactic
 	var subtitle_width = body_font.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
 	_text(Vector2((1280 - subtitle_width) * 0.5, 276), subtitle, 12, PAPER)
@@ -321,7 +342,7 @@ func _draw() -> void:
 		var color = JADE if i == 0 else GOLD
 		var name_text = game.fighter_name(fighter.character_id)
 		_text(Vector2(x, 57), name_text, 29, PAPER, true)
-		_text(Vector2(x + 85, 55), ("你  /  " if i == 0 else "对手  /  ") + ("剑 · 灵巧" if fighter.weapon_id == "sword" else "刀 · 刚猛"), 12, MUTED)
+		_text(Vector2(x + 85, 55), ("你  /  " if i == 0 else "对手  /  ") + Roster.weapon_name(fighter.weapon_id), 12, MUTED)
 		draw_rect(Rect2(x, 80, 432, 13), Color(0.02, 0.06, 0.075, 0.83))
 		var width = 432 * displayed_hp[i] / 120.0
 		var fill_x = x if i == 0 else x + 432 - width

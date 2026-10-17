@@ -1,9 +1,12 @@
 问锋 · Duel of Blades / Web edition
 
 原创游戏代码、庭院、程序特效与合成音效。
-角色与刀剑模型来自本项目的用户提供资源。
-单手动作：Quaternius Universal Animation Library 1 & 2，CC0 1.0。
+角色与刀剑、青龙刀、丈八蛇矛、方天画戟模型来自本项目的用户提供资源。
+单手动作与握持手指姿势：Quaternius Universal Animation Library 1 & 2，CC0 1.0。
 https://quaternius.com/
+关羽、张飞、吕布双手动作：KayKit Character Animations Free 1.1，CC0 1.0。
+https://kaylousberg.itch.io/kaykit-character-animations
+See licenses/KayKit-CC0.txt
 
 Godot Engine — MIT License
 See licenses/Godot-LICENSE.txt and licenses/Godot-THIRD-PARTY.txt

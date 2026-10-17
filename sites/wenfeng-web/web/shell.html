@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#10282c">
-  <meta name="description" content="赵云与马超，刀剑之间的一对一决斗。选将、拔刃，在青石庭院中与 AI 一较高下。">
+  <meta name="description" content="赵云、马超、关羽、张飞、吕布，刀剑与长兵的一对一决斗。选将、拔刃，在青石庭院中与 AI 一较高下。">
   <title>问锋 · 刀剑决斗</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="web.css">
@@ -29,7 +29,7 @@
           <p class="eyebrow">一 对 一 · 刀 剑 决 斗</p>
           <h1>问锋<span>DUEL OF BLADES</span></h1>
           <p class="tagline">一招有进退，<br>一刃定胜负。</p>
-          <p class="intro">赵云与马超 · 刀与剑<br>青石为界，三局两胜。</p>
+          <p class="intro">赵云 · 马超 · 关羽 · 张飞 · 吕布<br>刀剑与长兵，三局两胜。</p>
           <button id="start-btn">入场拔刃 <span>→</span></button>
           <div id="load-progress" hidden>
             <div class="progress-track"><div id="progress-fill"></div></div>
@@ -69,15 +69,16 @@
     <h2 id="help-title">出招有度，进退有时。</h2>
     <dl class="controls-list">
       <div><dt><kbd>W A S D</kbd> / 方向键</dt><dd>移动，自动面向对手</dd></div>
+      <div><dt><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> / <kbd>4</kbd> / <kbd>5</kbd></dt><dd>菜单选将：赵云 / 马超 / 关羽 / 张飞 / 吕布</dd></div>
       <div><dt><kbd>J</kbd> / 鼠标左键</dt><dd>轻击，连续按下衔接三段连招</dd></div>
       <div><dt><kbd>K</kbd> / 鼠标右键</dt><dd>重击，造成更高伤害与格挡压力</dd></div>
       <div><dt><kbd>L</kbd> / <kbd>Shift</kbd></dt><dd>按住格挡，命中前举刃可招架轻击</dd></div>
       <div><dt><kbd>Space</kbd></dt><dd>沿移动方向闪避；静止时向后撤</dd></div>
-      <div><dt><kbd>Q</kbd> / <kbd>E</kbd></dt><dd>两位武将各自的进攻技与战术技</dd></div>
+      <div><dt><kbd>Q</kbd> / <kbd>E</kbd></dt><dd>武将各自的进攻技与战术技，选将时可查看</dd></div>
       <div><dt><kbd>U</kbd></dt><dd>战意满后施展武将绝技</dd></div>
       <div><dt><kbd>Esc</kbd> / <kbd>R</kbd> / <kbd>F</kbd> / <kbd>M</kbd></dt><dd>暂停 / 重新对决 / 全屏 / 静音</dd></div>
     </dl>
-    <p class="help-note">攻击和闪避消耗体力，收招片刻可恢复。每回合 90 秒，超时按剩余生命判胜。触屏设备可使用画面下方的方向与招式按键。</p>
+    <p class="help-note">关羽持青龙偃月刀，张飞持丈八蛇矛，吕布持方天画戟；菜单中可自由指定对手。攻击和闪避消耗体力，收招片刻可恢复。每回合 90 秒，超时按剩余生命判胜。触屏设备可使用画面下方的方向与招式按键。</p>
   </dialog>
 
   <script>window.WENFENG_CONFIG = $GODOT_CONFIG;</script>

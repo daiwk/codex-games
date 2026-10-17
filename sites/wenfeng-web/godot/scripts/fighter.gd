@@ -1,6 +1,7 @@
 extends CharacterBody3D
 class_name DuelFighter
 const RoleSkills = preload("res://scripts/skill_profiles.gd")
+const Roster = preload("res://scripts/roster.gd")
 
 signal strike_requested(fighter, attack)
 signal impact_received(fighter, outcome, position)
@@ -57,6 +58,9 @@ var skill_hit_index = -1
 var skill_strike_announced = false
 var skill_animation_index = -1
 var skill_animation_started = false
+var grip_config: Dictionary = {}
+var right_hand_index = -1
+var left_hand_index = -1
 
 func _ready() -> void:
 	collision_layer = 2
@@ -76,7 +80,7 @@ func _load_visuals() -> void:
 	var scene = load("res://assets/characters/%s.glb" % character_id) as PackedScene
 	model = scene.instantiate()
 	model.name = "CharacterVisual"
-	model.scale = Vector3.ONE * 1.98
+	model.scale = Vector3.ONE * float(Roster.character(character_id).get("scale", 1.98))
 	add_child(model)
 	animation_player = _find_node(model, "AnimationPlayer") as AnimationPlayer
 	animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
@@ -91,6 +95,12 @@ func _load_visuals() -> void:
 	# from its own T-pose correspondence, so both weapons share the same grip.
 	var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/characters/animation_manifest.json"))
 	var config: Dictionary = manifest[character_id]["grip"]
+	grip_config = config
+	weapon_id = Roster.resolve_weapon(character_id, weapon_id)
+	if config.get("mode", "one_hand") == "two_hand":
+		_load_two_handed_weapon()
+		_tune_materials(model)
+		return
 	var attachment = BoneAttachment3D.new()
 	for index in skeleton.get_bone_count():
 		if skeleton.get_bone_name(index).ends_with("RightHand"):
@@ -113,6 +123,71 @@ func _load_visuals() -> void:
 	# Many small armor surfaces use the originals' baked normal maps. Keep them
 	# on the authored meshes; remove imported shadow lights/cameras if any.
 	_tune_materials(model)
+
+func is_two_handed() -> bool:
+	return character_id in ["guanyu", "zhangfei", "lubu"]
+
+func _load_two_handed_weapon() -> void:
+	for index in skeleton.get_bone_count():
+		if skeleton.get_bone_name(index).ends_with("RightHand"):
+			right_hand_index = index
+		elif skeleton.get_bone_name(index).ends_with("LeftHand"):
+			left_hand_index = index
+	assert(right_hand_index >= 0 and left_hand_index >= 0, "Both polearm hand sockets are required")
+	grip = Node3D.new()
+	grip.name = "TwoHandGrip"
+	add_child(grip)
+	weapon_mesh = (load(Roster.WEAPONS[weapon_id].path) as PackedScene).instantiate()
+	weapon_mesh.name = "TwoHandPolearm"
+	var length_m = float(grip_config.weapon_length)
+	weapon_mesh.scale = Vector3.ONE * length_m
+	weapon_mesh.position.y = -length_m * float(grip_config.grip_fraction)
+	grip.add_child(weapon_mesh)
+	if skeleton.has_signal("skeleton_updated"):
+		skeleton.connect("skeleton_updated", _update_two_hand_grip)
+	_update_two_hand_grip()
+	_tune_materials(weapon_mesh)
+
+func palm_position(left: bool) -> Vector3:
+	var index = left_hand_index if left else right_hand_index
+	var p: Array = grip_config.left_palm if left else grip_config.right_palm
+	var local_palm = skeleton.get_bone_global_pose(index) * Vector3(p[0], p[1], p[2])
+	return skeleton.to_global(local_palm)
+
+func _update_two_hand_grip() -> void:
+	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree() or not is_instance_valid(weapon_mesh) or left_hand_index < 0:
+		return
+	var right = palm_position(false)
+	var left = palm_position(true)
+	var axis = (right - left).normalized() * float(grip_config.get("axis_sign", 1.0))
+	if right.distance_to(left) < 0.025:
+		return
+	var wrist = skeleton.global_basis * skeleton.get_bone_global_pose(right_hand_index).basis
+	var side = wrist.x - axis * wrist.x.dot(axis)
+	if side.length() < 0.05:
+		side = Vector3.FORWARD.cross(axis)
+	side = side.normalized()
+	grip.global_transform = Transform3D(Basis(side, axis, side.cross(axis)), right)
+
+func _process(_delta: float) -> void:
+	if is_two_handed():
+		_update_two_hand_grip()
+
+func basic_reach() -> float:
+	return float(Roster.WEAPONS[weapon_id].reach)
+
+func preferred_distance() -> float:
+	return float(Roster.character(character_id).distance)
+
+func _light_attacks() -> Array:
+	if not is_two_handed():
+		return ATTACKS
+	var thrust = character_id == "zhangfei"
+	return [
+		{"clip": "Attack1", "duration": 0.98, "active": Vector2(0.32, 0.54), "damage": 18.0, "cost": 17.0, "reach": basic_reach(), "lunge": 1.7, "heavy": false, "shape": "line" if thrust else "sector", "half_width": 0.58, "min_dot": -0.12},
+		{"clip": "Attack2", "duration": 1.10, "active": Vector2(0.35, 0.61), "damage": 21.0, "cost": 20.0, "reach": basic_reach(), "lunge": 1.4, "heavy": false, "min_dot": -0.16},
+		{"clip": "Attack3", "duration": 1.34, "active": Vector2(0.42, 0.80), "damage": 28.0, "cost": 24.0, "reach": basic_reach() + 0.15, "lunge": 1.1, "heavy": false, "min_dot": -0.30},
+	]
 
 func _tune_materials(node: Node) -> void:
 	if node is MeshInstance3D:
@@ -176,10 +251,13 @@ func request_light() -> bool:
 	return _begin_attack(0)
 
 func request_heavy() -> bool:
-	if not enabled or state not in ["idle", "move", "block"] or hp <= 0.0 or stamina < HEAVY.cost:
+	var required_cost = 34.0 if is_two_handed() else float(HEAVY.cost)
+	if not enabled or state not in ["idle", "move", "block"] or hp <= 0.0 or stamina < required_cost:
 		return false
 	combo = 0
 	attack = HEAVY.duplicate()
+	if is_two_handed():
+		attack.merge({"duration": 1.48, "active": Vector2(0.48, 0.83), "damage": 38.0, "cost": 34.0, "reach": basic_reach() + 0.12, "lunge": 1.8})
 	_apply_weapon_stats()
 	_enter_attack()
 	return true
@@ -282,15 +360,18 @@ func _cancel_skill() -> void:
 	skill_animation_started = false
 
 func _begin_attack(index: int) -> bool:
-	if stamina < ATTACKS[index].cost:
+	var options = _light_attacks()
+	if stamina < options[index].cost:
 		return false
 	combo = index
-	attack = ATTACKS[index].duplicate()
+	attack = options[index].duplicate()
 	_apply_weapon_stats()
 	_enter_attack()
 	return true
 
 func _apply_weapon_stats() -> void:
+	if is_two_handed():
+		return
 	# The saber trades a little reach for damage; the straight sword recovers
 	# faster. The two use the same genuine single-hand animation set.
 	if weapon_id == "saber":
@@ -330,15 +411,19 @@ func forward() -> Vector3:
 	return global_basis.z.normalized()
 
 func blade_tip() -> Vector3:
+	if is_two_handed() and is_instance_valid(weapon_mesh):
+		return weapon_mesh.to_global(Vector3(0, 0.99, 0))
 	return weapon_mesh.to_global(Vector3(0, 98, 0)) if is_instance_valid(weapon_mesh) else global_position + Vector3.UP
 
 func blade_base() -> Vector3:
+	if is_two_handed() and is_instance_valid(weapon_mesh):
+		return weapon_mesh.to_global(Vector3(0, float(Roster.WEAPONS[weapon_id].blade_start), 0))
 	return weapon_mesh.to_global(Vector3(0, 22, 0)) if is_instance_valid(weapon_mesh) else global_position + Vector3.UP
 
 func is_invulnerable() -> bool:
 	if state == "dodge" and action_time >= 0.035 and action_time <= 0.36:
 		return true
-	if character_id == "zhaoyun":
+	if character_id in ["zhaoyun", "guanyu"]:
 		if state == "skill" and attack.get("kind", "") == "evade":
 			return action_time >= 0.05 and action_time <= 0.31
 		if state == "ultimate":
@@ -495,7 +580,7 @@ func _physics_process(delta: float) -> void:
 
 func _update_facing(delta: float) -> void:
 	var agile_step = state == "skill" and attack.get("kind", "") == "evade"
-	var chasing = character_id == "zhaoyun" and state == "ultimate"
+	var chasing = state == "ultimate" and skill_profile("ultimate").kind == "chase"
 	var committed = (state in ["attack", "skill"] and action_time >= (0.32 if agile_step else 0.10))
 	if state == "ultimate":
 		committed = action_time >= 0.45
@@ -650,7 +735,7 @@ func _update_ultimate() -> void:
 				attack = data.duplicate()
 				attack.merge({"heavy": true, "unparryable": true, "skill": "ultimate", "wave": true})
 				if chase:
-					attack.merge({"shape": "line", "half_width": 0.55, "reach": 3.1, "guard_cost": 16.0, "knockback": 0.35, "hit_stun": 0.20})
+					attack.merge({"shape": "line", "half_width": float(profile.get("half_width", 0.55)), "reach": float(profile.get("reach", 3.1)), "guard_cost": float(profile.get("guard_cost", 16.0)), "knockback": 0.35, "hit_stun": 0.20})
 				skill_triggered.emit(self, "ultimate", "finish" if index == hits.size() - 1 else "strike")
 			if not hit_landed:
 				strike_requested.emit(self, attack)

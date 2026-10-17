@@ -1,0 +1,21 @@
+{
+  "original_sha256": "0fa393110309994e5904066de0526273ff5729232923aee1d0a315d0fcf5173e",
+  "fixed_sha256": "f52a3bbdca491a9b92861e1c3d31f8bfbe4fe97489eaee577d5d18ec35e2582e",
+  "removed_triangle_indices": [
+    1123,
+    1124,
+    2282,
+    2283,
+    2284,
+    2285,
+    2287,
+    2288,
+    2290,
+    2291,
+    8475,
+    8476
+  ],
+  "triangles_before": 16253,
+  "triangles_after": 16241,
+  "preserved": "All vertex attributes, UVs, textures, materials, bones, weights and bind matrices"
+}

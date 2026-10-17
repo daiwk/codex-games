@@ -5,9 +5,11 @@ const Arena = preload("res://scripts/arena.gd")
 const Effects = preload("res://scripts/combat_fx.gd")
 const HUD = preload("res://scripts/hud.gd")
 const SkillEffects = preload("res://scripts/skill_fx.gd")
+const Roster = preload("res://scripts/roster.gd")
 
 var character_id = "zhaoyun"
 var weapon_id = "sword"
+var opponent_id = ""
 var difficulty = 1
 var phase = "menu"
 var paused = false
@@ -83,7 +85,7 @@ func _ready() -> void:
 		call_deferred("_start_asset_review")
 
 func fighter_name(id: String) -> String:
-	return "赵云" if id == "zhaoyun" else "马超"
+	return String(Roster.character(id).name)
 
 func _configure_inputs() -> void:
 	var keys = {"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
@@ -112,14 +114,15 @@ func _spawn_fighters() -> void:
 	player = Fighter.new()
 	player.name = "Player"
 	player.character_id = character_id
+	weapon_id = Roster.resolve_weapon(character_id, weapon_id)
 	player.weapon_id = weapon_id
 	player.is_player = true
 	player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(player)
 	enemy = Fighter.new()
 	enemy.name = "Opponent"
-	enemy.character_id = "machao" if character_id == "zhaoyun" else "zhaoyun"
-	enemy.weapon_id = "saber" if weapon_id == "sword" else "sword"
+	enemy.character_id = String(Roster.character(character_id).opponent) if opponent_id.is_empty() else opponent_id
+	enemy.weapon_id = Roster.resolve_weapon(enemy.character_id, "saber" if weapon_id == "sword" else "sword")
 	enemy.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(enemy)
 	player.opponent = enemy
@@ -132,20 +135,28 @@ func _spawn_fighters() -> void:
 		fx.register_fighter(fighter)
 
 func select_character(id: String) -> void:
-	if phase != "menu" or character_id == id:
+	if phase != "menu" or character_id == id or id not in Roster.IDS:
 		return
 	character_id = id
+	weapon_id = Roster.resolve_weapon(character_id, weapon_id)
 	_spawn_fighters()
 	_position_preview()
 	fx.sound("step", -16.0)
 
 func select_weapon(id: String) -> void:
-	if phase != "menu" or weapon_id == id:
+	if phase != "menu" or weapon_id == id or id not in Roster.weapon_choices(character_id):
 		return
 	weapon_id = id
 	_spawn_fighters()
 	_position_preview()
 	fx.sound("clang", -20.0, 1.3)
+
+func select_opponent(id: String) -> void:
+	if phase != "menu" or id not in Roster.IDS:
+		return
+	opponent_id = id
+	_spawn_fighters()
+	_position_preview()
 
 func _position_preview() -> void:
 	player.enabled = false
@@ -236,6 +247,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				select_character("zhaoyun")
 			KEY_2:
 				select_character("machao")
+			KEY_3:
+				select_character("guanyu")
+			KEY_4:
+				select_character("zhangfei")
+			KEY_5:
+				select_character("lubu")
 
 func _physics_process(delta: float) -> void:
 	if paused:
@@ -352,13 +369,18 @@ func _update_ai(delta: float) -> void:
 		if enemy.request_ultimate():
 			ai_cooldown = 3.2
 			return
-	var use_offensive_q = distance > 2.8 and distance < 5.2 if enemy.character_id == "zhaoyun" else distance < 2.75 and distance > 1.2
+	var thrust_role: bool = enemy.character_id in ["zhaoyun", "zhangfei"]
+	var use_offensive_q = distance > 2.8 and distance < 5.2 if thrust_role else distance < enemy.basic_reach() + 0.6 and distance > 1.2
 	if use_offensive_q and ai_cooldown <= 0.0 and rng.randf() < [0.12, 0.25, 0.36][difficulty]:
 		if enemy.request_skill("rush"):
 			ai_cooldown = 1.05
 			return
-	if enemy.character_id == "machao" and player.state == "block" and distance < 2.7 and ai_cooldown <= 0.0:
+	if enemy.character_id in ["machao", "zhangfei"] and player.state == "block" and distance < 2.7 and ai_cooldown <= 0.0:
 		if rng.randf() < [0.20, 0.50, 0.78][difficulty] and enemy.request_skill("counter"):
+			ai_cooldown = 1.2
+			return
+	if enemy.character_id == "lubu" and distance > 1.6 and distance < 4.2 and ai_cooldown <= 0.0:
+		if rng.randf() < [0.12, 0.26, 0.40][difficulty] and enemy.request_skill("counter"):
 			ai_cooldown = 1.2
 			return
 	if enemy.state == "attack":
@@ -371,7 +393,7 @@ func _update_ai(delta: float) -> void:
 	if player.state in ["attack", "skill"] and distance < 2.8 and player.action_time < 0.42:
 		var reaction = [0.23, 0.11, 0.045][difficulty]
 		if player.action_time >= reaction:
-			if enemy.character_id == "zhaoyun" and rng.randf() < [0.10, 0.24, 0.40][difficulty] and enemy.request_skill("counter"):
+			if enemy.character_id in ["zhaoyun", "guanyu"] and rng.randf() < [0.10, 0.24, 0.40][difficulty] and enemy.request_skill("counter"):
 				ai_cooldown = 0.9
 				return
 			if player.attack.get("heavy", false) and rng.randf() < [0.15, 0.48, 0.72][difficulty]:
@@ -382,11 +404,11 @@ func _update_ai(delta: float) -> void:
 				ai_guard = 0.45 + rng.randf() * 0.25
 				enemy.wants_block = true
 				return
-	if distance > 1.85:
+	if distance > enemy.preferred_distance():
 		enemy.input_move = (toward + side * 0.14).normalized()
 	elif ai_cooldown > 0.0:
 		enemy.input_move = side * 0.42 + (-toward * 0.25 if distance < 1.25 else Vector3.ZERO)
-	if distance < 2.12 and ai_cooldown <= 0.0 and ai_guard <= 0.0:
+	if distance < enemy.basic_reach() and ai_cooldown <= 0.0 and ai_guard <= 0.0:
 		var heavy_chance = 0.56 if player.state == "block" else 0.25
 		if enemy.stamina > 48.0 and rng.randf() < heavy_chance:
 			enemy.request_heavy()
@@ -450,6 +472,14 @@ func _on_action(fighter: DuelFighter, action: String) -> void:
 
 func _on_skill(fighter: DuelFighter, id: String, stage: String) -> void:
 	skill_fx.play_skill(fighter, id, stage)
+	if fighter.is_two_handed():
+		if stage == "start":
+			fx.sound("charge" if id == "ultimate" else "swing", -14.0, 0.8)
+		elif stage in ["release", "strike", "finish"]:
+			fx.sound("thrust" if fighter.character_id == "zhangfei" and id != "counter" else "heavy", -13.0)
+			if id == "ultimate":
+				shake = maxf(shake, 0.13 if stage == "finish" else 0.065)
+		return
 	if id == "ultimate":
 		if stage == "start":
 			fx.sound("charge", -11.0, 1.50 if fighter.character_id == "zhaoyun" else 0.72)
