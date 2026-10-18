@@ -1,6 +1,6 @@
 # 问锋 · Duel of Blades
 
-赵云、马超、关羽、张飞、吕布的一对一 3D 决斗。赵云与马超可选刀剑，关羽持青龙偃月刀，张飞持丈八蛇矛，吕布持方天画戟。支持自由选择对手、三档 AI、三局两胜、角色专属 Q/E/U 技能，以及键鼠和触屏操作。画面适配高清屏和全屏。
+赵云、马超、关羽、张飞、吕布、许褚的一对一 3D 决斗。赵云持龙胆亮银枪，马超持虎头湛金枪，关羽持青龙偃月刀，张飞持丈八蛇矛，吕布持方天画戟，许褚可选专用大刀、单手刀或剑。支持自由选择对手、三档 AI、三局两胜、角色专属 Q/E/U 技能，以及键鼠和触屏操作。画面适配高清屏和全屏。
 
 [在线游玩](https://wenfeng-duel.stormyyew5.chatgpt.site)
 
@@ -32,7 +32,7 @@ python3 play.py --check            # 检查游戏资源完整性
 
 | 按键 | 操作 |
 | --- | --- |
-| 1 / 2 / 3 / 4 / 5（菜单） | 赵云 / 马超 / 关羽 / 张飞 / 吕布 |
+| 1 / 2 / 3 / 4 / 5 / 6（菜单） | 赵云 / 马超 / 关羽 / 张飞 / 吕布 / 许褚 |
 | WASD / 方向键 | 移动，自动面向对手 |
 | J / 鼠标左键 | 轻击与连招 |
 | K / 鼠标右键 | 重击 |
@@ -54,11 +54,13 @@ sites/wenfeng-web/
 godot-games/
   3a-games/                        保留的原始人物、武器和动画 GLB
   tianque-arena/                   保留的其他已有角色 GLB
-  glb-manifest.json                29 个归档 GLB（含吕布原始备份及免费动画） 的路径、大小与 SHA256
+  glb-manifest.json                31 个归档 GLB（含吕布原始备份及免费动画） 的路径、大小与 SHA256
 ```
 
 吕布模型已移除两条翎尾末端的灰色片面，未经修改的原文件保存在 `godot-games/3a-games/source/originals/吕布.glb`，修复记录保存在同目录的 `吕布.repair.json`。其他原有 GLB 的路径与内容保持原样；运行游戏使用的是 `sites/wenfeng-web/godot/` 中的网页优化资源。旧桌面工程、安装包、导入缓存、临时截图和历史测试输出已从当前目录清理。
 
-长兵器动作按武器区分：刀、戟可斩扫，蛇矛的三段连招、重击与进攻技能均为突刺。双手动作使用 [KayKit Character Animations Free 1.1](https://kaylousberg.itch.io/kaykit-character-animations)（CC0），已重定向并烘焙到模型中。
+长兵器动作按武器区分：刀、戟可斩扫，枪、蛇矛的三段连招、重击与进攻技能均为突刺。双手动作使用 [KayKit Character Animations Free 1.1](https://kaylousberg.itch.io/kaykit-character-animations)（CC0），已重定向并烘焙到模型中。
 
 需要修改游戏并重新导出时，见 [网页版开发说明](sites/wenfeng-web/README.md)。素材来源与许可见各资源目录中的许可文件和游戏内「制作与许可」。
+
+刀、剑原始与网页资源均保留，当前可由许褚选择，也供后续武将使用。赵云和马超均以双手持枪，普通连招、重击和进攻技能使用突刺。

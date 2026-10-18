@@ -1,437 +1,334 @@
 {
   "zhaoyun": {
     "source": {
-      "file": "zhaoyun_network.glb",
-      "sha256": "d244af4e4938cf4aa977e1bfe3ec6f40ac7a90b625f37af7874d31ecc34b1c19",
-      "bind_reconstructed": true,
-      "recovery": "Previous same-character Mixamo rest rig, fitted to new weighted regions",
-      "head_vertices": 6533,
-      "corrected_head_weights": 6195,
-      "neck_y": 0.8020023339027872,
-      "head_y": 0.8508361473217388
+      "file": "assets/characters/zhaoyun.glb",
+      "sha256": "c843b2849facb8dd53f9806acad81d6e21b2909e878ea2bc072839cefcc21bec"
     },
     "clips": {
       "Idle": {
-        "seconds": 1.6667,
-        "samples": 51,
-        "sources": [
-          "Sword_Idle"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "Walk": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Walking_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "WalkBack": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Walking_Backwards",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "StrafeLeft": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Running_Strafe_Left",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
       },
       "StrafeRight": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Running_Strafe_Right",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
       },
       "Run": {
-        "seconds": 0.9333,
-        "samples": 29,
-        "sources": [
-          "Jog_Fwd_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Running_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
       },
       "TurnLeft": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Walking_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "TurnRight": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Walking_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "Attack1": {
-        "seconds": 1.4,
-        "samples": 43,
-        "sources": [
-          "Sword_Regular_A",
-          "Sword_Regular_A_Rec"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Attack2": {
-        "seconds": 1.5667,
-        "samples": 48,
-        "sources": [
-          "Sword_Regular_B",
-          "Sword_Regular_B_Rec"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Attack3": {
-        "seconds": 2.0,
-        "samples": 61,
-        "sources": [
-          "Sword_Regular_C"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Heavy": {
-        "seconds": 1.5333,
-        "samples": 47,
-        "sources": [
-          "Sword_Attack"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Block": {
-        "seconds": 1.2333,
-        "samples": 38,
-        "sources": [
-          "Sword_Block"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "Dodge": {
-        "seconds": 0.8,
-        "samples": 25,
-        "sources": [
-          "Sword_Dash"
-        ],
-        "rotation_tracks": 64
+        "source": "Dodge_Backward",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.4000000059604645,
+        "samples": 13
       },
       "Hit": {
-        "seconds": 0.3333,
-        "samples": 11,
-        "sources": [
-          "Hit_Chest"
-        ],
-        "rotation_tracks": 64
+        "source": "Hit_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.6666666865348816,
+        "samples": 21
       },
       "GuardBreak": {
-        "seconds": 0.8333,
-        "samples": 26,
-        "sources": [
-          "Hit_Knockback"
-        ],
-        "rotation_tracks": 64
+        "source": "Hit_B",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.8666666746139526,
+        "samples": 27
       },
       "Death": {
-        "seconds": 2.4,
-        "samples": 73,
-        "sources": [
-          "Death01"
-        ],
-        "rotation_tracks": 64
+        "source": "Death_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
       },
       "Victory": {
-        "seconds": 2.5,
-        "samples": 76,
-        "sources": [
-          "Yes"
-        ],
-        "rotation_tracks": 64
-      },
-      "DragonCharge": {
-        "seconds": 0.45,
-        "samples": 15,
-        "sources": [
-          "Sword_Idle"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "DragonThrust": {
-        "seconds": 0.4,
-        "samples": 13,
-        "sources": [
-          "Sword_Regular_C"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "DragonCross": {
-        "seconds": 0.4,
-        "samples": 13,
-        "sources": [
-          "Sword_Regular_A"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "DragonBackCut": {
-        "seconds": 0.4,
-        "samples": 13,
-        "sources": [
-          "Sword_Regular_B"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "CloudStep": {
-        "seconds": 0.8,
-        "samples": 25,
-        "sources": [
-          "Sword_Dash"
-        ],
-        "rotation_tracks": 64
+        "source": "Dodge_Backward",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.4000000059604645,
+        "samples": 13
+      },
+      "DragonCharge": {
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       }
     },
-    "atlas": {
-      "surfaces_before": 1,
-      "surfaces_after": 1,
-      "texture_scale": 1.0,
-      "mode": "original_network_pbr",
-      "vertices": 25907
-    },
     "grip": {
-      "rotation_xyzw": [
-        -0.5191755814473037,
-        -0.4519568768616764,
-        0.4782170206473658,
-        -0.5454357691327647
+      "mode": "two_hand",
+      "right_palm": [
+        0.008878611099173515,
+        0.05496008339221978,
+        -0.004304113958827496
       ],
-      "position": [
-        0.00016592438263006041,
-        0.04693517794738073,
-        -0.002462019526111608
+      "left_palm": [
+        0.009583438498928815,
+        0.05918377049032379,
+        0.005802857854817457
       ],
-      "mesh_scale": 0.0058,
-      "mesh_grip_y": -0.075
+      "weapon_length": 2.9,
+      "grip_fraction": 0.35,
+      "axis_sign": -1.0,
+      "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"
     }
   },
   "machao": {
     "source": {
-      "file": "machao_network.glb",
-      "sha256": "03eda9db56d555c462af3aca03863bdb79baacff4a327d2cbdee9c7fc9056dde",
-      "bind_reconstructed": false,
-      "head_vertices": 3317,
-      "corrected_head_weights": 2835,
-      "neck_y": 0.8257682632514104,
-      "head_y": 0.8843335291946639
+      "file": "assets/characters/machao.glb",
+      "sha256": "dd78c0c73ca6f1776e69bf1d51f1d05010e92eee177d306230c15f97cef65716"
     },
     "clips": {
       "Idle": {
-        "seconds": 1.6667,
-        "samples": 51,
-        "sources": [
-          "Sword_Idle"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "Walk": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Walking_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "WalkBack": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Walking_Backwards",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "StrafeLeft": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Running_Strafe_Left",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
       },
       "StrafeRight": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Running_Strafe_Right",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
       },
       "Run": {
-        "seconds": 0.9333,
-        "samples": 29,
-        "sources": [
-          "Jog_Fwd_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Running_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
       },
       "TurnLeft": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Walking_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "TurnRight": {
-        "seconds": 1.3333,
-        "samples": 41,
-        "sources": [
-          "Walk_Loop"
-        ],
-        "rotation_tracks": 64
+        "source": "Walking_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "Attack1": {
-        "seconds": 1.4,
-        "samples": 43,
-        "sources": [
-          "Sword_Regular_A",
-          "Sword_Regular_A_Rec"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Attack2": {
-        "seconds": 1.5667,
-        "samples": 48,
-        "sources": [
-          "Sword_Regular_B",
-          "Sword_Regular_B_Rec"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Attack3": {
-        "seconds": 2.0,
-        "samples": 61,
-        "sources": [
-          "Sword_Regular_C"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Heavy": {
-        "seconds": 1.5333,
-        "samples": 47,
-        "sources": [
-          "Sword_Attack"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Block": {
-        "seconds": 1.2333,
-        "samples": 38,
-        "sources": [
-          "Sword_Block"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       },
       "Dodge": {
-        "seconds": 0.8,
-        "samples": 25,
-        "sources": [
-          "Sword_Dash"
-        ],
-        "rotation_tracks": 64
+        "source": "Dodge_Backward",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.4000000059604645,
+        "samples": 13
       },
       "Hit": {
-        "seconds": 0.3333,
-        "samples": 11,
-        "sources": [
-          "Hit_Chest"
-        ],
-        "rotation_tracks": 64
+        "source": "Hit_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.6666666865348816,
+        "samples": 21
       },
       "GuardBreak": {
-        "seconds": 0.8333,
-        "samples": 26,
-        "sources": [
-          "Hit_Knockback"
-        ],
-        "rotation_tracks": 64
+        "source": "Hit_B",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.8666666746139526,
+        "samples": 27
       },
       "Death": {
-        "seconds": 2.4,
-        "samples": 73,
-        "sources": [
-          "Death01"
-        ],
-        "rotation_tracks": 64
+        "source": "Death_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
       },
       "Victory": {
-        "seconds": 2.5,
-        "samples": 76,
-        "sources": [
-          "Yes"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "TigerThrust": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
+      },
+      "TigerFinish": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "TigerSweep": {
-        "seconds": 0.8,
-        "samples": 25,
-        "sources": [
-          "Sword_Heavy_Combo"
-        ],
-        "rotation_tracks": 64
-      },
-      "TigerRoar": {
-        "seconds": 1.0667,
-        "samples": 33,
-        "sources": [
-          "Idle_Shield_Break"
-        ],
-        "rotation_tracks": 64
-      },
-      "TigerCharge": {
-        "seconds": 0.25,
-        "samples": 9,
-        "sources": [
-          "Sword_Heavy_Combo"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "TigerSlam": {
-        "seconds": 1.3,
-        "samples": 40,
-        "sources": [
-          "Sword_Heavy_Combo"
-        ],
-        "rotation_tracks": 64
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
+      },
+      "TigerRoar": {
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "TigerCharge": {
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
       }
     },
-    "atlas": {
-      "surfaces_before": 1,
-      "surfaces_after": 1,
-      "texture_scale": 1.0,
-      "mode": "original_network_pbr",
-      "vertices": 25145
-    },
     "grip": {
-      "rotation_xyzw": [
-        0.19386971100640588,
-        0.6663328938463307,
-        -0.6872327182761012,
-        0.21477011119685224
+      "mode": "two_hand",
+      "right_palm": [
+        0.002183942310512101,
+        0.05971764624118806,
+        -0.0038901330903172255
       ],
-      "position": [
-        -0.0009282294346012489,
-        0.04695893941870216,
-        -0.0017310109148707367
+      "left_palm": [
+        0.004523683781735603,
+        0.06957519128918652,
+        0.0002826984476997017
       ],
-      "mesh_scale": 0.0058,
-      "mesh_grip_y": -0.075
+      "weapon_length": 3.05,
+      "grip_fraction": 0.35,
+      "axis_sign": -1.0,
+      "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"
     }
   },
   "guanyu": {
@@ -909,6 +806,168 @@
       "grip_fraction": 0.35,
       "axis_sign": -1.0,
       "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"
+    }
+  },
+  "xuchu": {
+    "source": {
+      "file": "许褚.glb",
+      "sha256": "b0e17f2b5d4870ad873ad38ef722dcd7b27a09725508733484df42f0a2eb78a0"
+    },
+    "clips": {
+      "Idle": {
+        "source": "Melee_Blocking",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "Walk": {
+        "source": "Walking_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "WalkBack": {
+        "source": "Walking_Backwards",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "StrafeLeft": {
+        "source": "Running_Strafe_Left",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
+      },
+      "StrafeRight": {
+        "source": "Running_Strafe_Right",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
+      },
+      "Run": {
+        "source": "Running_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
+      },
+      "TurnLeft": {
+        "source": "Walking_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "TurnRight": {
+        "source": "Walking_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "Attack1": {
+        "source": "Melee_1H_Attack_Slice_Horizontal",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.3666666746139526,
+        "samples": 42
+      },
+      "Attack2": {
+        "source": "Melee_1H_Attack_Slice_Diagonal",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0,
+        "samples": 31
+      },
+      "Attack3": {
+        "source": "Melee_1H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "Heavy": {
+        "source": "Melee_1H_Attack_Jump_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.3333333730697632,
+        "samples": 41
+      },
+      "Block": {
+        "source": "Melee_Blocking",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "Dodge": {
+        "source": "Dodge_Backward",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.4000000059604645,
+        "samples": 13
+      },
+      "Hit": {
+        "source": "Hit_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.6666666865348816,
+        "samples": 21
+      },
+      "GuardBreak": {
+        "source": "Hit_B",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.8666666746139526,
+        "samples": 27
+      },
+      "Death": {
+        "source": "Death_A",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.800000011920929,
+        "samples": 25
+      },
+      "Victory": {
+        "source": "Melee_Blocking",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "TigerCleave": {
+        "source": "Melee_1H_Attack_Slice_Horizontal",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.3666666746139526,
+        "samples": 42
+      },
+      "BruteRoar": {
+        "source": "Melee_Blocking",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "BruteCharge": {
+        "source": "Melee_Blocking",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      },
+      "BruteFinish": {
+        "source": "Melee_1H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33
+      }
+    },
+    "grip": {
+      "mode": "one_hand",
+      "rotation_xyzw": [
+        -0.53020588677536,
+        0.4541434104668479,
+        -0.373506455480009,
+        -0.6108423758000541
+      ],
+      "position": [
+        -0.005653776787221441,
+        0.05589386709034441,
+        0.0027553544612601076
+      ],
+      "right_palm": [
+        -0.005653776787221441,
+        0.05589386709034441,
+        0.0027553544612601076
+      ],
+      "mesh_scale": 0.0058,
+      "mesh_grip_y": -0.075,
+      "adaptation": "Authored single-hand weapon socket, closed right-hand grip; no arm IK"
     }
   }
 }

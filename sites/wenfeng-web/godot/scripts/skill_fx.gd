@@ -11,6 +11,7 @@ const PALETTES = {
 	"guanyu": [Color("78ddb2"), Color("f0ffda"), Color("248768")],
 	"zhangfei": [Color("bc8ff0"), Color("f4e9ff"), Color("69419c")],
 	"lubu": [Color("f17e8c"), Color("ffdf9e"), Color("a82b49")],
+	"xuchu": [Color("e6b164"), Color("fff0c4"), Color("80502d")],
 }
 
 var active_effects: Dictionary = {}
@@ -114,6 +115,14 @@ func _play_polearm_skill(fighter: DuelFighter, skill: String, stage: String, pal
 		elif stage == "release":
 			_spawn(fighter, "sweeping_cleave" if crescent else "forward_thrust", palette, 0.38, 0.04, Vector3.ONE, Vector3.ONE * 1.28)
 	elif skill == "counter":
+		if fighter.character_id == "zhaoyun":
+			if stage == "start":
+				_spawn(fighter, "evade_echo", palette, 0.5, 0.04, Vector3.ONE, Vector3.ONE)
+				_spawn(fighter, "evade_wisps", palette, 0.85, 0.35, Vector3.ONE, Vector3.ONE, true)
+			elif stage == "release":
+				_remove_followers(fighter.get_instance_id())
+				_spawn(fighter, "return_thrust", palette, 0.34, 0.025, Vector3(0.7, 0.8, 1.20), Vector3(1.0, 1.0, 1.40))
+			return
 		if fighter.character_id == "lubu":
 			if stage == "release":
 				_spawn(fighter, "forward_thrust", palette, 0.38, 0.04, Vector3.ONE, Vector3.ONE * 1.35)
@@ -138,7 +147,7 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 		_play_polearm_skill(fighter, skill, stage, palette)
 		return
 	var is_zhaoyun = fighter.character_id == "zhaoyun"
-	# Ma Chao's ground warning stays visible between his raised blade and impact.
+	# Xu Chu's ground warning stays visible between his raised blade and impact.
 	if stage == "finish" or (stage == "release" and (skill != "ultimate" or is_zhaoyun)):
 		_remove_followers(owner_id)
 	match skill:
@@ -350,7 +359,7 @@ func _get_mesh(shape: String, character_id: String, palette: Array) -> ArrayMesh
 			var length = 3.10 if shape == "forward_thrust" else 2.70
 			_lance(b, length, 0.225, 1.08, color, bright)
 		"sweeping_cleave":
-			# This broad forward crescent follows Ma Chao's actual 2.65 m sweep.
+			# This broad forward crescent follows a heavy blade's close-range sweep.
 			_slash(b, 2.65, 0.21, -9.0, Vector3(0, 1.0, 0), color, bright)
 			_slash(b, 2.28, 0.055, 11.0, Vector3(0, 0.91, 0), _alpha(dark, 0.55), bright)
 		"armor_heat":

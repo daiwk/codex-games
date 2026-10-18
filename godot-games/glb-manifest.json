@@ -144,6 +144,16 @@
       "path": "godot-games/tianque-arena/assets/characters/tianque_hero.glb",
       "bytes": 1425228,
       "sha256": "926287ca3e4bf2dae06da6d310243e83ae7d527a7709d7fb4ac7f3629ead7dd1"
+    },
+    {
+      "path": "godot-games/3a-games/许褚.glb",
+      "bytes": 24284672,
+      "sha256": "b0e17f2b5d4870ad873ad38ef722dcd7b27a09725508733484df42f0a2eb78a0"
+    },
+    {
+      "path": "godot-games/3a-games/刀-许褚.glb",
+      "bytes": 4776704,
+      "sha256": "0df36b5753bb6982cbc829a9b3e251dde4fef0467720814373d678fd90714e67"
     }
   ],
   "notes": "吕布.glb is the corrected mesh; its untouched original is under source/originals/. Other user GLBs remain byte-for-byte unchanged."

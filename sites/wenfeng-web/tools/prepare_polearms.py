@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bake free KayKit two-handed clips onto the supplied Guan Yu / Zhang Fei / Lu Bu rigs.
+"""Bake free KayKit weapon clips onto the supplied warrior rigs.
 
 Optional preparation dependencies: numpy, scipy, Pillow. Original GLBs are
 read-only inputs. Runtime and local Web play need none of these dependencies.
@@ -21,6 +21,14 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT.parents[1] / "godot-games/3a-games"
 GAME = ROOT / "godot"
 KAY = ASSETS / "source/third_party/kaykit"
+CHARACTERS = {
+    'zhaoyun': ('assets/characters/zhaoyun.glb', 2.90),
+    'machao': ('assets/characters/machao.glb', 3.05),
+    'guanyu': ('关羽.glb', 2.85),
+    'zhangfei': ('张飞.glb', 3.05),
+    'lubu': ('吕布.glb', 3.15),
+    'xuchu': ('许褚.glb', 1.25),
+}
 
 
 class Sampler(GLB):
@@ -85,7 +93,34 @@ def clip_set(character):
         'Hit': ('general', 'Hit_A'), 'GuardBreak': ('general', 'Hit_B'),
         'Death': ('general', 'Death_A'), 'Victory': ('melee', 'Melee_2H_Idle'),
     }
-    if character == 'guanyu':
+    if character == 'xuchu':
+        # The free library has no named 1H idle. Its authored single-hand
+        # blocking stance gives the sword arm a ready pose and guards the chest.
+        clips.update(Idle=('melee', 'Melee_Blocking'),
+                     Block=('melee', 'Melee_Blocking'),
+                     Attack1=('melee', 'Melee_1H_Attack_Slice_Horizontal'),
+                     Attack2=('melee', 'Melee_1H_Attack_Slice_Diagonal'),
+                     Attack3=('melee', 'Melee_1H_Attack_Chop'),
+                     Heavy=('melee', 'Melee_1H_Attack_Jump_Chop'),
+                     Victory=('melee', 'Melee_Blocking'),
+                     TigerCleave=('melee', 'Melee_1H_Attack_Slice_Horizontal'),
+                     BruteRoar=('melee', 'Melee_Blocking'),
+                     BruteCharge=('melee', 'Melee_Blocking'),
+                     BruteFinish=('melee', 'Melee_1H_Attack_Chop'))
+    elif character in ('zhaoyun', 'machao'):
+        clips.update({alias: ('melee', 'Melee_2H_Attack_Stab') for alias in
+                      ['Attack1', 'Attack2', 'Attack3', 'Heavy']})
+        if character == 'zhaoyun':
+            clips.update({alias: ('melee', 'Melee_2H_Attack_Stab') for alias in
+                          ['DragonThrust', 'DragonCross', 'DragonBackCut']})
+            clips.update(CloudStep=('advanced', 'Dodge_Backward'),
+                         DragonCharge=('melee', 'Melee_2H_Idle'))
+        else:
+            clips.update({alias: ('melee', 'Melee_2H_Attack_Stab') for alias in
+                          ['TigerThrust', 'TigerFinish', 'TigerSweep', 'TigerSlam']})
+            clips.update(TigerRoar=('melee', 'Melee_2H_Idle'),
+                         TigerCharge=('melee', 'Melee_2H_Idle'))
+    elif character == 'guanyu':
         clips.update(CrescentSweep=('melee', 'Melee_2H_Attack_Spin'),
                      CrescentStep=('advanced', 'Dodge_Backward'),
                      CrescentCounter=('melee', 'Melee_2H_Attack_Chop'),
@@ -107,15 +142,24 @@ def clip_set(character):
     return clips
 
 
-def resize_images(scene, binary, maximum=1024):
+def resize_images(scene, binary, maximum=1024, normal_maximum=None):
     images = {v['bufferView']: v for v in scene.get('images', [])}
+    normal_views = set()
+    if normal_maximum is not None:
+        for material in scene.get('materials', []):
+            normal = material.get('normalTexture')
+            if normal is not None:
+                source = scene['textures'][normal['index']].get('source')
+                if source is not None:
+                    normal_views.add(scene['images'][source]['bufferView'])
     packed = bytearray()
     for index, view in enumerate(scene['bufferViews']):
         start = view.get('byteOffset', 0)
         payload = binary[start:start + view['byteLength']]
         if index in images:
             image = Image.open(io.BytesIO(payload))
-            image.thumbnail((maximum, maximum), Image.Resampling.LANCZOS)
+            limit = min(maximum, normal_maximum) if index in normal_views else maximum
+            image.thumbnail((limit, limit), Image.Resampling.LANCZOS)
             output = io.BytesIO()
             if images[index].get('mimeType') == 'image/jpeg':
                 image.convert('RGB').save(output, format='JPEG', quality=86, optimize=True)
@@ -186,6 +230,7 @@ def fit_polearm_hands(target, pose, axis, hand_rotations, palms):
 
 
 def bake(character, source_name, sources, finger_source):
+    one_hand = character == 'xuchu'
     target = GLB(ASSETS / source_name)
     bind, rest = target.pose()
     skin = target.j['skins'][0]
@@ -205,7 +250,7 @@ def bake(character, source_name, sources, finger_source):
     grip_rotations = {}
     source_hand = finger_source.names['hand_r']
     mirror = np.diag([-1., 1., 1.])
-    for side, suffix in [('Left', 'l'), ('Right', 'r')]:
+    for side, suffix in ([('Right', 'r')] if one_hand else [('Left', 'l'), ('Right', 'r')]):
         hand = target.names['mixamorig:' + side + 'Hand']
         source_weapon = finger_rest[source_hand][1] * R.from_euler('x', 90, degrees=True)
         if side == 'Left':
@@ -214,10 +259,10 @@ def bake(character, source_name, sources, finger_source):
         for digit in ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']:
             for index in range(1, 5):
                 name = 'mixamorig:' + side + 'Hand' + digit + str(index)
-                source_name = digit.lower() + '_%02d' % index + ('_leaf' if index == 4 else '') + '_r'
-                if name not in target.names or source_name not in finger_source.names:
+                finger_name = digit.lower() + '_%02d' % index + ('_leaf' if index == 4 else '') + '_r'
+                if name not in target.names or finger_name not in finger_source.names:
                     continue
-                t, s = target.names[name], finger_source.names[source_name]
+                t, s = target.names[name], finger_source.names[finger_name]
                 neutral = finger_rest[source_hand][1].inv() * finger_rest[s][1]
                 closed = finger_hold[source_hand][1].inv() * finger_hold[s][1]
                 delta = closed * neutral.inv()
@@ -246,7 +291,8 @@ def bake(character, source_name, sources, finger_source):
         return len(out['accessors']) - 1
 
     metrics = {}
-    hold_upper = {'Walk', 'WalkBack', 'StrafeLeft', 'StrafeRight', 'Run', 'TurnLeft', 'TurnRight', 'Dodge', 'CrescentStep'}
+    hold_upper = {'Walk', 'WalkBack', 'StrafeLeft', 'StrafeRight', 'Run', 'TurnLeft', 'TurnRight',
+                  'Dodge', 'CrescentStep', 'CloudStep'}
     for alias, (library, authored) in clip_set(character).items():
         src, pair = sources[library], pairs[library]
         duration = src.duration(authored)
@@ -256,12 +302,19 @@ def bake(character, source_name, sources, finger_source):
         for time in times:
             world, _ = src.pose(authored, time)
             if alias in hold_upper:
-                idle = sources['melee'].pose('Melee_2H_Idle', time % sources['melee'].duration('Melee_2H_Idle'))[0]
+                idle_name = 'Melee_Blocking' if one_hand else 'Melee_2H_Idle'
+                idle = sources['melee'].pose(idle_name, time % sources['melee'].duration(idle_name))[0]
                 for name, node in src.names.items():
                     if name.startswith(('upperarm.', 'lowerarm.', 'wrist.', 'hand.', 'handslot.')) or name in ['chest', 'head']:
                         if name in sources['melee'].names:
                             world[node] = idle[sources['melee'].names[name]]
             desired = {t: world[s][1] * correction[library][t] for t, s in pair.items()}
+            if one_hand:
+                # KayKit animates mitten-hand nodes between wrist and weapon
+                # socket. Carry that authored sword orientation into our wrist
+                # rather than dropping those nodes during skeleton mapping.
+                right_hand = target.names['mixamorig:RightHand']
+                desired[right_hand] = world[src.names['handslot.r']][1] * grip_rotations['Right'].inv()
             for t, (hand, relative) in finger_offsets.items():
                 desired[t] = desired[hand] * relative
             pose, global_rotations = {}, {}
@@ -279,10 +332,11 @@ def bake(character, source_name, sources, finger_source):
                 pose[hips][0][[0, 2]] = rest[hips][0][[0, 2]] + np.clip(delta[[0, 2]], -0.10, 0.10)
                 grounded = target.world(pose)
                 pose[hips][0][1] += floor - min(grounded[t][0][1] for t in feet)
-            weapon_rotation = world[src.names['handslot.r']][1]
-            axis = weapon_rotation.apply([0., 1., 0.])
-            hand_rotations = {side: weapon_rotation * grip_rotations[side].inv() for side in ['Left', 'Right']}
-            fit_polearm_hands(target, pose, axis, hand_rotations, palms)
+            if not one_hand:
+                weapon_rotation = world[src.names['handslot.r']][1]
+                axis = weapon_rotation.apply([0., 1., 0.])
+                hand_rotations = {side: weapon_rotation * grip_rotations[side].inv() for side in ['Left', 'Right']}
+                fit_polearm_hands(target, pose, axis, hand_rotations, palms)
             for t, values in rotations.items():
                 q = pose[t][1]
                 if values and np.dot(values[-1], q) < 0:
@@ -300,62 +354,105 @@ def bake(character, source_name, sources, finger_source):
         metrics[alias] = {'source': authored, 'library': 'KayKit Free 1.1', 'seconds': float(duration), 'samples': len(times)}
         print(character, alias, authored, flush=True)
     blob = compact_buffers(out, blob)
-    blob = resize_images(out, blob)
+    blob = resize_images(out, blob, normal_maximum=512 if character in ('zhaoyun', 'machao', 'xuchu') else None)
     out['asset']['generator'] = 'Wenfeng: CC0 KayKit T-pose world-space retarget, closed-finger grip'
     destination = GAME / ('assets/characters/' + character + '.glb')
     write_glb(destination, out, blob)
-    return {'source': {'file': target.path.name, 'sha256': hashlib.sha256(target.path.read_bytes()).hexdigest()},
-            'clips': metrics, 'grip': {'mode': 'two_hand', 'right_palm': palms['right'], 'left_palm': palms['left'],
-                                    'weapon_length': {'guanyu': 2.85, 'zhangfei': 3.05, 'lubu': 3.15}[character],
-                                    'grip_fraction': 0.35, 'axis_sign': -1.0,
-                                    'adaptation': 'Authored weapon axis, offline two-bone arm IK, mirrored closed grip'}}
+    grip = ({'mode': 'one_hand', 'rotation_xyzw': grip_rotations['Right'].as_quat().tolist(),
+             'position': palms['right'], 'right_palm': palms['right'],
+             'mesh_scale': 0.0058, 'mesh_grip_y': -0.075,
+             'adaptation': 'Authored single-hand weapon socket, closed right-hand grip; no arm IK'} if one_hand else
+            {'mode': 'two_hand', 'right_palm': palms['right'], 'left_palm': palms['left'],
+             'weapon_length': CHARACTERS[character][1], 'grip_fraction': 0.35, 'axis_sign': -1.0,
+             'adaptation': 'Authored weapon axis, offline two-bone arm IK, mirrored closed grip'})
+    return {'source': {'file': source_name, 'sha256': hashlib.sha256(target.path.read_bytes()).hexdigest()},
+            'clips': metrics, 'grip': grip}
 
 
-def refine_spear_head(scene):
-    """Narrow the oversized blade without changing the shaft, tassel or tip.
+def refine_polearm_head(scene, blade_root, transition_start, scale_xyz, shaft_band):
+    """Shrink a blade at its root, then move the intact upper assembly forward.
 
-    The supplied mesh is centred on its bounds rather than its shaft. Scale
-    around the measured shaft centre and blend through the blade collar.
-    Transform normals with the deformation's inverse-transpose Jacobian.
+    The head is scaled about its original blade root. Its short neck and tassel
+    move together with the head; the length adjustment is spread along a bare
+    shaft section below the ornaments, above the fixed two-hand grip. Two
+    positive-Jacobian stages preserve the tip and avoid an elongated metal cone.
     """
+    assert 0. < transition_start < blade_root < 1.
+    scale_x, scale_y, scale_z = scale_xyz
+    source_tip = max(float(scene.accessor(primitive['attributes']['POSITION'])[:, 1].max())
+                     for mesh in scene.j['meshes'] for primitive in mesh['primitives'])
+    shaft_start, shaft_end = shaft_band
+    assert 0.35 < shaft_start < shaft_end < transition_start
+    assembly_shift = 1. - (blade_root + scale_y * (source_tip - blade_root))
     blob = bytearray(scene.bin)
+    transformed_accessors = set()
     for mesh in scene.j['meshes']:
         for primitive in mesh['primitives']:
             attributes = primitive['attributes']
+            if attributes['POSITION'] in transformed_accessors:
+                continue
+            transformed_accessors.add(attributes['POSITION'])
             positions = scene.accessor(attributes['POSITION'])
-            normals = scene.accessor(attributes['NORMAL'])
-            t = np.clip((positions[:, 1] - 0.70) / 0.07, 0., 1.)
+            band = blade_root - transition_start
+            t = np.clip((positions[:, 1] - transition_start) / band, 0., 1.)
             blend = t * t * (3. - 2. * t)
-            derivative = 6. * t * (1. - t) / 0.07
-            sx, sz = 1. - 0.15 * blend, 1. - 0.35 * blend
-            x, z = positions[:, 0] + 0.034423828125, positions[:, 2] + 0.019287109375
+            derivative = 6. * t * (1. - t) / band
+            sx, sz = 1. + (scale_x - 1.) * blend, 1. + (scale_z - 1.) * blend
+            x, y, z = positions.T
             adjusted = positions.copy()
-            adjusted[:, 0] = -0.034423828125 + x * sx
-            adjusted[:, 2] = -0.019287109375 + z * sz
-            transformed = normals.copy()
-            transformed[:, 0] = normals[:, 0] / sx
-            transformed[:, 2] = normals[:, 2] / sz
-            transformed[:, 1] = (normals[:, 1]
-                + 0.15 * derivative * x * transformed[:, 0]
-                + 0.35 * derivative * z * transformed[:, 2])
+            adjusted[:, 0], adjusted[:, 2] = x * sx, z * sz
+            # Stage A: shrink the metal blade at its root, retaining the short
+            # collar. Stage B: translate the complete upper assembly; extend
+            # only the bare shaft below it to keep the original tip at Y=1.
+            stage_y = y + (scale_y - 1.) * blend * (y - blade_root)
+            shaft_t = np.clip((stage_y - shaft_start) / (shaft_end - shaft_start), 0., 1.)
+            shaft_blend = shaft_t * shaft_t * (3. - 2. * shaft_t)
+            shaft_derivative = 6. * shaft_t * (1. - shaft_t) / (shaft_end - shaft_start)
+            adjusted[:, 1] = stage_y + assembly_shift * shaft_blend
+            jxy = (scale_x - 1.) * derivative * x
+            jzy = (scale_z - 1.) * derivative * z
+            stage_jyy = 1. + (scale_y - 1.) * (blend + derivative * (y - blade_root))
+            jyy = stage_jyy * (1. + assembly_shift * shaft_derivative)
+            assert np.all(jyy >= scale_y - 1e-6), 'Head transition must not fold over'
             active = t > 0
-            transformed[active] /= np.linalg.norm(transformed[active], axis=1)[:, None]
+            shaft_active = shaft_t > 0
+            active |= shaft_active
+            normal_active = (t > 0) | ((shaft_t > 0) & (shaft_t < 1))
             adjusted[~active] = positions[~active]
-            for semantic, values in [('POSITION', adjusted), ('NORMAL', transformed)]:
+            updates = [('POSITION', adjusted)]
+            if 'NORMAL' in attributes:
+                normals = scene.accessor(attributes['NORMAL'])
+                transformed = normals.copy()
+                transformed[:, 0], transformed[:, 2] = normals[:, 0] / sx, normals[:, 2] / sz
+                transformed[:, 1] = (normals[:, 1] - jxy * transformed[:, 0] - jzy * transformed[:, 2]) / jyy
+                transformed[normal_active] /= np.linalg.norm(transformed[normal_active], axis=1)[:, None]
+                updates.append(('NORMAL', transformed))
+            if 'TANGENT' in attributes:
+                tangents = scene.accessor(attributes['TANGENT'])
+                transformed = tangents.copy()
+                transformed[:, 0] = sx * tangents[:, 0] + jxy * tangents[:, 1]
+                transformed[:, 1] = jyy * tangents[:, 1]
+                transformed[:, 2] = sz * tangents[:, 2] + jzy * tangents[:, 1]
+                transformed[normal_active, :3] /= np.linalg.norm(transformed[normal_active, :3], axis=1)[:, None]
+                updates.append(('TANGENT', transformed))
+            for semantic, values in updates:
                 accessor = scene.j['accessors'][attributes[semantic]]
                 view = scene.j['bufferViews'][accessor['bufferView']]
-                assert accessor['componentType'] == 5126 and accessor['type'] == 'VEC3'
+                assert accessor['componentType'] == 5126
                 offset = view.get('byteOffset', 0) + accessor.get('byteOffset', 0)
                 target = np.ndarray(values.shape, dtype='<f4', buffer=blob,
-                                    offset=offset, strides=(view.get('byteStride', 12), 4))
+                                    offset=offset, strides=(view.get('byteStride', values.shape[1] * 4), 4))
                 target[:] = values
                 if semantic == 'POSITION':
                     accessor['min'], accessor['max'] = values.min(0).tolist(), values.max(0).tolist()
     scene.bin = bytes(blob)
     scene.j['asset'].setdefault('extras', {})['wenfeng_spear_head'] = {
-        'width_scale': 0.65, 'thickness_scale': 0.85,
-        'blend_y': [0.70, 0.77], 'shaft_center_xz': [-0.034423828125, -0.019287109375],
-        'length_and_tip_unchanged': True,
+        'head_scale_xyz': list(scale_xyz), 'blend_y': [transition_start, blade_root],
+        'source_blade_root_y': blade_root, 'source_tip_y': source_tip,
+        'blade_root_y': 1. + scale_y * (blade_root - source_tip),
+        'tip_y': 1., 'head_pivot_y': blade_root,
+        'upper_assembly_shift_y': assembly_shift, 'shaft_extension_blend_y': list(shaft_band),
+        'grip_shaft_unchanged_below_y': shaft_start, 'tassel_shape_preserved': True,
     }
 
 
@@ -379,38 +476,150 @@ def center_weapon_shaft(scene, center):
     scene.j['asset'].setdefault('extras', {})['wenfeng_grip_center_xz'] = list(center)
 
 
-def prepare_weapons():
+def normalize_horizontal_spear(scene, center):
+    """Put an original -X-pointing spear on +Y, with its tail at zero.
+
+    A rigid quarter-turn preserves the original spearhead, tassel and UVs.
+    Divide by original length so the runtime's weapon_length is in metres.
+    """
+    positions = [scene.accessor(primitive['attributes']['POSITION'])
+                 for mesh in scene.j['meshes'] for primitive in mesh['primitives']]
+    tail = max(float(values[:, 0].max()) for values in positions)
+    tip = min(float(values[:, 0].min()) for values in positions)
+    length = tail - tip
+    assert length > 0
+    blob = bytearray(scene.bin)
+    transformed_accessors = set()
+    for mesh in scene.j['meshes']:
+        for primitive in mesh['primitives']:
+            for semantic in ('POSITION', 'NORMAL', 'TANGENT'):
+                index = primitive['attributes'].get(semantic)
+                if index is None or index in transformed_accessors:
+                    continue
+                transformed_accessors.add(index)
+                values = scene.accessor(index)
+                adjusted = values.copy()
+                if semantic == 'POSITION':
+                    adjusted[:, 0] = (values[:, 1] - center[0]) / length
+                    adjusted[:, 1] = (tail - values[:, 0]) / length
+                    adjusted[:, 2] = (values[:, 2] - center[1]) / length
+                else:
+                    adjusted[:, 0], adjusted[:, 1] = values[:, 1], -values[:, 0]
+                accessor = scene.j['accessors'][index]
+                view = scene.j['bufferViews'][accessor['bufferView']]
+                assert accessor['componentType'] == 5126
+                offset = view.get('byteOffset', 0) + accessor.get('byteOffset', 0)
+                target = np.ndarray(adjusted.shape, dtype='<f4', buffer=blob, offset=offset,
+                                    strides=(view.get('byteStride', adjusted.shape[1] * 4), 4))
+                target[:] = adjusted
+                if semantic == 'POSITION':
+                    accessor['min'], accessor['max'] = adjusted.min(0).tolist(), adjusted.max(0).tolist()
+    scene.bin = bytes(blob)
+    scene.j['asset'].setdefault('extras', {})['wenfeng_spear_axis'] = {
+        'source_axis': '-X', 'runtime_axis': '+Y', 'source_shaft_center_yz': list(center),
+        'source_length': length, 'tail_y': 0., 'tip_y': 1.,
+    }
+
+
+def normalize_xuchu_saber(scene):
+    """Rigidly fit the diagonal supplied saber to the shared one-hand socket.
+
+    Its original handle is diagonal. Keep its full shape, rotate the measured
+    handle axis to +Y and place the palm centre at the same 12.93 cm grip used
+    by the preserved sword/saber, so all three are interchangeable on one rig.
+    """
+    center = np.array([0.330000013, 0.607033253, -0.057281181])
+    rotation = np.array([[0.642242193, -0.715890765, 0.273907542],
+                         [-0.764054060, -0.626455724, 0.154190257],
+                         [0.061207581, -0.308307648, -0.949315548]])
+    grip_y = 0.075 / 0.0058
+    # The tip stays at Y=100, matching old weapon-tip sampling. A little pommel
+    # below Y=0 is retained rather than shortening the supplied handle.
+    scale = (100. - grip_y) / 1.039460421
+    blob = bytearray(scene.bin)
+    transformed = set()
+    for mesh in scene.j['meshes']:
+        for primitive in mesh['primitives']:
+            for semantic in ('POSITION', 'NORMAL', 'TANGENT'):
+                index = primitive['attributes'].get(semantic)
+                if index is None or index in transformed:
+                    continue
+                transformed.add(index)
+                values = scene.accessor(index)
+                adjusted = values.copy()
+                adjusted[:, :3] = (values[:, :3] - center) @ rotation.T * scale if semantic == 'POSITION' else values[:, :3] @ rotation.T
+                if semantic == 'POSITION':
+                    adjusted[:, 1] += grip_y
+                accessor = scene.j['accessors'][index]
+                view = scene.j['bufferViews'][accessor['bufferView']]
+                assert accessor['componentType'] == 5126
+                offset = view.get('byteOffset', 0) + accessor.get('byteOffset', 0)
+                target = np.ndarray(adjusted.shape, dtype='<f4', buffer=blob, offset=offset,
+                                    strides=(view.get('byteStride', adjusted.shape[1] * 4), 4))
+                target[:] = adjusted
+                if semantic == 'POSITION':
+                    accessor['min'], accessor['max'] = adjusted.min(0).tolist(), adjusted.max(0).tolist()
+    scene.bin = bytes(blob)
+    scene.j['asset'].setdefault('extras', {})['wenfeng_one_hand_grip'] = {
+        'source_handle_center': center.tolist(), 'source_to_runtime_rotation': rotation.tolist(),
+        'scale': scale, 'handle_center': [0., grip_y, 0.], 'tip_y': 100.,
+    }
+
+
+def prepare_weapons(characters=None):
+    selected = set(CHARACTERS if characters is None else characters)
     weapons = GAME / 'assets/weapons'
     weapons.mkdir(exist_ok=True)
-    for name, file, center in [
-            ('guandao', '青龙刀.glb', (-0.02490234375, 0.0029296875)),
-            ('serpent_spear', '丈八蛇矛.glb', (-0.034423828125, -0.019287109375)),
-            ('halberd', '方天画戟.glb', (0., -0.00390625))]:
+    for character, name, file, center in [
+            ('guanyu', 'guandao', '青龙刀.glb', (-0.02490234375, 0.0029296875)),
+            ('zhangfei', 'serpent_spear', '丈八蛇矛.glb', (-0.034423828125, -0.019287109375)),
+            ('lubu', 'halberd', '方天画戟.glb', (0., -0.00390625))]:
+        if character not in selected:
+            continue
         scene = GLB(ASSETS / file)
-        if name == 'serpent_spear':
-            refine_spear_head(scene)
         center_weapon_shaft(scene, center)
+        if name == 'serpent_spear':
+            refine_polearm_head(scene, 0.713, 0.705, (0.70, 0.70, 0.48), (0.36, 0.395))
         write_glb(weapons / (name + '.glb'), scene.j, resize_images(scene.j, scene.bin, 1024))
-    saber = GLB(ASSETS / 'onehand_saber.glb')
-    center_weapon_shaft(saber, (-5.7, 0.))
-    write_glb(GAME / 'onehand_saber.glb', saber.j, resize_images(saber.j, saber.bin, 512))
+    for character, center in [('zhaoyun', (0.0751953125, 0.)),
+                              ('machao', (0.1162109375, 0.0146484375))]:
+        if character not in selected:
+            continue
+        name = character + '_spear'
+        scene = GLB(ASSETS / (name + '.glb'))
+        normalize_horizontal_spear(scene, center)
+        refine_polearm_head(scene, 0.82 if character == 'zhaoyun' else 0.775,
+                           0.78 if character == 'zhaoyun' else 0.774, (0.65, 0.65, 0.65), (0.42, 0.60))
+        write_glb(weapons / (name + '.glb'), scene.j, resize_images(scene.j, scene.bin, 1024))
+    if 'xuchu' in selected:
+        scene = GLB(ASSETS / '刀-许褚.glb')
+        normalize_xuchu_saber(scene)
+        write_glb(weapons / 'xuchu_saber.glb', scene.j,
+                  resize_images(scene.j, scene.bin, 1024, normal_maximum=512))
+    if characters is None:
+        saber = GLB(ASSETS / 'onehand_saber.glb')
+        center_weapon_shaft(saber, (-5.7, 0.))
+        write_glb(GAME / 'onehand_saber.glb', saber.j, resize_images(saber.j, saber.bin, 512))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--weapons-only', action='store_true', help='Prepare weapon geometry/textures without rebaking character animations')
+    parser.add_argument('--characters', nargs='+', choices=CHARACTERS,
+                        help='Rebake only selected characters and their corresponding weapons')
     args = parser.parse_args()
     if args.weapons_only:
-        prepare_weapons()
+        prepare_weapons(args.characters)
         return
     sources = {key: Sampler(KAY / ('Rig_Medium_' + name + '.glb')) for key, name in [
         ('melee', 'CombatMelee'), ('general', 'General'), ('basic', 'MovementBasic'), ('advanced', 'MovementAdvanced')]}
     fingers = Sampler(ASSETS / 'source/third_party/ual1/UAL1_Standard.glb')
     manifest_path = GAME / 'assets/characters/animation_manifest.json'
     manifest = json.loads(manifest_path.read_text())
-    for character, file in [('guanyu', '关羽.glb'), ('zhangfei', '张飞.glb'), ('lubu', '吕布.glb')]:
+    for character in args.characters or CHARACTERS:
+        file, _ = CHARACTERS[character]
         manifest[character] = bake(character, file, sources, fingers)
-    prepare_weapons()
+    prepare_weapons(args.characters)
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
 

@@ -1,6 +1,6 @@
 extends SceneTree
 const Roster = preload("res://scripts/roster.gd")
-const POLEARM_IDS = ["guanyu", "zhangfei", "lubu"]
+const POLEARM_IDS = ["zhaoyun", "machao", "guanyu", "zhangfei", "lubu"]
 
 var game: Node3D
 var checks: Array = []
@@ -106,7 +106,7 @@ func _run() -> void:
 		if id in POLEARM_IDS:
 			check(id + " paired polearm", game.player.weapon_id == Roster.resolve_weapon(id, ""))
 			game.player.set_physics_process(false)
-			for clip in ["Idle", "Attack1", "Attack2", "Attack3", "Heavy", "Block"]:
+			for clip in ["Idle", "Attack1", "Attack2", "Attack3", "Heavy", "Block", "Walk", "Run", "Dodge"]:
 				game.player.play_clip(clip, 0.0)
 				game.player.animation_player.advance(0)
 				game.player.animation_player.seek(0.25, true)
@@ -207,16 +207,22 @@ func _check_weapon_corrections() -> void:
 			check("guandao %s edge faces opponent at yaw %.2f" % [clip, yaw], edge.dot(game.player.forward()) > 0.20)
 	game.player.set_physics_process(true)
 	var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/characters/animation_manifest.json"))
-	for clip in ["Attack1", "Attack2", "Attack3", "Heavy", "SerpentThrust", "SerpentCross"]:
-		check("serpent spear " + clip + " baked from authored stab", manifest.zhangfei.clips[clip].source == "Melee_2H_Attack_Stab")
-	for index in 4:
-		for target_position in [Vector3(0, .015, 2.35), Vector3(2, .015, 2), Vector3(0, .015, -2.35)]:
-			await setup_fight("zhangfei", 2.35)
-			game.enemy.position = target_position
-			var started: bool = game.player.request_heavy() if index == 3 else game.player._begin_attack(index)
-			check("spear strike %d uses straight line geometry" % index, started and game.player.attack.get("shape", "") == "line")
-			if index == 3:
-				check("spear heavy uses charged stab timing", is_equal_approx(game.player.action_duration, 1.4) and game.player.attack.active == Vector2(0.29, 0.60))
-			game._resolve_strike(game.player, game.player.attack)
-			var in_front = target_position.x == 0 and target_position.z > 0
-			check("spear strike %d target %s obeys thrust direction" % [index, target_position], (game.enemy.hp < 120) == in_front)
+	var stab_aliases = {
+		"zhaoyun": ["Attack1", "Attack2", "Attack3", "Heavy", "DragonThrust", "DragonCross", "DragonBackCut"],
+		"machao": ["Attack1", "Attack2", "Attack3", "Heavy", "TigerThrust", "TigerFinish"],
+		"zhangfei": ["Attack1", "Attack2", "Attack3", "Heavy", "SerpentThrust", "SerpentCross"],
+	}
+	for id in stab_aliases:
+		for clip in stab_aliases[id]:
+			check(id + " " + clip + " baked from authored stab", manifest[id].clips[clip].source == "Melee_2H_Attack_Stab")
+		for index in 4:
+			for target_position in [Vector3(0, .015, 2.35), Vector3(2, .015, 2), Vector3(0, .015, -2.35)]:
+				await setup_fight(id, 2.35)
+				game.enemy.position = target_position
+				var started: bool = game.player.request_heavy() if index == 3 else game.player._begin_attack(index)
+				check(id + " spear strike %d uses straight line geometry" % index, started and game.player.attack.get("shape", "") == "line")
+				if index == 3:
+					check(id + " spear heavy uses charged stab timing", is_equal_approx(game.player.action_duration, 1.4) and game.player.attack.active == Vector2(0.29, 0.60))
+				game._resolve_strike(game.player, game.player.attack)
+				var in_front = target_position.x == 0 and target_position.z > 0
+				check(id + " spear strike %d target %s obeys thrust direction" % [index, target_position], (game.enemy.hp < 120) == in_front)

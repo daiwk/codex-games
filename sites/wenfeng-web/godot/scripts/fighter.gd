@@ -116,7 +116,7 @@ func _load_visuals() -> void:
 	grip.quaternion = Quaternion(q[0], q[1], q[2], q[3])
 	var p: Array = config.position
 	grip.position = Vector3(p[0], p[1], p[2])
-	weapon_mesh = (load("res://onehand_%s.glb" % weapon_id) as PackedScene).instantiate()
+	weapon_mesh = (load(Roster.WEAPONS[weapon_id].path) as PackedScene).instantiate()
 	weapon_mesh.name = "OneHandWeapon"
 	weapon_mesh.scale = Vector3.ONE * float(config.mesh_scale)
 	weapon_mesh.position.y = float(config.mesh_grip_y)
@@ -126,7 +126,7 @@ func _load_visuals() -> void:
 	_tune_materials(model)
 
 func is_two_handed() -> bool:
-	return character_id in ["guanyu", "zhangfei", "lubu"]
+	return grip_config.get("mode", "one_hand") == "two_hand"
 
 func _load_two_handed_weapon() -> void:
 	for index in skeleton.get_bone_count():
@@ -200,6 +200,12 @@ func preferred_distance() -> float:
 	return float(Roster.character(character_id).distance)
 
 func _light_attacks() -> Array:
+	if character_id == "xuchu":
+		return [
+			{"clip": "Attack1", "duration": 0.94, "active": Vector2(0.15, 0.28), "damage": 18.0, "cost": 16.0, "reach": basic_reach(), "lunge": 1.6, "heavy": false, "min_dot": 0.08},
+			{"clip": "Attack2", "duration": 1.04, "active": Vector2(0.37, 0.50), "damage": 21.0, "cost": 19.0, "reach": basic_reach() + 0.08, "lunge": 1.4, "heavy": false, "min_dot": 0.0},
+			{"clip": "Attack3", "duration": 1.24, "active": Vector2(0.60, 0.80), "damage": 28.0, "cost": 23.0, "reach": basic_reach() + 0.15, "lunge": 1.2, "heavy": false, "min_dot": -0.12},
+		]
 	if not is_two_handed():
 		return ATTACKS
 	if is_thrust_weapon():
@@ -277,15 +283,17 @@ func request_light() -> bool:
 	return _begin_attack(0)
 
 func request_heavy() -> bool:
-	var required_cost = 34.0 if is_two_handed() else float(HEAVY.cost)
-	if not enabled or state not in ["idle", "move", "block"] or hp <= 0.0 or stamina < required_cost:
+	var profile = HEAVY.duplicate()
+	if is_two_handed():
+		profile.merge({"duration": 1.48, "active": Vector2(0.48, 0.83), "damage": 38.0, "cost": 34.0, "reach": basic_reach() + 0.12, "lunge": 1.8}, true)
+	elif character_id == "xuchu":
+		profile.merge({"duration": 1.40, "active": Vector2(0.72, 0.88), "damage": 36.0, "cost": 32.0, "reach": basic_reach() + 0.15, "lunge": 2.0}, true)
+	if is_thrust_weapon():
+		profile.merge({"duration": 1.40, "active": Vector2(0.29, 0.60), "shape": "line", "half_width": 0.62}, true)
+	if not enabled or state not in ["idle", "move", "block"] or hp <= 0.0 or stamina < float(profile.cost):
 		return false
 	combo = 0
-	attack = HEAVY.duplicate()
-	if is_two_handed():
-		attack.merge({"duration": 1.48, "active": Vector2(0.48, 0.83), "damage": 38.0, "cost": 34.0, "reach": basic_reach() + 0.12, "lunge": 1.8}, true)
-	if is_thrust_weapon():
-		attack.merge({"duration": 1.40, "active": Vector2(0.29, 0.60), "shape": "line", "half_width": 0.62}, true)
+	attack = profile
 	_apply_weapon_stats()
 	_enter_attack()
 	return true
@@ -405,9 +413,15 @@ func _apply_weapon_stats() -> void:
 	if weapon_id == "saber":
 		attack.damage *= 1.08
 		attack.duration *= 1.04
+		attack.active *= 1.04
 		attack.reach -= 0.10
+	elif weapon_id == "xuchu_saber":
+		attack.damage *= 1.12
+		attack.duration *= 1.10
+		attack.active *= 1.10
 	else:
 		attack.duration *= 0.96
+		attack.active *= 0.96
 
 func _enter_attack() -> void:
 	stamina -= float(attack.cost)
@@ -441,12 +455,12 @@ func forward() -> Vector3:
 func blade_tip() -> Vector3:
 	if is_two_handed() and is_instance_valid(weapon_mesh):
 		return weapon_mesh.to_global(Vector3(0, 0.99, 0))
-	return weapon_mesh.to_global(Vector3(0, 98, 0)) if is_instance_valid(weapon_mesh) else global_position + Vector3.UP
+	return weapon_mesh.to_global(Vector3(0, float(Roster.WEAPONS[weapon_id].get("blade_tip", 98.0)), 0)) if is_instance_valid(weapon_mesh) else global_position + Vector3.UP
 
 func blade_base() -> Vector3:
 	if is_two_handed() and is_instance_valid(weapon_mesh):
 		return weapon_mesh.to_global(Vector3(0, float(Roster.WEAPONS[weapon_id].blade_start), 0))
-	return weapon_mesh.to_global(Vector3(0, 22, 0)) if is_instance_valid(weapon_mesh) else global_position + Vector3.UP
+	return weapon_mesh.to_global(Vector3(0, float(Roster.WEAPONS[weapon_id].get("blade_base", 22.0)), 0)) if is_instance_valid(weapon_mesh) else global_position + Vector3.UP
 
 func is_invulnerable() -> bool:
 	if state == "dodge" and action_time >= 0.035 and action_time <= 0.36:
@@ -461,11 +475,11 @@ func is_invulnerable() -> bool:
 	return false
 
 func _has_skill_armor(data: Dictionary) -> bool:
-	if character_id != "machao":
+	if character_id not in ["machao", "xuchu"]:
 		return false
 	if state == "ultimate":
 		return action_time >= 0.55
-	return state == "skill" and attack.get("kind", "") == "sweep" and action_time >= 0.18 and action_time <= 0.70 and not data.heavy
+	return state == "skill" and (attack.get("kind", "") == "sweep" or attack.get("light_armor", false)) and action_time >= 0.18 and action_time <= 0.70 and not data.heavy
 
 func receive_strike(attacker: DuelFighter, data: Dictionary) -> String:
 	if hp <= 0.0:

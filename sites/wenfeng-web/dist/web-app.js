@@ -136,7 +136,7 @@
         onProgress(current, total) {
           const ratio = total > 0 ? Math.min(0.98, current / total) : 0.1;
           $('progress-fill').style.width = `${Math.round(ratio * 100)}%`;
-          status.textContent = ratio > 0.95 ? '资源就绪，正在布置庭院…' : `正在载入刀剑与武将… ${Math.round(ratio * 100)}%`;
+          status.textContent = ratio > 0.95 ? '资源就绪，正在布置庭院…' : `正在载入兵刃与武将… ${Math.round(ratio * 100)}%`;
         },
         onPrintError(message) { console.error('[Godot]', message); },
         onExit(code) {

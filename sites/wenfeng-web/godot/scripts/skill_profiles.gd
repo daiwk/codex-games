@@ -4,41 +4,52 @@ extends RefCounted
 # modifies basic attacks. Each skill carries its own animation and hit geometry.
 const ZHAOYUN = {
 	"rush": {"name": "游龙突刺", "description": "直线突刺 · 窄域追身", "cost": 22.0, "cooldown": 4.5,
-		"kind": "thrust", "clip": "DragonThrust", "duration": 0.72, "active": Vector2(0.30, 0.47),
-		"damage": 20.0, "reach": 3.1, "half_width": 0.48, "shape": "line", "heavy": false,
+		"kind": "thrust", "clip": "DragonThrust", "duration": 0.84, "active": Vector2(0.19, 0.36),
+		"damage": 20.0, "reach": 3.8, "half_width": 0.48, "shape": "line", "heavy": false,
 		"guard_cost": 16.0, "lunge": 10.5, "dash_from": 0.04, "dash_to": 0.25},
 	"counter": {"name": "回风掠影", "description": "闪身避击 · 随后还刺", "cost": 20.0, "cooldown": 6.5,
 		"kind": "evade", "clip": "CloudStep", "strike_clip": "DragonThrust", "strike_start": 0.25,
-		"duration": 0.85, "active": Vector2(0.40, 0.55), "damage": 16.0, "reach": 3.0,
+		"duration": 0.85, "active": Vector2(0.35, 0.44), "damage": 16.0, "reach": 3.8,
 		"half_width": 0.50, "shape": "line", "heavy": false, "guard_cost": 14.0, "lunge": 0.0},
-	"ultimate": {"name": "龙吟破阵", "description": "五段追击 · 窄域可打断", "cost": 100.0,
-		"kind": "chase", "windup": 0.45, "duration": 2.55, "radius": 0.0, "charge_clip": "DragonCharge",
+	"ultimate": {"name": "龙吟破阵", "description": "五段连刺 · 追身可打断", "cost": 100.0,
+		"kind": "chase", "windup": 0.45, "duration": 2.60, "radius": 0.0,
+		"reach": 3.8, "half_width": 0.50, "guard_cost": 18.0, "charge_clip": "DragonCharge",
 		"hits": [
-			{"start": 0.45, "clip": "DragonThrust", "clip_duration": 0.34, "active": Vector2(0.65, 0.77), "damage": 8.0},
-			{"start": 0.79, "clip": "DragonCross", "clip_duration": 0.34, "active": Vector2(0.99, 1.11), "damage": 8.0},
-			{"start": 1.13, "clip": "DragonBackCut", "clip_duration": 0.34, "active": Vector2(1.33, 1.45), "damage": 9.0},
-			{"start": 1.47, "clip": "DragonThrust", "clip_duration": 0.34, "active": Vector2(1.67, 1.79), "damage": 10.0},
-			{"start": 1.86, "clip": "DragonCross", "clip_duration": 0.48, "active": Vector2(2.07, 2.19), "damage": 17.0},
+			{"start": 0.45, "clip": "DragonThrust", "clip_duration": 0.36, "active": Vector2(0.54, 0.60), "damage": 8.0,
+				"shape": "line", "reach": 3.8, "half_width": 0.50},
+			{"start": 0.81, "clip": "DragonCross", "clip_duration": 0.36, "active": Vector2(0.90, 0.96), "damage": 8.0,
+				"shape": "line", "reach": 3.8, "half_width": 0.50},
+			{"start": 1.17, "clip": "DragonBackCut", "clip_duration": 0.36, "active": Vector2(1.26, 1.32), "damage": 9.0,
+				"shape": "line", "reach": 3.8, "half_width": 0.50},
+			{"start": 1.53, "clip": "DragonThrust", "clip_duration": 0.36, "active": Vector2(1.62, 1.68), "damage": 10.0,
+				"shape": "line", "reach": 3.8, "half_width": 0.50},
+			{"start": 1.94, "clip": "DragonCross", "clip_duration": 0.50, "active": Vector2(2.06, 2.15), "damage": 17.0,
+				"shape": "line", "reach": 3.8, "half_width": 0.50, "guard_cost": 32.0, "knockback": 0.8},
 		]},
 }
 
 const MACHAO = {
-	"rush": {"name": "破军横扫", "description": "宽弧重斩 · 抗轻击削防", "cost": 28.0, "cooldown": 6.0,
-		"kind": "sweep", "clip": "TigerSweep", "duration": 1.05, "active": Vector2(0.46, 0.68),
-		"damage": 30.0, "reach": 2.65, "shape": "sector", "min_dot": -0.15,
-		"heavy": true, "guard_cost": 60.0, "wave": true, "lunge": 1.3},
+	"rush": {"name": "破军重刺", "description": "双手重刺 · 抗轻击削防", "cost": 28.0, "cooldown": 6.0,
+		"kind": "thrust", "clip": "TigerThrust", "duration": 1.05, "active": Vector2(0.23, 0.45),
+		"damage": 30.0, "reach": 4.0, "shape": "line", "half_width": 0.60,
+		"heavy": true, "guard_cost": 48.0, "light_armor": true, "lunge": 5.8, "dash_from": 0.08, "dash_to": 0.28},
 	"counter": {"name": "虎啸震阵", "description": "近身战吼 · 震退破防", "cost": 26.0, "cooldown": 9.0,
 		"kind": "roar", "clip": "TigerRoar", "duration": 1.05, "active": Vector2(0.42, 0.55),
 		"damage": 8.0, "reach": 2.75, "radial": true, "shape": "radial", "heavy": true,
 		"guard_cost": 40.0, "force_guardbreak": true, "break_stun": 0.70, "hit_stun": 0.70,
 		"knockback": 2.3, "unparryable": true, "wave": true, "lunge": 0.0},
-	"ultimate": {"name": "烈虎断岳", "description": "蓄力震地 · 单击破防", "cost": 100.0,
-		"kind": "slam", "windup": 1.0, "duration": 2.60, "radius": 3.8,
-		"charge_clip": "TigerCharge", "release_clip": "TigerSlam", "release_duration": 1.10,
-		"hits": [{"start": 1.0, "active": Vector2(1.30, 1.50), "damage": 58.0,
-			"reach": 3.8, "radial": true, "shape": "radial", "guard_cost": 100.0,
-			"guard_chip": 12.0, "force_guardbreak": true, "break_stun": 1.15,
-			"knockback": 4.8, "hit_stun": 0.80}]},
+	"ultimate": {"name": "烈虎穿阵", "description": "蓄力三刺 · 重枪直线破防", "cost": 100.0,
+		"kind": "chase", "windup": 0.82, "duration": 2.95, "radius": 0.0,
+		"reach": 4.1, "half_width": 0.60, "guard_cost": 36.0, "charge_clip": "TigerCharge",
+		"hits": [
+			{"start": 0.82, "clip": "TigerThrust", "clip_duration": 0.56, "active": Vector2(0.95, 1.06), "damage": 18.0,
+				"shape": "line", "reach": 4.1, "half_width": 0.60, "guard_cost": 32.0},
+			{"start": 1.43, "clip": "TigerThrust", "clip_duration": 0.60, "active": Vector2(1.57, 1.68), "damage": 19.0,
+				"shape": "line", "reach": 4.1, "half_width": 0.60, "guard_cost": 36.0, "knockback": 0.5},
+			{"start": 2.08, "clip": "TigerFinish", "clip_duration": 0.68, "active": Vector2(2.24, 2.37), "damage": 25.0,
+				"shape": "line", "reach": 4.1, "half_width": 0.60, "guard_cost": 62.0,
+				"force_guardbreak": true, "break_stun": 0.90, "knockback": 3.1, "hit_stun": 0.60},
+		]},
 }
 
 const GUANYU = {
@@ -98,5 +109,24 @@ const LUBU = {
 		]},
 }
 
+const XUCHU = {
+	"rush": {"name": "虎痴横斩", "description": "重刀横斩 · 抗轻击削防", "cost": 30.0, "cooldown": 6.4,
+		"kind": "sweep", "clip": "TigerCleave", "duration": 1.12, "active": Vector2(0.18, 0.33),
+		"damage": 29.0, "reach": 2.8, "shape": "sector", "min_dot": -0.15,
+		"heavy": true, "guard_cost": 52.0, "light_armor": true, "wave": true, "lunge": 1.4},
+	"counter": {"name": "虎威震喝", "description": "近身怒喝 · 震退破防", "cost": 27.0, "cooldown": 9.5,
+		"kind": "roar", "clip": "BruteRoar", "duration": 1.10, "active": Vector2(0.43, 0.56),
+		"damage": 8.0, "reach": 2.75, "shape": "radial", "radial": true, "heavy": true,
+		"guard_cost": 42.0, "force_guardbreak": true, "break_stun": 0.70, "hit_stun": 0.70,
+		"knockback": 2.5, "unparryable": true, "wave": true, "lunge": 0.0},
+	"ultimate": {"name": "虎痴断岳", "description": "蓄力重斩 · 震地破防", "cost": 100.0,
+		"kind": "slam", "windup": 0.95, "duration": 2.65, "radius": 3.8,
+		"charge_clip": "BruteCharge", "release_clip": "BruteFinish", "release_duration": 1.10,
+		"hits": [{"start": 0.95, "active": Vector2(1.49, 1.63), "damage": 60.0,
+			"reach": 3.8, "shape": "radial", "radial": true, "guard_cost": 100.0,
+			"guard_chip": 12.0, "force_guardbreak": true, "break_stun": 1.10,
+			"knockback": 4.4, "hit_stun": 0.80}]},
+}
+
 static func for_character(id: String) -> Dictionary:
-	return {"zhaoyun": ZHAOYUN, "machao": MACHAO, "guanyu": GUANYU, "zhangfei": ZHANGFEI, "lubu": LUBU}.get(id, ZHAOYUN)
+	return {"zhaoyun": ZHAOYUN, "machao": MACHAO, "guanyu": GUANYU, "zhangfei": ZHANGFEI, "lubu": LUBU, "xuchu": XUCHU}.get(id, ZHAOYUN)

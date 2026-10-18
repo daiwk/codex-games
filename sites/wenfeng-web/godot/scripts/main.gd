@@ -8,7 +8,7 @@ const SkillEffects = preload("res://scripts/skill_fx.gd")
 const Roster = preload("res://scripts/roster.gd")
 
 var character_id = "zhaoyun"
-var weapon_id = "sword"
+var weapon_id = "zhaoyun_spear"
 var opponent_id = ""
 var difficulty = 1
 var phase = "menu"
@@ -122,7 +122,7 @@ func _spawn_fighters() -> void:
 	enemy = Fighter.new()
 	enemy.name = "Opponent"
 	enemy.character_id = String(Roster.character(character_id).opponent) if opponent_id.is_empty() else opponent_id
-	enemy.weapon_id = Roster.resolve_weapon(enemy.character_id, "saber" if weapon_id == "sword" else "sword")
+	enemy.weapon_id = Roster.resolve_weapon(enemy.character_id, "")
 	enemy.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(enemy)
 	player.opponent = enemy
@@ -253,6 +253,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				select_character("zhangfei")
 			KEY_5:
 				select_character("lubu")
+			KEY_6:
+				select_character("xuchu")
 
 func _physics_process(delta: float) -> void:
 	if paused:
@@ -315,10 +317,10 @@ func _player_input() -> void:
 		if not player.request_dodge(player.input_move) and player.stamina < 24.0:
 			_stamina_hint()
 	elif Input.is_action_just_pressed("heavy"):
-		if not player.request_heavy() and player.stamina < 29.0:
+		if not player.request_heavy() and player.state in ["idle", "move", "block"]:
 			_stamina_hint()
 	elif Input.is_action_just_pressed("light"):
-		if not player.request_light() and player.stamina < 15.0:
+		if not player.request_light() and player.state in ["idle", "move", "block"]:
 			_stamina_hint()
 
 func _stamina_hint() -> void:
@@ -359,7 +361,11 @@ func _update_ai(delta: float) -> void:
 			if enemy.request_heavy():
 				ai_cooldown = 1.0
 				return
-		var evade_at = 1.12 if player.character_id == "machao" else 0.54
+		var evade_at = INF
+		for hit in player.skill_profile("ultimate").hits:
+			if player.action_time <= hit.active.y:
+				evade_at = hit.active.x - 0.13
+				break
 		if player.action_time >= evade_at and rng.randf() < [0.30, 0.60, 0.85][difficulty]:
 			if enemy.request_dodge((side - toward * 0.8).normalized()):
 				return
@@ -369,13 +375,13 @@ func _update_ai(delta: float) -> void:
 		if enemy.request_ultimate():
 			ai_cooldown = 3.2
 			return
-	var thrust_role: bool = enemy.character_id in ["zhaoyun", "zhangfei"]
+	var thrust_role: bool = enemy.is_thrust_weapon()
 	var use_offensive_q = distance > 2.8 and distance < 5.2 if thrust_role else distance < enemy.basic_reach() + 0.6 and distance > 1.2
 	if use_offensive_q and ai_cooldown <= 0.0 and rng.randf() < [0.12, 0.25, 0.36][difficulty]:
 		if enemy.request_skill("rush"):
 			ai_cooldown = 1.05
 			return
-	if enemy.character_id in ["machao", "zhangfei"] and player.state == "block" and distance < 2.7 and ai_cooldown <= 0.0:
+	if enemy.character_id in ["machao", "zhangfei", "xuchu"] and player.state == "block" and distance < 2.7 and ai_cooldown <= 0.0:
 		if rng.randf() < [0.20, 0.50, 0.78][difficulty] and enemy.request_skill("counter"):
 			ai_cooldown = 1.2
 			return
@@ -476,7 +482,8 @@ func _on_skill(fighter: DuelFighter, id: String, stage: String) -> void:
 		if stage == "start":
 			fx.sound("charge" if id == "ultimate" else "swing", -14.0, 0.8)
 		elif stage in ["release", "strike", "finish"]:
-			fx.sound("thrust" if fighter.character_id == "zhangfei" and id != "counter" else "heavy", -13.0)
+			var piercing = fighter.is_thrust_weapon() and fighter.skill_profile(id).get("kind", "") != "roar"
+			fx.sound("thrust" if piercing else "heavy", -13.0)
 			if id == "ultimate":
 				shake = maxf(shake, 0.13 if stage == "finish" else 0.065)
 		return

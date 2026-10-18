@@ -69,7 +69,7 @@ func run(target: Node) -> void:
 	await click(Vector2(234, 333))
 	check(game.character_id == "machao" and game.player.character_id == "machao", "menu mouse selects Ma Chao")
 	await click(Vector2(320, 443))
-	check(game.weapon_id == "saber" and game.player.weapon_id == "saber", "menu mouse selects saber")
+	check(game.weapon_id == "machao_spear" and game.player.weapon_id == "machao_spear", "menu retains Ma Chao's paired two-hand spear")
 	await click(Vector2(100, 532))
 	check(game.difficulty == 0, "menu mouse selects difficulty")
 	await click(Vector2(220, 632))

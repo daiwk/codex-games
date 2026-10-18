@@ -47,8 +47,10 @@ func run(target: Node) -> void:
 		for clip in required:
 			complete = complete and fighter.animation_names.has(clip)
 		check(complete, fighter.character_id + " has every replacement clip")
-		check(fighter.blade_tip().distance_to(fighter.blade_base()) > 0.70 and fighter.blade_tip().distance_to(fighter.blade_base()) < 1.10, fighter.character_id + " weapon scale", fighter.blade_tip().distance_to(fighter.blade_base()))
-		check(fighter.grip.get_parent().bone_name.ends_with("RightHand"), fighter.character_id + " weapon follows right hand")
+		var head_length = (.99 - float(fighter.Roster.WEAPONS[fighter.weapon_id].blade_start)) * float(fighter.grip_config.weapon_length)
+		check(is_equal_approx(fighter.blade_tip().distance_to(fighter.blade_base()), head_length), fighter.character_id + " spear scale", fighter.blade_tip().distance_to(fighter.blade_base()))
+		check(fighter.is_two_handed() and fighter.grip.global_position.distance_to(fighter.palm_position(false)) < 0.035, fighter.character_id + " weapon follows two-hand grip")
+	check(ResourceLoader.exists("res://onehand_sword.glb") and ResourceLoader.exists("res://onehand_saber.glb"), "sword and saber remain available for future warriors")
 
 	reset(5.0)
 	await frames(2)
@@ -211,7 +213,7 @@ func run(target: Node) -> void:
 	game.select_character("machao")
 	game.select_weapon("saber")
 	await frames(3)
-	check(game.player.character_id == "machao" and game.player.weapon_id == "saber" and game.enemy.character_id == "zhaoyun" and game.enemy.weapon_id == "sword", "selection swaps real characters and weapons")
+	check(game.player.character_id == "machao" and game.player.weapon_id == "machao_spear" and game.enemy.character_id == "zhaoyun" and game.enemy.weapon_id == "zhaoyun_spear", "selection equips paired spears and rejects reserved saber")
 	reset(4.5)
 	Engine.time_scale = 4.0
 	game.ai_enabled = true

@@ -8,7 +8,7 @@ var failures: Array = []
 var impacts: Array = []
 var stages: Array = []
 var polling_skill_input = false
-var move_behind_on_finish = false
+var finish_target_offset = Vector2.ZERO
 var rush_distances: Dictionary = {}
 
 func _physics_process(_delta: float) -> void:
@@ -30,10 +30,20 @@ func frames(count: int) -> void:
 func seconds(duration: float) -> void:
 	await frames(int(ceil(duration * 60.0)))
 
+func until_action_time(moment: float) -> void:
+	# Follow the fighter's real clock so hit-stop and engine scheduling cannot
+	# place a timing assertion on the wrong side of a short thrust window.
+	var ticks = 0
+	while game.player.state in ["skill", "ultimate"] and game.player.action_time < moment and ticks < 2400:
+		await get_tree().physics_frame
+		ticks += 1
+	if ticks >= 2400:
+		check(false, "skill clock reaches requested time", moment)
+
 func select_role(id: String) -> void:
 	game.return_to_menu()
 	game.select_character(id)
-	game.select_weapon("sword")
+	check(game.player.is_two_handed() and game.player.is_thrust_weapon(), id + " equips its two-handed spear")
 	if not game.enemy.impact_received.is_connected(_observe_impact):
 		game.enemy.impact_received.connect(_observe_impact)
 	if not game.player.skill_triggered.is_connected(_observe_stage):
@@ -45,10 +55,10 @@ func _observe_impact(_fighter, outcome: String, _at: Vector3) -> void:
 
 func _observe_stage(fighter, id: String, stage: String) -> void:
 	stages.append({"skill": id, "stage": stage, "time": fighter.action_time, "clip": fighter.current_clip})
-	# Emitted after commitment and before resolving damage. Moving behind here
-	# distinguishes an actual radial slam from a targeted thrust's last hit.
-	if move_behind_on_finish and id == "ultimate" and stage == "finish":
-		game.enemy.position = fighter.position - fighter.forward() * 2.0
+	# Emitted after facing commitment and before resolving damage. Move only
+	# for the last strike so a chase cannot re-aim and hide an overly wide hit.
+	if finish_target_offset != Vector2.ZERO and id == "ultimate" and stage == "finish":
+		offset_defender(finish_target_offset.x, finish_target_offset.y)
 
 func reset(gap = 1.8) -> void:
 	get_tree().paused = false
@@ -61,7 +71,7 @@ func reset(gap = 1.8) -> void:
 	game.scores = [0, 0]
 	game.hit_stop_until = 0
 	game.skill_fx.clear()
-	move_behind_on_finish = false
+	finish_target_offset = Vector2.ZERO
 	impacts.clear()
 	stages.clear()
 	for fighter in [game.player, game.enemy]:
@@ -110,7 +120,7 @@ func resource_checks(role: String) -> void:
 	var e_cost = 20.0 if role == "zhaoyun" else 26.0
 	var q_cd = 4.5 if role == "zhaoyun" else 6.0
 	var e_cd = 6.5 if role == "zhaoyun" else 9.0
-	var aliases = ["DragonCharge", "DragonThrust", "DragonCross", "DragonBackCut", "CloudStep"] if role == "zhaoyun" else ["TigerSweep", "TigerRoar", "TigerCharge", "TigerSlam"]
+	var aliases = ["DragonCharge", "DragonThrust", "DragonCross", "DragonBackCut", "CloudStep"] if role == "zhaoyun" else ["TigerThrust", "TigerRoar", "TigerCharge", "TigerFinish"]
 	var complete = true
 	for clip in aliases:
 		complete = complete and game.player.animation_names.has(clip)
@@ -148,14 +158,15 @@ func resource_checks(role: String) -> void:
 
 func rush_checks(role: String) -> void:
 	var damage = 20.0 if role == "zhaoyun" else 30.0
+	var profile: Dictionary = game.player.skill_profile("rush")
 	reset()
 	freeze_defender()
 	game.player.request_skill("rush")
-	await seconds(0.27 if role == "zhaoyun" else 0.43)
+	await until_action_time(profile.active.x - 0.03)
 	check(game.enemy.hp == 120.0, role + " Q telegraph cannot damage early")
-	await seconds(0.46)
+	await until_action_time(profile.active.y + 0.04)
 	check(is_equal_approx(game.enemy.hp, 120.0 - damage), role + " Q deals its distinct damage once", game.enemy.hp)
-	await seconds(0.6)
+	await seconds(profile.duration - profile.active.y + 0.10)
 	check(is_equal_approx(game.enemy.hp, 120.0 - damage) and game.player.state == "idle", role + " Q recovery ends without repeated damage")
 	reset(5.0)
 	freeze_defender()
@@ -167,21 +178,21 @@ func rush_checks(role: String) -> void:
 	reset(8.0)
 	freeze_defender()
 	game.player.request_skill("rush")
-	await seconds(0.22)
+	await until_action_time(profile.active.x - 0.05)
 	offset_defender(1.4, 1.2)
-	await seconds(0.7)
-	check(game.enemy.hp == (120.0 if role == "zhaoyun" else 90.0), role + " Q " + ("misses outside narrow thrust corridor" if role == "zhaoyun" else "catches a lateral target in broad sweep"), game.enemy.hp)
+	await seconds(profile.duration)
+	check(game.enemy.hp == 120.0, role + " Q misses outside narrow thrust corridor", game.enemy.hp)
 	reset(8.0)
 	freeze_defender()
 	game.player.request_skill("rush")
-	await seconds(0.22)
+	await until_action_time(profile.active.x - 0.05)
 	offset_defender(0.0, -1.7)
-	await seconds(1.0)
+	await seconds(profile.duration)
 	check(game.enemy.hp == 120.0, role + " Q cannot hit behind committed facing")
 	reset(8.0)
 	freeze_defender()
 	game.player.request_skill("rush")
-	await seconds(1.2)
+	await seconds(profile.duration + 0.10)
 	check(game.enemy.hp == 120.0, role + " Q has finite range")
 	reset()
 	freeze_defender()
@@ -197,6 +208,7 @@ func rush_checks(role: String) -> void:
 	check(outcome == "hit" and game.player.hp == 89.0 and game.player.state == "hit", role + " Q can be interrupted by a heavy")
 
 func zhao_step_checks() -> void:
+	var profile: Dictionary = game.player.skill_profile("counter")
 	reset(2.0)
 	freeze_defender()
 	var origin: Vector3 = game.player.position
@@ -209,10 +221,10 @@ func zhao_step_checks() -> void:
 	check(game.player.position.x - origin.x > 0.4, "Zhao E follows chosen lateral movement", game.player.position - origin)
 	check(game.enemy.state == "idle" and game.player.parries == 0, "Zhao E does not intercept or stagger the attacker")
 	offset_defender(0.0, 1.8)
-	await seconds(0.50)
-	check(game.enemy.hp == 104.0, "Zhao E returns a 16 damage cut without needing an incoming attack", game.enemy.hp)
-	await seconds(0.4)
-	check(game.player.state == "idle" and game.enemy.hp == 104.0, "Zhao E cuts once then recovers")
+	await until_action_time(profile.active.y + 0.04)
+	check(game.enemy.hp == 104.0, "Zhao E returns a 16 damage thrust without needing an incoming attack", game.enemy.hp)
+	await seconds(profile.duration - profile.active.y + 0.10)
+	check(game.player.state == "idle" and game.enemy.hp == 104.0, "Zhao E thrusts once then recovers")
 	reset(4.0)
 	freeze_defender()
 	origin = game.player.position
@@ -222,11 +234,19 @@ func zhao_step_checks() -> void:
 	reset()
 	freeze_defender()
 	game.player.request_skill("counter")
-	await seconds(0.35)
+	await until_action_time(profile.active.x - 0.02)
 	outcome = game.player.receive_strike(game.enemy, DuelFighter.ATTACKS[0])
 	check(outcome == "hit" and game.player.hp == 105.0 and game.player.state == "hit", "Zhao E is vulnerable after its short evasion window")
 	await seconds(0.7)
-	check(game.enemy.hp == 120.0, "interrupting Zhao E prevents its later cut")
+	check(game.enemy.hp == 120.0, "interrupting Zhao E prevents its later thrust")
+	for offset in [Vector2(1.4, 1.2), Vector2(0.0, -1.8)]:
+		reset(8.0)
+		freeze_defender()
+		game.player.request_skill("counter")
+		await until_action_time(profile.active.x - 0.02)
+		offset_defender(offset.x, offset.y)
+		await seconds(profile.duration)
+		check(game.enemy.hp == 120.0, "Zhao E return thrust misses " + ("behind" if offset.y < 0.0 else "outside its narrow corridor"), game.enemy.hp)
 
 func ma_roar_checks() -> void:
 	reset()
@@ -257,34 +277,38 @@ func ma_roar_checks() -> void:
 	check(outcome == "hit" and game.player.hp == 105.0 and game.player.state == "hit", "Ma E has no Zhao-style evasion or counter interception")
 
 func ultimate_checks(role: String) -> void:
-	var expected_damage = 52.0 if role == "zhaoyun" else 58.0
+	var expected_damage = 52.0 if role == "zhaoyun" else 62.0
+	var expected_hits = 5 if role == "zhaoyun" else 3
+	var profile: Dictionary = game.player.skill_profile("ultimate")
+	var first_hit: Dictionary = profile.hits[0]
 	reset(2.0)
 	freeze_defender()
 	game.player.energy = 100.0
 	check(game.player.request_ultimate(), role + " full energy activates U")
 	check(game.player.energy == 0.0 and game.player.state == "ultimate" and game.player.skill_stage == "windup", role + " U consumes energy and has readable startup")
-	await seconds(0.60 if role == "zhaoyun" else 1.20)
+	await until_action_time(first_hit.active.x - 0.03)
 	check(game.enemy.hp == 120.0, role + " U cannot damage before its first active window")
-	await seconds(2.4)
+	await seconds(profile.duration + 0.10)
 	var damage_events = 0
 	for outcome in impacts:
 		if outcome in ["hit", "heavy_hit"]:
 			damage_events += 1
 	check(game.enemy.hp == 120.0 - expected_damage and game.player.damage_dealt == expected_damage, role + " U deals its actual total damage", {"hp": game.enemy.hp, "damage": game.player.damage_dealt})
-	check(damage_events == (5 if role == "zhaoyun" else 1), role + " U has " + ("five distinct targeted hits" if role == "zhaoyun" else "one committed slam"), damage_events)
+	check(damage_events == expected_hits, role + " U has " + str(expected_hits) + " distinct targeted thrusts", damage_events)
 	check(game.player.state == "idle" and game.player.energy == 0.0 and game.enemy.energy > 35.0, role + " U recovers and cannot refill itself from its own damage")
+	for offset in [Vector2(0.0, -2.0), Vector2(1.6, 1.2)]:
+		reset(14.0)
+		freeze_defender()
+		finish_target_offset = offset
+		game.player.energy = 100.0
+		game.player.request_ultimate()
+		await seconds(profile.duration + 0.10)
+		check(game.enemy.hp == 120.0, role + " U final committed thrust misses " + ("behind" if offset.y < 0.0 else "outside its narrow corridor"), game.enemy.hp)
 	reset(14.0)
 	freeze_defender()
-	move_behind_on_finish = true
 	game.player.energy = 100.0
 	game.player.request_ultimate()
-	await seconds(2.8)
-	check(game.enemy.hp == (120.0 if role == "zhaoyun" else 62.0), role + " U final " + ("targeted cut misses behind" if role == "zhaoyun" else "radial slam hits behind"), game.enemy.hp)
-	reset(14.0)
-	freeze_defender()
-	game.player.energy = 100.0
-	game.player.request_ultimate()
-	await seconds(2.8)
+	await seconds(profile.duration + 0.10)
 	check(game.enemy.hp == 120.0, role + " U cannot hit an opponent outside its range")
 	reset()
 	freeze_defender()
@@ -293,31 +317,38 @@ func ultimate_checks(role: String) -> void:
 	await seconds(0.20)
 	var outcome: String = game.player.receive_strike(game.enemy, DuelFighter.HEAVY)
 	check(outcome == "hit" and game.player.state == "hit" and is_equal_approx(game.player.energy, 47.4), role + " early heavy interrupts U and refunds 35 plus received-hit energy", game.player.energy)
-	await seconds(2.8)
+	await seconds(profile.duration + 0.10)
 	check(game.enemy.hp == 120.0, role + " interrupted U emits no later damage")
 	reset(1.3)
 	game.player.energy = 100.0
 	game.player.request_ultimate()
-	await seconds(0.58 if role == "zhaoyun" else 1.21)
-	game.enemy.request_dodge(Vector3.ZERO)
-	await seconds(0.23)
-	check(game.enemy.hp == 120.0 and game.enemy.dodged_hits > 0, role + " actual first U strike can be dodged", game.enemy.dodged_hits)
+	# At the accelerated test rate, the attacker updates before the defender.
+	# Leave more than the dodge's 35 ms startup plus one physics tick.
+	await until_action_time(first_hit.active.x - 0.10)
+	var dodge_started: bool = game.enemy.request_dodge(Vector3.ZERO)
+	var dodge_began_at: float = game.player.action_time
+	check(dodge_started, role + " defender starts a real dodge before U contact")
+	await until_action_time(first_hit.active.y + 0.08)
+	check(game.enemy.hp == 120.0 and game.enemy.dodged_hits > 0, role + " actual first U strike can be dodged", {"dodges": game.enemy.dodged_hits, "hp": game.enemy.hp, "started": dodge_began_at, "clock": game.player.action_time, "defender_state": game.enemy.state, "defender_clock": game.enemy.action_time, "gap": game.player.position.distance_to(game.enemy.position)})
 
 func zhao_ultimate_checks() -> void:
+	var profile: Dictionary = game.player.skill_profile("ultimate")
+	var first_hit: Dictionary = profile.hits[0]
+	var second_hit: Dictionary = profile.hits[1]
 	reset(2.0)
 	freeze_defender()
 	game.player.energy = 100.0
 	game.player.request_ultimate()
-	await seconds(0.82)
+	await until_action_time(first_hit.active.y + 0.05)
 	check(game.enemy.hp == 112.0, "Zhao U first chase hit deals 8 damage")
 	offset_defender(1.0, 1.73)
-	await seconds(0.32)
-	check(game.enemy.hp == 104.0, "Zhao U reacquires a target between strikes", {"hp": game.enemy.hp, "facing": game.player.forward()})
+	await until_action_time(second_hit.active.y + 0.02)
+	check(game.enemy.hp == 104.0, "Zhao U reacquires a target between thrusts", {"hp": game.enemy.hp, "facing": game.player.forward()})
 	reset()
 	freeze_defender()
 	game.player.energy = 100.0
 	game.player.request_ultimate()
-	await seconds(0.60)
+	await until_action_time(first_hit.active.x - 0.05)
 	var outcome: String = game.player.receive_strike(game.enemy, DuelFighter.HEAVY)
 	check(outcome == "evade" and game.player.hp == 120.0 and game.player.state == "ultimate", "Zhao U grants brief invulnerability during a chase lunge")
 	for data in [DuelFighter.ATTACKS[0], DuelFighter.HEAVY]:
@@ -325,7 +356,7 @@ func zhao_ultimate_checks() -> void:
 		freeze_defender()
 		game.player.energy = 100.0
 		game.player.request_ultimate()
-		await seconds(0.82)
+		await until_action_time(first_hit.active.y + 0.08)
 		outcome = game.player.receive_strike(game.enemy, data)
 		check(outcome == "hit" and game.player.state == "hit", "Zhao U can be interrupted between lunges by " + ("heavy" if data.heavy else "light"))
 	reset()
@@ -337,13 +368,17 @@ func zhao_ultimate_checks() -> void:
 	check(outcome == "hit" and game.player.state == "hit", "Zhao U startup is vulnerable to a light attack")
 
 func ma_ultimate_checks() -> void:
+	var profile: Dictionary = game.player.skill_profile("ultimate")
 	reset(2.0)
 	freeze_defender(true)
 	game.player.energy = 100.0
 	game.player.request_ultimate()
-	await seconds(1.65)
-	check(game.enemy.hp == 108.0 and game.enemy.stamina == 0.0, "Ma U breaks full guard and deals exactly 12 chip damage", {"hp": game.enemy.hp, "stamina": game.enemy.stamina})
-	check(game.enemy.state == "stagger" and is_equal_approx(game.enemy.action_duration, 1.15) and game.enemy.parries == 0, "Ma U applies its long forced guard break without being parried")
+	for index in 3:
+		await until_action_time(profile.hits[index].active.y + 0.03)
+		var expected_guard = [68.0, 32.0, 0.0][index]
+		check(game.enemy.hp == 120.0 and is_equal_approx(game.enemy.stamina, expected_guard), "Ma U thrust " + str(index + 1) + " applies its own guard damage without HP chip", {"hp": game.enemy.hp, "stamina": game.enemy.stamina})
+	check(impacts == ["block", "block", "break"] and game.enemy.blocked_hits == 3 and game.enemy.parries == 0, "Ma U has three unparryable guard contacts and breaks on its final thrust", impacts)
+	check(game.enemy.state == "stagger" and is_equal_approx(game.enemy.action_duration, 0.90), "Ma U final thrust applies its forced guard-break stun")
 	reset()
 	freeze_defender()
 	game.player.energy = 100.0
@@ -361,8 +396,8 @@ func ma_ultimate_checks() -> void:
 	game.player.hp = 1.0
 	outcome = game.player.receive_strike(game.enemy, DuelFighter.HEAVY)
 	check(game.player.hp == 0.0 and game.player.state == "dead" and game.player.skill_id == "", "lethal damage stops Ma U despite armor")
-	await seconds(2.0)
-	check(game.enemy.hp == 120.0, "dead Ma U cannot produce its pending slam")
+	await seconds(profile.duration + 0.10)
+	check(game.enemy.hp == 120.0, "dead Ma U cannot produce its pending thrusts")
 
 func input_and_lifecycle_checks(role: String) -> void:
 	reset(5.0)
@@ -414,7 +449,7 @@ func run(target: Node) -> void:
 		else:
 			await ma_ultimate_checks()
 		await input_and_lifecycle_checks(role)
-	check(float(rush_distances.zhaoyun) > float(rush_distances.machao) + 0.4, "Zhao Q closes farther than Ma Q's deliberate sweeping step", rush_distances)
+	check(float(rush_distances.zhaoyun) > float(rush_distances.machao) + 0.4, "Zhao Q closes farther than Ma Q's deliberate heavy thrust", rush_distances)
 	var report = {"passed": failures.is_empty(), "checks": checks.size(), "failures": failures, "results": checks, "final_state": game.snapshot()}
 	for path in ["res://qa/role-skills-results.json", "res://qa/skills-results.json"]:
 		var file = FileAccess.open(path, FileAccess.WRITE)

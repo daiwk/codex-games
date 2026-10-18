@@ -113,7 +113,7 @@ func _build_menu() -> void:
 	_label(menu, "问锋", Vector2(44, 77), 90, PAPER, 400, true)
 	_label(menu, "DUEL OF BLADES", Vector2(53, 185), 16, GOLD)
 	_label(menu, "一招有进退，一刃定胜负。", Vector2(52, 230), 18, PAPER)
-	_label(menu, "出战武将  /  1—5", Vector2(52, 282), 13, MUTED)
+	_label(menu, "出战武将  /  1—6", Vector2(52, 282), 13, MUTED)
 	for i in Roster.IDS.size():
 		var id: String = Roster.IDS[i]
 		var role: Dictionary = Roster.character(id)
@@ -123,8 +123,10 @@ func _build_menu() -> void:
 	_label(menu, "掌中兵刃", Vector2(52, 414), 13, MUTED)
 	buttons.sword = _button(menu, "剑  ·  灵巧", Rect2(52, 441, 176, 44), func(): _select_weapon_slot(0))
 	buttons.saber = _button(menu, "刀  ·  刚猛", Rect2(240, 441, 176, 44), func(): _select_weapon_slot(1))
+	buttons.weapon3 = _button(menu, "剑  ·  灵巧", Rect2(302, 441, 114, 44), func(): _select_weapon_slot(2))
 	buttons.sword.toggle_mode = true
 	buttons.saber.toggle_mode = true
+	buttons.weapon3.toggle_mode = true
 	_label(menu, "对手强度", Vector2(52, 505), 13, MUTED)
 	for i in 3:
 		var index = i
@@ -150,9 +152,10 @@ func _build_menu() -> void:
 		line.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		menu_role_skills.append(line)
 	_label(menu, "对阵武将", Vector2(568, 654), 12, MUTED)
+	var enemy_button_width = (660.0 - 10.0 * (Roster.IDS.size() - 1)) / Roster.IDS.size()
 	for i in Roster.IDS.size():
 		var id: String = Roster.IDS[i]
-		var button = _button(menu, String(Roster.character(id).name), Rect2(568 + i * 134, 681, 124, 36), func(): game.select_opponent(id))
+		var button = _button(menu, String(Roster.character(id).name), Rect2(568 + i * (enemy_button_width + 10), 681, enemy_button_width, 36), func(): game.select_opponent(id))
 		button.toggle_mode = true
 		buttons["enemy_" + id] = button
 
@@ -202,12 +205,14 @@ func _process(delta: float) -> void:
 			buttons[id].set_pressed_no_signal(game.character_id == id)
 			buttons["enemy_" + id].set_pressed_no_signal(game.enemy.character_id == id)
 		var choices = Roster.weapon_choices(game.character_id)
-		for i in 2:
-			var button: Button = buttons.sword if i == 0 else buttons.saber
+		var weapon_button_width = (364.0 - 12.0 * (choices.size() - 1)) / choices.size()
+		for i in 3:
+			var button: Button = [buttons.sword, buttons.saber, buttons.weapon3][i]
 			button.visible = i < choices.size()
 			if button.visible:
 				button.text = Roster.weapon_name(String(choices[i]))
-				button.size.x = 364 if choices.size() == 1 else 176
+				button.position.x = 52 + i * (weapon_button_width + 12)
+				button.size.x = weapon_button_width
 				button.set_pressed_no_signal(game.weapon_id == choices[i])
 		for i in 3:
 			buttons["difficulty" + str(i)].set_pressed_no_signal(game.difficulty == i)
