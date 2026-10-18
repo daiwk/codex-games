@@ -10,7 +10,7 @@ const ZHAOYUN = {
 	"counter": {"name": "回风掠影", "description": "闪身避击 · 随后还刺", "cost": 20.0, "cooldown": 6.5,
 		"kind": "evade", "clip": "CloudStep", "strike_clip": "DragonThrust", "strike_start": 0.25,
 		"duration": 0.85, "active": Vector2(0.35, 0.44), "damage": 16.0, "reach": 3.8,
-		"half_width": 0.50, "shape": "line", "heavy": false, "guard_cost": 14.0, "lunge": 0.0},
+		"half_width": 0.50, "shape": "line", "heavy": false, "guard_cost": 14.0, "lunge": 0.0, "return_lunge": 5.5},
 	"ultimate": {"name": "龙吟破阵", "description": "五段连刺 · 追身可打断", "cost": 100.0,
 		"kind": "chase", "windup": 0.45, "duration": 2.60, "radius": 0.0,
 		"reach": 3.8, "half_width": 0.50, "guard_cost": 18.0, "charge_clip": "DragonCharge",

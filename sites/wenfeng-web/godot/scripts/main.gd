@@ -450,11 +450,15 @@ func _update_ai(delta: float) -> void:
 				ai_guard = 0.45 + rng.randf() * 0.25
 				enemy.wants_block = true
 				return
-	if distance > enemy.preferred_distance():
+	# Spears now require actual blade contact. Approach into a normal stroke's
+	# physical range instead of spending stamina at the former broad-phase edge.
+	var normal_range = minf(enemy.basic_reach(), 2.6) if thrust_role else enemy.basic_reach()
+	var desired_distance = minf(enemy.preferred_distance(), 2.15) if thrust_role else enemy.preferred_distance()
+	if distance > desired_distance:
 		enemy.input_move = (toward + side * 0.14).normalized()
 	elif ai_cooldown > 0.0:
 		enemy.input_move = side * 0.42 + (-toward * 0.25 if distance < 1.25 else Vector3.ZERO)
-	if distance < enemy.basic_reach() and ai_cooldown <= 0.0 and ai_guard <= 0.0:
+	if distance < normal_range and ai_cooldown <= 0.0 and ai_guard <= 0.0:
 		var heavy_chance = 0.56 if player.state == "block" else 0.25
 		if enemy.stamina > 48.0 and rng.randf() < heavy_chance:
 			enemy.request_heavy()
@@ -507,7 +511,7 @@ func _update_mounted_ai(delta: float) -> void:
 	elif distance < enemy.basic_reach() + 0.45 and distance > 2.0 and enemy.skill_ready("rush") and rng.randf() < [0.18, 0.35, 0.50][difficulty]:
 		enemy.request_skill("rush")
 		ai_cooldown = 1.0
-	elif distance < enemy.basic_reach() + 0.1:
+	elif distance < (minf(enemy.basic_reach() + 0.1, 2.25 + enemy.mount_speed * 0.22) if enemy.is_thrust_weapon() else enemy.basic_reach() + 0.1):
 		if enemy.stamina > 45.0 and rng.randf() < 0.25:
 			enemy.request_heavy()
 		else:
@@ -529,22 +533,32 @@ func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 			return
 	if not data.get("radial", false) and offset.normalized().dot(attacker.forward()) < float(data.get("min_dot", 0.12)):
 		return
-	# Test both the current blade and its swept tip against the body capsule.
-	# A close-range allowance covers contact hidden inside armor and the frame
-	# immediately before the imported skeleton advances.
-	var low = defender.global_position + Vector3.UP * (1.7 if defender.mounted else 0.42)
-	var high = defender.global_position + Vector3.UP * (3.1 if defender.mounted else 1.55)
+	# A thrust must actually touch the body, including when a skill carries the
+	# wave flag. Its reach/line tests are only a broad phase, not a ranged hit.
+	var physical_thrust = attacker.is_physical_thrust(data)
+	var low = defender.thrust_body_low()
+	var high = defender.thrust_body_high()
 	var blade = Geometry3D.get_closest_points_between_segments(attacker.blade_base(), attacker.blade_tip(), low, high)
 	var sweep = Geometry3D.get_closest_points_between_segments(attacker.previous_tip, attacker.blade_tip(), low, high)
 	var contact = minf(blade[0].distance_to(blade[1]), sweep[0].distance_to(sweep[1]))
-	if data.get("shape", "") != "line" and not data.get("wave", false) and contact > 0.70 and offset.length() > 1.48:
+	if physical_thrust and contact > defender.thrust_body_radius() + 0.07:
+		return
+	if not physical_thrust and data.get("shape", "") != "line" and not data.get("wave", false) and contact > 0.70 and offset.length() > 1.48:
 		return
 	attacker.hit_landed = true
 	var resolved = data.duplicate()
+	if physical_thrust:
+		var nearest = blade if blade[0].distance_to(blade[1]) <= sweep[0].distance_to(sweep[1]) else sweep
+		var normal = (nearest[0] - nearest[1]).normalized()
+		if normal.length_squared() < 0.01:
+			normal = -attacker.forward()
+		resolved["contact_point"] = nearest[1] + normal * defender.thrust_body_radius()
 	if attacker.mounted and attacker.mount_speed > 4.8 and data.get("kind", "") != "roar":
 		resolved.damage *= 1.0 + minf(attacker.mount_speed / 28.0, 0.30)
 		resolved["guard_cost"] = float(data.get("guard_cost", 24.0)) * 1.15
-	defender.receive_strike(attacker, resolved)
+	var outcome = defender.receive_strike(attacker, resolved)
+	if physical_thrust and outcome not in ["evade", "dead"]:
+		attacker.register_thrust_contact(resolved.contact_point)
 
 func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 	var damage = int(fighter.opponent.attack.get("damage", 0)) if outcome in ["hit", "heavy_hit"] else 0
@@ -694,14 +708,16 @@ func snapshot() -> Dictionary:
 	return {"phase": phase, "paused": paused, "combat_mode": combat_mode, "horse_color": horse_color, "enemy_horse_color": enemy_horse_color, "scores": scores.duplicate(), "seconds": round_time,
 		"player": {"character": player.character_id, "weapon": player.weapon_id, "hp": player.hp,
 			"mounted": player.mounted, "mount_speed": player.mount_speed, "mount_charge_cooldown": player.mount_charge_cooldown, "heading": player.rotation.y,
+			"contact_active": player.contact_active, "contact_latched": player.contact_latched, "contact_retraction": player.contact_retraction,
 			"horse_color": player.horse_color,
 			"stamina": player.stamina, "energy": player.energy, "cooldowns": player.cooldowns.duplicate(),
-			"skill": player.skill_id, "skill_stage": player.skill_stage, "state": player.state, "combo": player.combo, "position": [player.position.x, player.position.y, player.position.z]},
+			"skill": player.skill_id, "skill_stage": player.skill_stage, "state": player.state, "action_time": player.action_time, "combo": player.combo, "position": [player.position.x, player.position.y, player.position.z]},
 		"enemy": {"character": enemy.character_id, "weapon": enemy.weapon_id, "hp": enemy.hp,
 			"mounted": enemy.mounted, "mount_speed": enemy.mount_speed, "mount_charge_cooldown": enemy.mount_charge_cooldown, "heading": enemy.rotation.y,
+			"contact_active": enemy.contact_active, "contact_latched": enemy.contact_latched, "contact_retraction": enemy.contact_retraction,
 			"horse_color": enemy.horse_color,
 			"stamina": enemy.stamina, "energy": enemy.energy, "cooldowns": enemy.cooldowns.duplicate(),
-			"skill": enemy.skill_id, "skill_stage": enemy.skill_stage, "state": enemy.state, "position": [enemy.position.x, enemy.position.y, enemy.position.z]}}
+			"skill": enemy.skill_id, "skill_stage": enemy.skill_stage, "state": enemy.state, "action_time": enemy.action_time, "position": [enemy.position.x, enemy.position.y, enemy.position.z]}}
 
 func capture(path: String) -> void:
 	await RenderingServer.frame_post_draw

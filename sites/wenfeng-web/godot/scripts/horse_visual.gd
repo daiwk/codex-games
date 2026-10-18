@@ -10,12 +10,9 @@ const HORSE_SCENES = {
 	"white": "res://assets/mounts/horse_white.glb",
 }
 const MANIFEST_PATH = "res://assets/mounts/manifest.json"
+const SADDLE_SCENE_PATH = "res://assets/mounts/saddle.glb"
+const SADDLE_MANIFEST_PATH = "res://assets/mounts/saddle_manifest.json"
 const MODEL_SCALE = 1.0
-const SADDLE_COLORS = {
-	"zhaoyun": Color("416e86"), "machao": Color("956933"),
-	"guanyu": Color("315d49"), "zhangfei": Color("564363"),
-	"lubu": Color("793b41"), "xuchu": Color("806439"),
-}
 
 var character_id = "guanyu"
 var horse_color = "brown"
@@ -28,15 +25,20 @@ var _skeleton: Skeleton3D
 var _animation_player: AnimationPlayer
 var _animation_tree: AnimationTree
 var _saddle_frame: Node3D
+var _saddle_model: Node3D
+var _saddle_fit: Dictionary = {}
 var _seat: Marker3D
 var _bit_left: Marker3D
 var _bit_right: Marker3D
 var _hand_left: Marker3D
 var _hand_right: Marker3D
 var _reins: Array[MeshInstance3D] = []
-var _cloth_material: StandardMaterial3D
 var _leather_material: StandardMaterial3D
 var _metal_material: StandardMaterial3D
+var _stirrup_frames: Array[Node3D] = []
+var _stirrup_straps: Array[MeshInstance3D] = []
+var _rider_skeleton: Skeleton3D
+var _rider_feet: Array[Dictionary] = []
 var _motion_speed = 0.0
 var _clips: Dictionary = {}
 
@@ -52,7 +54,6 @@ func setup(id: String, color: String = "brown") -> void:
 		if changed:
 			_clear_visual()
 		_ensure_visual()
-		_paint_saddle()
 
 func saddle_height() -> float:
 	return saddle_transform().origin.y
@@ -98,9 +99,19 @@ func reset_motion() -> void:
 	_animation_tree.active = true
 
 func _process(_delta: float) -> void:
+	_cache_rider_feet()
+	_update_stirrup_straps()
 	_update_reins()
 
+func _disconnect_rider() -> void:
+	if is_instance_valid(_rider_skeleton) and _rider_skeleton.skeleton_updated.is_connected(_on_rider_skeleton_updated):
+		_rider_skeleton.skeleton_updated.disconnect(_on_rider_skeleton_updated)
+
+func _exit_tree() -> void:
+	_disconnect_rider()
+
 func _clear_visual() -> void:
+	_disconnect_rider()
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -109,15 +120,20 @@ func _clear_visual() -> void:
 	_animation_player = null
 	_animation_tree = null
 	_saddle_frame = null
+	_saddle_model = null
+	_saddle_fit.clear()
 	_seat = null
 	_bit_left = null
 	_bit_right = null
 	_hand_left = null
 	_hand_right = null
 	_reins.clear()
+	_stirrup_frames.clear()
+	_stirrup_straps.clear()
+	_rider_feet.clear()
+	_rider_skeleton = null
 	_clips.clear()
 	_motion_speed = 0.0
-	_cloth_material = null
 	_leather_material = null
 	_metal_material = null
 
@@ -133,7 +149,10 @@ func _ensure_visual() -> void:
 	var head: Array = data.head_anchor
 	_saddle_surface = Vector3(saddle[0], saddle[1], saddle[2])
 	_head_anchor = Vector3(head[0], head[1], head[2])
-	_seat_offset_y = float(data.get("seat_offset_y", 0.05))
+	assert(FileAccess.file_exists(SADDLE_MANIFEST_PATH), "Prepare the supplied saddle with tools/prepare_saddle.py")
+	var saddle_manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SADDLE_MANIFEST_PATH))
+	_saddle_fit = saddle_manifest.fits[horse_color]
+	_seat_offset_y = float(_saddle_fit.rider_seat_y)
 	var scene = load(HORSE_SCENES[horse_color]) as PackedScene
 	assert(scene != null, "The selected user horse GLB is required")
 	_model = scene.instantiate()
@@ -156,10 +175,8 @@ func _ensure_visual() -> void:
 	_skeleton.force_update_all_bone_transforms()
 	_leather_material = _material(Color("34251d"), 0.0)
 	_metal_material = _material(Color("aa8954"), 0.55)
-	_cloth_material = _material(Color("315d49"), 0.0)
 	_build_tack()
 	_build_gait_tree()
-	_paint_saddle()
 	reset_motion()
 
 func _find(node: Node, kind: String) -> Node:
@@ -178,12 +195,6 @@ func _material(color: Color, metallic: float) -> StandardMaterial3D:
 	material.roughness = 0.55 if metallic > 0.0 else 0.88
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return material
-
-func _paint_saddle() -> void:
-	# The user's PBR coat, mane, normal maps and roughness remain untouched.
-	# Only our separate saddlecloth reflects the selected general's colour.
-	if _cloth_material != null:
-		_cloth_material.albedo_color = SADDLE_COLORS.get(character_id, SADDLE_COLORS.guanyu)
 
 func _build_gait_tree() -> void:
 	var gait = AnimationNodeBlendSpace1D.new()
@@ -232,29 +243,58 @@ func _marker(parent: Node3D, label: String, position_m: Vector3) -> Marker3D:
 func _build_tack() -> void:
 	_saddle_frame = _bone_frame("MountSaddle", _saddle_surface)
 	_seat = _marker(_saddle_frame, "RiderSeat", Vector3(0, _seat_offset_y, 0))
-	_hand_left = _marker(_saddle_frame, "LeftReinHand", Vector3(-0.16, 0.22, 0.22))
-	_hand_right = _marker(_saddle_frame, "RightReinHand", Vector3(0.16, 0.22, 0.22))
-	_cloth(_saddle_frame, 0.43, 0.48, func(x: float, _z: float): return -0.025 - 0.23 * pow(absf(x) / 0.43, 1.75), _cloth_material)
-	_cloth(_saddle_frame, 0.29, 0.35, func(x: float, z: float): return 0.045 + 0.025 * pow(x / 0.29, 2.0) + 0.075 * pow(absf(z) / 0.35, 4.0), _leather_material)
-	for z in [-0.35, 0.35]:
+	_hand_left = _marker(_saddle_frame, "LeftReinHand", Vector3(-0.16, _seat_offset_y + 0.17, 0.22))
+	_hand_right = _marker(_saddle_frame, "RightReinHand", Vector3(0.16, _seat_offset_y + 0.17, 0.22))
+	# The supplied textured saddle replaces both temporary thin cloth surfaces
+	# and their decorative rods. It shares the same animated back socket.
+	var saddle_scene = load(SADDLE_SCENE_PATH) as PackedScene
+	assert(saddle_scene != null, "The supplied saddle GLB is required")
+	_saddle_model = saddle_scene.instantiate()
+	_saddle_model.name = "FittedSaddle"
+	_saddle_frame.add_child(_saddle_model)
+	var saddle_offset: Array = _saddle_fit.saddle_offset
+	_saddle_model.position = Vector3(saddle_offset[0], saddle_offset[1], saddle_offset[2])
+	var saddle_mesh = _find(_saddle_model, "MeshInstance3D") as MeshInstance3D
+	assert(saddle_mesh != null and saddle_mesh.mesh.get_blend_shape_count() == 1, "Saddle requires its fitted white-horse panel shape")
+	saddle_mesh.set_blend_shape_value(0, 1.0 if horse_color == "white" else 0.0)
+	for side in [1.0, -1.0]:
+		var frame = Node3D.new()
+		frame.name = "LeftStirrup" if side > 0.0 else "RightStirrup"
+		frame.position = Vector3(side * 0.43, _seat_offset_y - 0.57, 0.18)
+		_saddle_frame.add_child(frame)
+		# BoneAttachment may update after the rider modifier. Keep the sampled
+		# world-space boot contact independent of subsequent horse-back motion.
+		var initial_transform = frame.global_transform
+		frame.top_level = true
+		frame.global_transform = initial_transform
+		# A forward-facing opening and flat tread hold the boot. The former
+		# torus faced sideways and hung empty beside the rider's foot.
 		for index in 8:
-			var x1 = -0.29 + float(index) / 8.0 * 0.58
-			var x2 = -0.29 + float(index + 1) / 8.0 * 0.58
-			_tack_rod(_saddle_frame, Vector3(x1, 0.12 + 0.025 * pow(x1 / 0.29, 2.0), z), Vector3(x2, 0.12 + 0.025 * pow(x2 / 0.29, 2.0), z), 0.012, _metal_material)
-	for side in [-1.0, 1.0]:
-		_tack_rod(_saddle_frame, Vector3(side * 0.28, 0.01, 0.06), Vector3(side * 0.43, -0.43, 0.09), 0.014, _leather_material)
-		var stirrup = TorusMesh.new()
-		stirrup.inner_radius = 0.075
-		stirrup.outer_radius = 0.098
-		stirrup.rings = 12
-		stirrup.ring_segments = 6
-		var ring = MeshInstance3D.new()
-		ring.mesh = stirrup
-		ring.material_override = _metal_material
-		ring.position = Vector3(side * 0.43, -0.52, 0.09)
-		ring.rotation.z = PI * 0.5
-		_saddle_frame.add_child(ring)
-		_tack_rod(_saddle_frame, Vector3(side * 0.34, -0.13, -0.07), Vector3(side * 0.29, -0.58, -0.07), 0.020, _leather_material)
+			var a = PI * float(index) / 8.0
+			var b = PI * float(index + 1) / 8.0
+			_tack_rod(frame, Vector3(cos(a) * 0.065, 0.02 + sin(a) * 0.065, 0), Vector3(cos(b) * 0.065, 0.02 + sin(b) * 0.065, 0), 0.008, _metal_material)
+		for x in [-0.065, 0.065]:
+			_tack_rod(frame, Vector3(x, 0.02, 0), Vector3(x, -0.07, 0), 0.008, _metal_material)
+		var tread = MeshInstance3D.new()
+		var tread_mesh = BoxMesh.new()
+		tread_mesh.size = Vector3(0.145, 0.018, 0.065)
+		tread.mesh = tread_mesh
+		tread.material_override = _metal_material
+		tread.position.y = -0.07
+		frame.add_child(tread)
+		_batch_tack(frame)
+		_stirrup_frames.append(frame)
+		var strap = MeshInstance3D.new()
+		var strap_mesh = CylinderMesh.new()
+		strap_mesh.top_radius = 0.011
+		strap_mesh.bottom_radius = 0.011
+		strap_mesh.height = 1.0
+		strap_mesh.radial_segments = 6
+		strap.mesh = strap_mesh
+		strap.material_override = _leather_material
+		strap.name = "StirrupLeather"
+		_saddle_frame.add_child(strap)
+		_stirrup_straps.append(strap)
 	var head_frame = _bone_frame("Head", _head_anchor)
 	for index in 12:
 		var a = TAU * float(index) / 12.0
@@ -264,7 +304,6 @@ func _build_tack() -> void:
 		_tack_rod(head_frame, Vector3(side * 0.13, -0.22, 0.20), Vector3(side * 0.12, 0.10, -0.10), 0.010, _leather_material)
 	_bit_left = _marker(head_frame, "LeftBit", Vector3(-0.14, -0.22, 0.20))
 	_bit_right = _marker(head_frame, "RightBit", Vector3(0.14, -0.22, 0.20))
-	_batch_tack(_saddle_frame)
 	_batch_tack(head_frame)
 	for _index in 10:
 		var mesh = CylinderMesh.new()
@@ -278,23 +317,6 @@ func _build_tack() -> void:
 		rein.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(rein)
 		_reins.append(rein)
-
-func _cloth(parent: Node3D, half_width: float, half_length: float, height: Callable, material: Material) -> void:
-	var surface = SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for iz in 8:
-		for ix in 12:
-			var x0 = lerpf(-half_width, half_width, float(ix) / 12.0)
-			var x1 = lerpf(-half_width, half_width, float(ix + 1) / 12.0)
-			var z0 = lerpf(-half_length, half_length, float(iz) / 8.0)
-			var z1 = lerpf(-half_length, half_length, float(iz + 1) / 8.0)
-			for point in [Vector2(x0, z0), Vector2(x0, z1), Vector2(x1, z1), Vector2(x0, z0), Vector2(x1, z1), Vector2(x1, z0)]:
-				surface.add_vertex(Vector3(point.x, float(height.call(point.x, point.y)), point.y))
-	surface.generate_normals()
-	var instance = MeshInstance3D.new()
-	instance.mesh = surface.commit()
-	instance.material_override = material
-	parent.add_child(instance)
 
 func _tack_rod(parent: Node3D, start_m: Vector3, end_m: Vector3, radius_m: float, material: Material) -> void:
 	var delta = end_m - start_m
@@ -341,6 +363,72 @@ func _batch_tack(frame: Node3D) -> void:
 	var instance = MeshInstance3D.new()
 	instance.mesh = combined
 	frame.add_child(instance)
+
+func _cache_rider_feet() -> void:
+	if not is_inside_tree():
+		return
+	if is_instance_valid(_rider_skeleton):
+		return
+	var fighter = get_parent()
+	if fighter == null:
+		return
+	for property in fighter.get_property_list():
+		if property.name == "skeleton":
+			_rider_skeleton = fighter.get("skeleton") as Skeleton3D
+			break
+	if not is_instance_valid(_rider_skeleton):
+		return
+	_rider_feet.clear()
+	for side in ["Left", "Right"]:
+		var foot = -1
+		var toe = -1
+		for index in _rider_skeleton.get_bone_count():
+			var label = _rider_skeleton.get_bone_name(index)
+			if label.ends_with(side + "Foot"):
+				foot = index
+			elif label.ends_with(side + "ToeBase"):
+				toe = index
+		_rider_feet.append({"foot": foot, "toe": toe})
+	if not _rider_skeleton.skeleton_updated.is_connected(_on_rider_skeleton_updated):
+		_rider_skeleton.skeleton_updated.connect(_on_rider_skeleton_updated)
+
+func _on_rider_skeleton_updated() -> void:
+	# SkeletonModifier3D restores its input poses after skinning. Read only this
+	# signal's final output; an idle _process read sees the standing/walking legs.
+	if not is_inside_tree() or not is_instance_valid(_rider_skeleton) or not _rider_skeleton.is_inside_tree():
+		return
+	if _stirrup_frames.size() != 2 or not is_instance_valid(_saddle_frame) or not _saddle_frame.is_inside_tree():
+		return
+	for index in 2:
+		var frame = _stirrup_frames[index]
+		if not is_instance_valid(frame) or not frame.is_inside_tree():
+			continue
+		if is_instance_valid(_rider_skeleton) and _rider_feet.size() == 2:
+			var pair: Dictionary = _rider_feet[index]
+			if int(pair.foot) >= 0 and int(pair.toe) >= 0:
+				var foot: Vector3 = _rider_skeleton.to_global(_rider_skeleton.get_bone_global_pose(int(pair.foot)).origin)
+				var toe: Vector3 = _rider_skeleton.to_global(_rider_skeleton.get_bone_global_pose(int(pair.toe)).origin)
+				frame.global_position = foot.lerp(toe, 0.62) + Vector3.UP * 0.045
+				var forward = (toe - foot).slide(Vector3.UP).normalized()
+				if forward.length_squared() > 0.5:
+					frame.global_basis = Basis(Vector3.UP.cross(forward).normalized(), Vector3.UP, forward)
+	_update_stirrup_straps()
+
+func _update_stirrup_straps() -> void:
+	if not is_inside_tree() or _stirrup_frames.size() != 2 or not is_instance_valid(_saddle_frame) or not _saddle_frame.is_inside_tree():
+		return
+	for index in 2:
+		var frame = _stirrup_frames[index]
+		var strap = _stirrup_straps[index]
+		if not is_instance_valid(frame) or not frame.is_inside_tree() or not is_instance_valid(strap) or not strap.is_inside_tree():
+			continue
+		var side = 1.0 if index == 0 else -1.0
+		var anchor = Vector3(side * 0.255, 0.09, 0.06)
+		var end = _saddle_frame.to_local(frame.to_global(Vector3(0, 0.085, 0)))
+		var delta = end - anchor
+		strap.position = (anchor + end) * 0.5
+		strap.quaternion = Quaternion(Vector3.UP, delta.normalized())
+		strap.scale.y = maxf(delta.length(), 0.001)
 
 func _update_reins() -> void:
 	if _reins.size() != 10 or not is_instance_valid(_bit_left):

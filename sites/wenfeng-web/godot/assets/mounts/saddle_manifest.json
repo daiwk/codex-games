@@ -1,0 +1,72 @@
+{
+  "source": "godot-games/3a-games/马鞍.glb",
+  "source_bytes": 6265848,
+  "source_sha256": "39d17b346c02c4a8387a1fae3ef37bc9088abdd176468e592bffdd7b5620edbe",
+  "file": "saddle.glb",
+  "runtime_bytes": 1774188,
+  "vertices": 9714,
+  "triangles": 9790,
+  "texture_maximum": 2048,
+  "source_to_runtime": {
+    "uniform_scale": 0.9,
+    "yaw_degrees": -90.0,
+    "source_contact": [
+      0.0,
+      0.58543,
+      0.0
+    ],
+    "source_seat": [
+      0.0,
+      0.74322,
+      0.0
+    ]
+  },
+  "fits": {
+    "brown": {
+      "saddle_offset": [
+        0.0,
+        0.035,
+        0.0
+      ],
+      "seat_surface_y": 0.177011,
+      "rider_seat_y": 0.237011,
+      "flank_clearance_m": 0.016,
+      "panel_adjusted_vertices": 1766,
+      "panel_max_expansion_m": 0.07240619973859033,
+      "bounds_min": [
+        -0.40682106138808033,
+        -0.526887,
+        -0.4497803270816803
+      ],
+      "bounds_max": [
+        0.40131231386062943,
+        0.306755578125,
+        0.4497803270816803
+      ]
+    },
+    "white": {
+      "saddle_offset": [
+        0.0,
+        0.035,
+        0.0
+      ],
+      "seat_surface_y": 0.177011,
+      "rider_seat_y": 0.237011,
+      "flank_clearance_m": 0.016,
+      "panel_adjusted_vertices": 1801,
+      "panel_max_expansion_m": 0.11404484147792604,
+      "bounds_min": [
+        -0.43935764423532575,
+        -0.526887,
+        -0.4497803270816803
+      ],
+      "bounds_max": [
+        0.43681064625747423,
+        0.306755578125,
+        0.4497803270816803
+      ]
+    }
+  },
+  "white_blend_shape": "WhiteFit",
+  "provenance": "User-supplied Tripo saddle; original remains unchanged. Original triangles/UV and textured upper seat/frame preserved. Lower hanging panels fit each supplied horse flank."
+}

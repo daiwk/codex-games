@@ -5,6 +5,7 @@ const Roster = preload("res://scripts/roster.gd")
 const MountedCombat = preload("res://scripts/mounted_combat.gd")
 const HorseVisual = preload("res://scripts/horse_visual.gd")
 const RiderPose = preload("res://scripts/rider_pose.gd")
+const ThrustContact = preload("res://scripts/thrust_contact.gd")
 
 signal strike_requested(fighter, attack)
 signal impact_received(fighter, outcome, position)
@@ -75,6 +76,13 @@ var horse: Node3D
 var rider_pose: SkeletonModifier3D
 var riding_height = 0.0
 var rider_hip_height = 0.0
+var thrust_contact: SkeletonModifier3D
+var contact_latched = false
+var contact_active = false
+var contact_point = Vector3.ZERO
+var contact_retraction = 0.0
+var _thrust_segment_data: Dictionary = {}
+var _contact_backstep_requested = false
 
 func _ready() -> void:
 	collision_layer = 2
@@ -98,6 +106,9 @@ func _ready() -> void:
 		rider_hip_height = rider_pose.rest_hip_height()
 		riding_height = horse.saddle_height() - rider_hip_height
 		model.position = Vector3(0.0, riding_height, horse.saddle_z())
+	if is_two_handed():
+		thrust_contact = ThrustContact.new()
+		thrust_contact.setup(self, skeleton)
 	reset_fighter()
 
 func _load_visuals() -> void:
@@ -173,6 +184,8 @@ func _load_two_handed_weapon() -> void:
 	_tune_materials(weapon_mesh)
 
 func palm_position(left: bool) -> Vector3:
+	if is_instance_valid(thrust_contact) and thrust_contact.pose_cached:
+		return skeleton.to_global(thrust_contact.left_palm_local if left else thrust_contact.right_palm_local)
 	var index = left_hand_index if left else right_hand_index
 	var p: Array = grip_config.left_palm if left else grip_config.right_palm
 	var local_palm = skeleton.get_bone_global_pose(index) * Vector3(p[0], p[1], p[2])
@@ -186,7 +199,8 @@ func _update_two_hand_grip(delta = 0.0, instant = false) -> void:
 	var axis = (right - left).normalized() * float(grip_config.get("axis_sign", 1.0))
 	if right.distance_to(left) < 0.025:
 		return
-	var wrist = skeleton.global_basis * skeleton.get_bone_global_pose(right_hand_index).basis
+	var wrist_basis: Basis = thrust_contact.right_wrist_basis if is_instance_valid(thrust_contact) and thrust_contact.pose_cached else skeleton.get_bone_global_pose(right_hand_index).basis
+	var wrist = skeleton.global_basis * wrist_basis
 	var side = wrist.x - axis * wrist.x.dot(axis)
 	if side.length() < 0.05:
 		side = Vector3.UP.cross(axis) if absf(axis.y) < 0.9 else Vector3.RIGHT.cross(axis)
@@ -219,6 +233,44 @@ func _process(delta: float) -> void:
 
 func is_thrust_weapon() -> bool:
 	return bool(Roster.WEAPONS[weapon_id].get("thrust_only", false))
+
+func is_physical_thrust(data: Dictionary = {}) -> bool:
+	if not is_two_handed() or state not in ["attack", "skill", "ultimate"]:
+		return false
+	var candidate = data
+	if candidate.is_empty():
+		candidate = _thrust_segment_data if state == "ultimate" and not _thrust_segment_data.is_empty() else attack
+	return candidate.get("shape", "") == "line" and not candidate.get("radial", false)
+
+func thrust_body_low() -> Vector3:
+	return global_position + Vector3.UP * (1.7 if mounted else 0.42)
+
+func thrust_body_high() -> Vector3:
+	return global_position + Vector3.UP * (3.1 if mounted else 1.55)
+
+func thrust_body_radius() -> float:
+	return 0.36
+
+func _reset_thrust_contact() -> void:
+	contact_latched = false
+	contact_active = false
+	contact_point = Vector3.ZERO
+	contact_retraction = 0.0
+	_thrust_segment_data.clear()
+	_contact_backstep_requested = false
+
+func register_thrust_contact(at: Vector3) -> void:
+	# A parry may already have changed us to stagger during receive_strike.
+	if not is_physical_thrust():
+		return
+	contact_latched = true
+	contact_active = true
+	contact_point = at
+	if mounted:
+		mount_charge_time = 0.0
+	# Withdraw the authored hands towards their ready stance after resistance.
+	# Action/recovery timers and combo buffering continue on the original clock.
+	play_clip("Idle", 0.08)
 
 func basic_reach() -> float:
 	return float(Roster.WEAPONS[weapon_id].reach) + (0.30 if mounted else 0.0)
@@ -393,6 +445,7 @@ func request_skill(id: String) -> bool:
 	state = "skill"
 	attack = profile.duplicate(true)
 	attack["skill"] = id
+	_reset_thrust_contact()
 	action_duration = profile.duration
 	if profile.kind == "evade":
 		dodge_direction = input_move.normalized() if input_move.length() > 0.1 else -forward()
@@ -417,6 +470,7 @@ func request_ultimate() -> bool:
 	combo_buffered = false
 	hit_landed = false
 	attack = {}
+	_reset_thrust_contact()
 	turning_in_place = false
 	velocity.x = 0.0
 	velocity.z = 0.0
@@ -425,6 +479,7 @@ func request_ultimate() -> bool:
 	return true
 
 func _cancel_skill() -> void:
+	_reset_thrust_contact()
 	if skill_id != "":
 		skill_triggered.emit(self, skill_id, "cancel")
 	skill_id = ""
@@ -463,6 +518,7 @@ func _apply_weapon_stats() -> void:
 		attack.active *= 0.96
 
 func _enter_attack() -> void:
+	_reset_thrust_contact()
 	stamina -= float(attack.cost)
 	regen_delay = 0.75
 	state = "attack"
@@ -534,7 +590,7 @@ func _has_skill_armor(data: Dictionary) -> bool:
 func receive_strike(attacker: DuelFighter, data: Dictionary) -> String:
 	if hp <= 0.0:
 		return "dead"
-	var impact = global_position + Vector3.UP * (2.1 if mounted else 1.05)
+	var impact: Vector3 = data.get("contact_point", global_position + Vector3.UP * (2.1 if mounted else 1.05))
 	if is_invulnerable():
 		dodged_hits += 1
 		gain_energy(9.0)
@@ -664,6 +720,7 @@ func _physics_process(delta: float) -> void:
 			_update_locomotion(delta)
 	if mounted:
 		_update_mount_motion(delta)
+	_limit_thrust_motion()
 	velocity.y -= 20.0 * delta
 	if is_on_floor() and velocity.y < 0:
 		velocity.y = -0.2
@@ -685,6 +742,17 @@ func _physics_process(delta: float) -> void:
 	previous_tip = blade_tip()
 
 func _update_facing(delta: float) -> void:
+	if contact_latched:
+		# Once the point meets armour, movement may turn away rather than
+		# continuing the automatic chase through the other fighter.
+		mount_turn_rate = 0.0
+		if input_move.length_squared() > 0.01:
+			var error = angle_difference(rotation.y, atan2(input_move.x, input_move.z))
+			var step = clampf(error, -2.2 * delta, 2.2 * delta)
+			rotation.y += step
+			if mounted:
+				mount_turn_rate = step / maxf(delta, 0.001)
+		return
 	if mounted:
 		_update_mount_facing(delta)
 		return
@@ -837,6 +905,31 @@ func _update_mount_motion(delta: float) -> void:
 		footstep_clock = 0.0
 		action_started.emit(self, "hoof")
 
+func _limit_thrust_motion() -> void:
+	# A standing fighter can brace as the point meets resistance. A horse
+	# retains its real impact speed until the strike resolves, then brakes.
+	var resisted = contact_latched or (contact_active and not mounted) or _contact_backstep_requested
+	if not is_physical_thrust() or not resisted or not is_instance_valid(opponent):
+		return
+	var toward = opponent.global_position - global_position
+	toward.y = 0.0
+	if toward.length_squared() < 0.0001:
+		return
+	toward = toward.normalized()
+	if contact_latched and input_move.length_squared() > 0.01 and not mounted:
+		var escape = input_move.limit_length() * 2.8
+		velocity.x = escape.x
+		velocity.z = escape.z
+	var advance = maxf(0.0, Vector3(velocity.x, 0, velocity.z).dot(toward))
+	velocity -= toward * advance
+	if _contact_backstep_requested:
+		# A rare fully enclosed guard withdraws through normal physics, never a
+		# position correction; collision and arena limits remain authoritative.
+		velocity.x -= toward.x * 1.6
+		velocity.z -= toward.z * 1.6
+	if mounted:
+		mount_charge_time = 0.0
+
 func _idle() -> void:
 	_cancel_skill()
 	state = "idle"
@@ -865,6 +958,10 @@ func _update_skill(delta: float) -> void:
 		speed = float(attack.lunge)
 	elif kind == "sweep" and action_time > 0.16 and action_time < window.y:
 		speed = float(attack.lunge)
+	elif kind == "evade" and is_physical_thrust() and action_time >= float(attack.strike_start) and action_time < window.y:
+		# The return thrust must regain the distance spent evading; broad reach
+		# alone no longer deals damage while the blade is still out of range.
+		speed = float(attack.get("return_lunge", 0.0))
 	elif kind == "evade" and action_time > 0.04 and action_time < 0.27:
 		speed = 6.0
 		direction = dodge_direction
@@ -892,6 +989,10 @@ func _update_ultimate() -> void:
 		var window: Vector2 = data.active
 		if chase and action_time >= float(data.start) and skill_animation_index < index:
 			skill_animation_index = index
+			_reset_thrust_contact()
+			_thrust_segment_data = data.duplicate(true)
+			if not _thrust_segment_data.has("shape"):
+				_thrust_segment_data["shape"] = "line"
 			play_clip(data.clip, 0.045, float(data.clip_duration))
 		if chase and action_time >= window.x - 0.10 and action_time <= window.x + 0.025:
 			lunging = true

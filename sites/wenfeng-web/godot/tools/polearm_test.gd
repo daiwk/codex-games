@@ -112,6 +112,7 @@ func _run() -> void:
 				game.player.animation_player.seek(0.25, true)
 				game.player.animation_player.pause()
 				game.player.skeleton.force_update_all_bone_transforms()
+				await frames(2)
 				game.player._update_two_hand_grip()
 				var a: Vector3 = game.player.weapon_mesh.to_global(Vector3.ZERO)
 				var b: Vector3 = game.player.weapon_mesh.to_global(Vector3.UP)
@@ -202,6 +203,7 @@ func _check_weapon_corrections() -> void:
 			game.player.animation_player.seek(animation.length * 0.48, true)
 			game.player.animation_player.pause()
 			game.player.skeleton.force_update_all_bone_transforms()
+			await frames(2)
 			game.player._update_two_hand_grip(0.0, true)
 			var edge: Vector3 = -game.player.weapon_mesh.global_basis.x.normalized()
 			check("guandao %s edge faces opponent at yaw %.2f" % [clip, yaw], edge.dot(game.player.forward()) > 0.20)
@@ -223,6 +225,12 @@ func _check_weapon_corrections() -> void:
 				check(id + " spear strike %d uses straight line geometry" % index, started and game.player.attack.get("shape", "") == "line")
 				if index == 3:
 					check(id + " spear heavy uses charged stab timing", is_equal_approx(game.player.action_duration, 1.4) and game.player.attack.active == Vector2(0.29, 0.60))
-				game._resolve_strike(game.player, game.player.attack)
+				# Run the real stroke through its active window. Hold its heading
+				# fixed so this tests blade direction rather than auto-aim turning.
+				for tick in 64:
+					game.player.rotation.y = 0.0
+					await frames(1)
+					if game.player.action_time > float(game.player.attack.active.y) + 0.04:
+						break
 				var in_front = target_position.x == 0 and target_position.z > 0
 				check(id + " spear strike %d target %s obeys thrust direction" % [index, target_position], (game.enemy.hp < 120) == in_front)

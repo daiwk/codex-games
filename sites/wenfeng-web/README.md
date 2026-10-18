@@ -52,6 +52,12 @@ python3 tools/fetch_web_resources.py
 
 选将菜单可切换步战/马战（B）；默认步战。马战复用所有六将，WASD控马转向，Space冲刺（24体力、3.6秒冷却），J/K和Q/E/U为马上攻击。松键后有短暂减速过程；骑速超过4.8m/s时对命中的武器攻击提供最高30%伤害加成。马战场地与镜头已放大。双方均骑乘，以武将生命判胜，当前无上下马/落马系统。
 
-`horse_visual.gd` 使用 `assets/mounts/horse_brown.glb`、`horse_white.glb`，保留用户提供的真实毛色和贴图，双方坐骑可分别选色，配有简易鞍具；`rider_pose.gd` 在动画后通过SkeletonModifier3D固定髋部和跨马双腿，保留上身攻防，不修改原始人物GLB；`mounted_combat.gd`定义枪刺、刀戟挥斩和骑乘技能。站立马匹的身体碰撞与骑乘者合并为同一角色碰撞体，当前不支持独立击杀马匹。原始马匹和许可保存在完整GitHub仓库的`godot-games/3a-games/source/third_party/horse/`。
+`horse_visual.gd` 使用 `assets/mounts/horse_brown.glb`、`horse_white.glb`，保留用户提供的真实毛色和贴图，双方坐骑可分别选色。鞍座与鞍垫使用用户提供的马鞍，侧垫分别适配两匹马，马镫跟随骑手靴子；`rider_pose.gd` 在动画后通过SkeletonModifier3D固定髋部和跨马双腿，保留上身攻防，不修改原始人物GLB；`mounted_combat.gd`定义枪刺、刀戟挥斩和骑乘技能。站立马匹的身体碰撞与骑乘者合并为同一角色碰撞体，当前不支持独立击杀马匹。原始马匹和许可保存在完整GitHub仓库的`godot-games/3a-games/source/third_party/horse/`。
 
 用户提供的 `马_棕色.glb` / `马_白色.glb` 原件仅用于归档：原导出无动画，骨骼静止变换与逆绑定矩阵异常且几乎所有权重集中于Root，不能直接用于跑步。网页副本保留外观、UV和贴图，按已验证的四足参考骨架重新绑定并接入CC0站立/行走/奔跑动作；转换方式与数据详见 `tools/prepare_mounts.py` 及 `assets/mounts/` 内记录。
+
+`马鞍.glb` 原件也完整保留。运行 `python3 tools/prepare_saddle.py` 生成 `assets/mounts/saddle.glb` 与 `saddle_manifest.json`：保留原三角形、UV与上部鞍架，将贴图缩为2048px，仅把下垂侧垫贴合到两匹马的肋部。白马适配使用同一模型的形态键，不复制整套纹理。此可选素材准备步骤需要NumPy、SciPy和Pillow，直接运行已打包的游戏无需安装这些库。
+
+## 突刺接触
+
+直刺的射程与前方窄线仅做初筛，实际伤害还须兵刃或上一帧刀尖轨迹接触躯干。`thrust_contact.gd` 在动画与骑姿之后限制过深的伸枪，近身时向准备姿态缩短刺幅，并用双臂IK保持握杆、骨长和武器长度。命中或格挡后收枪并停止本段前冲，连刺每段重新允许出招；闪避、招架、挥砍和震喝保留各自规则。运行 `godot --headless --path godot --script res://tools/thrust_contact_test.gd` 可验证接触、近身、连刺和防守回归。

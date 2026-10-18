@@ -146,6 +146,11 @@
       "sha256": "8570a69f989cab0ee1e05b42ed2609518deb74f1e027dab19d5a113ab7dc5cc7"
     },
     {
+      "path": "godot-games/3a-games/马鞍.glb",
+      "bytes": 6265848,
+      "sha256": "39d17b346c02c4a8387a1fae3ef37bc9088abdd176468e592bffdd7b5620edbe"
+    },
+    {
       "path": "godot-games/tianque-arena/assets/characters/enemies/boss_cleric.glb",
       "bytes": 1300360,
       "sha256": "fc3b06c679c7905fb8bdbf5cd684cedb57ac81e711172906cbadd73fb6a00bb9"
