@@ -213,7 +213,7 @@ func run(target: Node) -> void:
 	game.select_character("machao")
 	game.select_weapon("saber")
 	await frames(3)
-	check(game.player.character_id == "machao" and game.player.weapon_id == "machao_spear" and game.enemy.character_id == "zhaoyun" and game.enemy.weapon_id == "zhaoyun_spear", "selection equips paired spears and rejects reserved saber")
+	check(game.player.character_id == "machao" and game.player.weapon_id == "serpent_spear" and game.enemy.character_id == "zhaoyun" and game.enemy.weapon_id == "serpent_spear", "selection equips shared serpent spears and rejects reserved saber")
 	reset(4.5)
 	Engine.time_scale = 4.0
 	game.ai_enabled = true

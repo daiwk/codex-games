@@ -22,7 +22,7 @@ ASSETS = ROOT.parents[1] / "godot-games/3a-games"
 GAME = ROOT / "godot"
 KAY = ASSETS / "source/third_party/kaykit"
 CHARACTERS = {
-    'zhaoyun': ('assets/characters/zhaoyun.glb', 2.90),
+    'zhaoyun': ('assets/characters/zhaoyun.glb', 3.05),
     'machao': ('assets/characters/machao.glb', 3.05),
     'guanyu': ('关羽.glb', 2.85),
     'zhangfei': ('张飞.glb', 3.05),
@@ -568,6 +568,8 @@ def normalize_xuchu_saber(scene):
 
 def prepare_weapons(characters=None):
     selected = set(CHARACTERS if characters is None else characters)
+    if selected.intersection({'zhaoyun', 'machao'}):
+        selected.add('zhangfei')
     weapons = GAME / 'assets/weapons'
     weapons.mkdir(exist_ok=True)
     for character, name, file, center in [

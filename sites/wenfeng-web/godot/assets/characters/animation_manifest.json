@@ -156,7 +156,7 @@
         0.05918377049032379,
         0.005802857854817457
       ],
-      "weapon_length": 2.9,
+      "weapon_length": 3.05,
       "grip_fraction": 0.35,
       "axis_sign": -1.0,
       "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"

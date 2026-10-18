@@ -3,9 +3,9 @@ extends RefCounted
 const IDS = ["zhaoyun", "machao", "guanyu", "zhangfei", "lubu", "xuchu"]
 const CHARACTERS = {
 	"zhaoyun": {"name": "赵云", "courtesy": "子龙", "style": "游斗追击", "color": "49d5ee",
-		"identity": "亮银枪双手追刺，以退为进；连环进枪考验距离与时机。", "weapons": ["zhaoyun_spear"], "opponent": "machao", "distance": 2.65},
+		"identity": "蛇矛双手追刺，以退为进；连环进枪考验距离与时机。", "weapons": ["serpent_spear"], "opponent": "machao", "distance": 2.65},
 	"machao": {"name": "马超", "courtesy": "孟起", "style": "刚猛压制", "color": "ff9844",
-		"identity": "虎头枪双手重刺，震阵破防；蓄势连刺直贯中路。", "weapons": ["machao_spear"], "opponent": "zhaoyun", "distance": 2.80},
+		"identity": "蛇矛双手重刺，震阵破防；蓄势连刺直贯中路。", "weapons": ["serpent_spear"], "opponent": "zhaoyun", "distance": 2.80},
 	"guanyu": {"name": "关羽", "courtesy": "云长", "style": "长刀制域", "color": "78ddb2",
 		"identity": "青龙刀双手横扫，以长制短；拖刀避锋，回身重斩。", "weapons": ["guandao"], "opponent": "zhangfei", "distance": 2.65},
 	"zhangfei": {"name": "张飞", "courtesy": "翼德", "style": "蛇矛破阵", "color": "c9a2f3",

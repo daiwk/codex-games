@@ -5,7 +5,7 @@ extends SceneTree
 const Roster = preload("res://scripts/roster.gd")
 const WEAPONS = ["xuchu_saber", "saber", "sword"]
 const EXCLUSIVE_WEAPONS = {
-	"zhaoyun": "zhaoyun_spear", "machao": "machao_spear",
+	"zhaoyun": "serpent_spear", "machao": "serpent_spear",
 	"guanyu": "guandao", "zhangfei": "serpent_spear", "lubu": "halberd",
 }
 const GRIP_Y = 0.075 / 0.0058

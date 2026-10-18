@@ -8,7 +8,7 @@ const SkillEffects = preload("res://scripts/skill_fx.gd")
 const Roster = preload("res://scripts/roster.gd")
 
 var character_id = "zhaoyun"
-var weapon_id = "zhaoyun_spear"
+var weapon_id = "serpent_spear"
 var opponent_id = ""
 var difficulty = 1
 var combat_mode = "foot"

@@ -40,13 +40,13 @@ python3 tools/fetch_web_resources.py
 
 蛇矛网页副本已局部收窄刃头：刃长和厚度为原来的70%、宽度48%，连接处平滑过渡；蛇形弯折、杆身、红缨、总长及刀尖纵向位置保留。三把长兵器和单手刀的网页副本已按实际柄心归中，原始归档GLB均保留。单独重新生成武器可运行 `python3 tools/prepare_polearms.py --weapons-only`，无需重新烘焙角色动作。
 
-赵云与马超现使用各自的双手枪。可用 `python3 tools/prepare_polearms.py --characters zhaoyun machao` 单独烘焙这两位武将；默认烘焙六人。两把枪从源模型的横向轴旋转到纵向并校准杆心，刀剑资源仍保留在工程中。
+赵云与马超当前改用张飞同款丈八蛇矛，保留各自技能与双手突刺；原两把枪的资源继续保留。可用 `python3 tools/prepare_polearms.py --characters zhaoyun machao` 单独烘焙这两位武将；默认烘焙六人。两把枪从源模型的横向轴旋转到纵向并校准杆心，刀剑资源仍保留在工程中。
 
 许褚默认持专用大刀，也可在选将菜单切换单手刀或剑；使用单手横斩、斜斩、劈砍、重击与专属Q/E/U。单独重建可用 `python3 tools/prepare_polearms.py --characters xuchu`。
 
 新增界面文字时，可在缓存完整 Noto 字库后运行 `python3 tools/subset_fonts.py` 补齐两份游戏字体；该可选步骤需要 `fonttools`。`--check` 检查现有子集的中文覆盖。
 
-赵云、马超的金属枪头已按长宽厚65%局部缩小，保持整枪长度和红缨，连接颈平滑过渡。
+保留的赵云、马超原枪模型，其金属枪头已按长宽厚65%局部缩小，保持整枪长度和红缨，连接颈平滑过渡；当前两人改用蛇矛，不加载这两把枪。
 
 ## 马战
 
