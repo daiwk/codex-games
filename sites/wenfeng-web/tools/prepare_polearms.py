@@ -5,6 +5,7 @@ Optional preparation dependencies: numpy, scipy, Pillow. Original GLBs are
 read-only inputs. Runtime and local Web play need none of these dependencies.
 """
 from copy import deepcopy
+import argparse
 import hashlib
 import io
 import json
@@ -310,7 +311,98 @@ def bake(character, source_name, sources, finger_source):
                                     'adaptation': 'Authored weapon axis, offline two-bone arm IK, mirrored closed grip'}}
 
 
+def refine_spear_head(scene):
+    """Narrow the oversized blade without changing the shaft, tassel or tip.
+
+    The supplied mesh is centred on its bounds rather than its shaft. Scale
+    around the measured shaft centre and blend through the blade collar.
+    Transform normals with the deformation's inverse-transpose Jacobian.
+    """
+    blob = bytearray(scene.bin)
+    for mesh in scene.j['meshes']:
+        for primitive in mesh['primitives']:
+            attributes = primitive['attributes']
+            positions = scene.accessor(attributes['POSITION'])
+            normals = scene.accessor(attributes['NORMAL'])
+            t = np.clip((positions[:, 1] - 0.70) / 0.07, 0., 1.)
+            blend = t * t * (3. - 2. * t)
+            derivative = 6. * t * (1. - t) / 0.07
+            sx, sz = 1. - 0.15 * blend, 1. - 0.35 * blend
+            x, z = positions[:, 0] + 0.034423828125, positions[:, 2] + 0.019287109375
+            adjusted = positions.copy()
+            adjusted[:, 0] = -0.034423828125 + x * sx
+            adjusted[:, 2] = -0.019287109375 + z * sz
+            transformed = normals.copy()
+            transformed[:, 0] = normals[:, 0] / sx
+            transformed[:, 2] = normals[:, 2] / sz
+            transformed[:, 1] = (normals[:, 1]
+                + 0.15 * derivative * x * transformed[:, 0]
+                + 0.35 * derivative * z * transformed[:, 2])
+            active = t > 0
+            transformed[active] /= np.linalg.norm(transformed[active], axis=1)[:, None]
+            adjusted[~active] = positions[~active]
+            for semantic, values in [('POSITION', adjusted), ('NORMAL', transformed)]:
+                accessor = scene.j['accessors'][attributes[semantic]]
+                view = scene.j['bufferViews'][accessor['bufferView']]
+                assert accessor['componentType'] == 5126 and accessor['type'] == 'VEC3'
+                offset = view.get('byteOffset', 0) + accessor.get('byteOffset', 0)
+                target = np.ndarray(values.shape, dtype='<f4', buffer=blob,
+                                    offset=offset, strides=(view.get('byteStride', 12), 4))
+                target[:] = values
+                if semantic == 'POSITION':
+                    accessor['min'], accessor['max'] = values.min(0).tolist(), values.max(0).tolist()
+    scene.bin = bytes(blob)
+    scene.j['asset'].setdefault('extras', {})['wenfeng_spear_head'] = {
+        'width_scale': 0.65, 'thickness_scale': 0.85,
+        'blend_y': [0.70, 0.77], 'shaft_center_xz': [-0.034423828125, -0.019287109375],
+        'length_and_tip_unchanged': True,
+    }
+
+
+def center_weapon_shaft(scene, center):
+    """Translate only X/Z so the authored handle sits on the game's grip axis."""
+    blob = bytearray(scene.bin)
+    for mesh in scene.j['meshes']:
+        for primitive in mesh['primitives']:
+            index = primitive['attributes']['POSITION']
+            values = scene.accessor(index)
+            values[:, 0] -= center[0]
+            values[:, 2] -= center[1]
+            accessor = scene.j['accessors'][index]
+            view = scene.j['bufferViews'][accessor['bufferView']]
+            offset = view.get('byteOffset', 0) + accessor.get('byteOffset', 0)
+            target = np.ndarray(values.shape, dtype='<f4', buffer=blob,
+                                offset=offset, strides=(view.get('byteStride', 12), 4))
+            target[:] = values
+            accessor['min'], accessor['max'] = values.min(0).tolist(), values.max(0).tolist()
+    scene.bin = bytes(blob)
+    scene.j['asset'].setdefault('extras', {})['wenfeng_grip_center_xz'] = list(center)
+
+
+def prepare_weapons():
+    weapons = GAME / 'assets/weapons'
+    weapons.mkdir(exist_ok=True)
+    for name, file, center in [
+            ('guandao', '青龙刀.glb', (-0.02490234375, 0.0029296875)),
+            ('serpent_spear', '丈八蛇矛.glb', (-0.034423828125, -0.019287109375)),
+            ('halberd', '方天画戟.glb', (0., -0.00390625))]:
+        scene = GLB(ASSETS / file)
+        if name == 'serpent_spear':
+            refine_spear_head(scene)
+        center_weapon_shaft(scene, center)
+        write_glb(weapons / (name + '.glb'), scene.j, resize_images(scene.j, scene.bin, 1024))
+    saber = GLB(ASSETS / 'onehand_saber.glb')
+    center_weapon_shaft(saber, (-5.7, 0.))
+    write_glb(GAME / 'onehand_saber.glb', saber.j, resize_images(saber.j, saber.bin, 512))
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--weapons-only', action='store_true', help='Prepare weapon geometry/textures without rebaking character animations')
+    args = parser.parse_args()
+    if args.weapons_only:
+        prepare_weapons()
+        return
     sources = {key: Sampler(KAY / ('Rig_Medium_' + name + '.glb')) for key, name in [
         ('melee', 'CombatMelee'), ('general', 'General'), ('basic', 'MovementBasic'), ('advanced', 'MovementAdvanced')]}
     fingers = Sampler(ASSETS / 'source/third_party/ual1/UAL1_Standard.glb')
@@ -318,11 +410,7 @@ def main():
     manifest = json.loads(manifest_path.read_text())
     for character, file in [('guanyu', '关羽.glb'), ('zhangfei', '张飞.glb'), ('lubu', '吕布.glb')]:
         manifest[character] = bake(character, file, sources, fingers)
-    weapons = GAME / 'assets/weapons'
-    weapons.mkdir(exist_ok=True)
-    for name, file in [('guandao', '青龙刀.glb'), ('serpent_spear', '丈八蛇矛.glb'), ('halberd', '方天画戟.glb')]:
-        scene = GLB(ASSETS / file)
-        write_glb(weapons / (name + '.glb'), scene.j, resize_images(scene.j, scene.bin, 1024))
+    prepare_weapons()
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
 

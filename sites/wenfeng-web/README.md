@@ -37,3 +37,5 @@ python3 tools/fetch_web_resources.py
 ## 重新烘焙双手动作（可选）
 
 完整 GitHub 仓库保留了关羽、张飞、吕布及武器的原始 GLB，以及 KayKit 免费版动画和原始许可。安装 `numpy scipy Pillow` 后，在本目录运行 `python3 tools/prepare_polearms.py`，再执行 Web 构建。吕布原模型的两个灰色翎尾片面通过 `tools/repair_lubu.py` 删除，原版保存在归档内；修复脚本可重复运行。烘焙工具只读取模型，通过 T-pose 重定向、保留骨长的双臂 IK、闭合手指和地面校正生成 `godot/assets/` 下的网页副本；普通本地游玩和 Web 重建均不需要这些库。Sites 源码快照自带烘焙后的运行资源，重新烘焙时使用完整 GitHub 仓库。
+
+蛇矛网页副本已局部收窄刃头：宽度为原来的65%、厚度85%，连接处平滑过渡；蛇形弯刃轮廓、杆身、红缨、总长及刀尖纵向位置保持原样。三把长兵器和单手刀的网页副本已按实际柄心归中，原始归档GLB均保留。单独重新生成武器可运行 `python3 tools/prepare_polearms.py --weapons-only`，无需重新烘焙角色动作。
