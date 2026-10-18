@@ -1,0 +1,132 @@
+{
+  "brown": {
+    "file": "horse_brown.glb",
+    "source": "马_棕色.glb",
+    "source_sha256": "afc4ec2a4277dc753f53eb5c545170d310b9522385ae60a9f4d15d88e1b924c4",
+    "source_uniform_scale": 2.67,
+    "source_yaw_degrees": 90.00067901611328,
+    "model_scale": 1.0,
+    "bounds_min": [
+      -0.3317742897581597,
+      0.0,
+      -1.3004730392548967
+    ],
+    "bounds_max": [
+      0.33181457742743037,
+      2.2176119863986967,
+      1.3682235157827434
+    ],
+    "saddle_surface": [
+      0.0006779671680362943,
+      1.5998891118546528,
+      -0.18
+    ],
+    "seat_offset_y": 0.05,
+    "head_anchor": [
+      0.0,
+      1.95,
+      1.075
+    ],
+    "belly_width": 0.6218701328324171,
+    "vertices": 12087,
+    "triangles": 19509,
+    "weighted_bones": 45,
+    "max_texture": 2048,
+    "clips": {
+      "Idle": {
+        "frames": 101,
+        "duration": 3.3333332538604736,
+        "minimum_floor": 0.0,
+        "maximum_floor": 0.0
+      },
+      "Walk": {
+        "frames": 36,
+        "duration": 1.1666666269302368,
+        "minimum_floor": 0.0,
+        "maximum_floor": 0.0
+      },
+      "Gallop": {
+        "frames": 18,
+        "duration": 0.5833333134651184,
+        "minimum_floor": 0.0,
+        "maximum_floor": 0.17628692906406326
+      }
+    },
+    "regions": {
+      "body": 6995,
+      "front_left": 604,
+      "front_right": 589,
+      "rear_left": 665,
+      "rear_right": 649,
+      "tail": 2585
+    }
+  },
+  "white": {
+    "file": "horse_white.glb",
+    "source": "马_白色.glb",
+    "source_sha256": "8570a69f989cab0ee1e05b42ed2609518deb74f1e027dab19d5a113ab7dc5cc7",
+    "source_uniform_scale": 2.33,
+    "source_yaw_degrees": 61.98087692260742,
+    "model_scale": 1.0,
+    "bounds_min": [
+      -0.3591515552079207,
+      0.0,
+      -1.2676287699077062
+    ],
+    "bounds_max": [
+      0.38067697783578464,
+      2.2970071136951447,
+      1.1603885945273045
+    ],
+    "saddle_surface": [
+      -0.012285498584534734,
+      1.6134995892931059,
+      -0.18
+    ],
+    "seat_offset_y": 0.05,
+    "head_anchor": [
+      0.14,
+      2.015,
+      0.91
+    ],
+    "belly_width": 0.6779147938176967,
+    "vertices": 11999,
+    "triangles": 19878,
+    "weighted_bones": 45,
+    "max_texture": 2048,
+    "clips": {
+      "Idle": {
+        "frames": 101,
+        "duration": 3.3333332538604736,
+        "minimum_floor": 0.0,
+        "maximum_floor": 0.0
+      },
+      "Walk": {
+        "frames": 36,
+        "duration": 1.1666666269302368,
+        "minimum_floor": 0.0,
+        "maximum_floor": 0.0
+      },
+      "Gallop": {
+        "frames": 18,
+        "duration": 0.5833333134651184,
+        "minimum_floor": 0.0,
+        "maximum_floor": 0.17628692906406326
+      }
+    },
+    "regions": {
+      "body": 6386,
+      "front_left": 535,
+      "front_right": 515,
+      "rear_left": 712,
+      "rear_right": 745,
+      "tail": 3106
+    }
+  },
+  "provenance": {
+    "geometry": "User-supplied Tripo models; original exports are retained unchanged.",
+    "motion": "Quaternius Animated Farm Animals, CC0-1.0; see assets/licenses/Horse-CC0.txt.",
+    "preparation": "tools/prepare_mounts.py",
+    "reference_sha256": "fae7a7ec91e0d6a33554efb896fac9c4e8c632644183bcb8cc962f673d3ce609"
+  }
+}

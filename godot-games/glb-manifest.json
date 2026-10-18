@@ -41,6 +41,11 @@
       "sha256": "0fa393110309994e5904066de0526273ff5729232923aee1d0a315d0fcf5173e"
     },
     {
+      "path": "godot-games/3a-games/source/third_party/horse/Horse.glb",
+      "bytes": 1108124,
+      "sha256": "fae7a7ec91e0d6a33554efb896fac9c4e8c632644183bcb8cc962f673d3ce609"
+    },
+    {
       "path": "godot-games/3a-games/source/third_party/kaykit/Rig_Medium_CombatMelee.glb",
       "bytes": 999416,
       "sha256": "c55e6ec1c79e83ae21d46fe1cd921c1b64be8b9a524a24517e51c6ba99231459"
@@ -101,6 +106,11 @@
       "sha256": "8a3eec371c6b959e5a92b2d4eb0a25ca83d5bf4e9e3d4dee6651c89521c16310"
     },
     {
+      "path": "godot-games/3a-games/刀-许褚.glb",
+      "bytes": 4776704,
+      "sha256": "0df36b5753bb6982cbc829a9b3e251dde4fef0467720814373d678fd90714e67"
+    },
+    {
       "path": "godot-games/3a-games/吕布.glb",
       "bytes": 21620156,
       "sha256": "f52a3bbdca491a9b92861e1c3d31f8bfbe4fe97489eaee577d5d18ec35e2582e"
@@ -116,9 +126,24 @@
       "sha256": "006fc8db811882aaed1e3c8520524bfa2127c6f4c94991f0c19d6e177928105d"
     },
     {
+      "path": "godot-games/3a-games/许褚.glb",
+      "bytes": 24284672,
+      "sha256": "b0e17f2b5d4870ad873ad38ef722dcd7b27a09725508733484df42f0a2eb78a0"
+    },
+    {
       "path": "godot-games/3a-games/青龙刀.glb",
       "bytes": 4779816,
       "sha256": "6f1ce94b1da174a6b9703be76d3c8ee41f014c144c554bb47740ed7a462fcfee"
+    },
+    {
+      "path": "godot-games/3a-games/马_棕色.glb",
+      "bytes": 14703000,
+      "sha256": "afc4ec2a4277dc753f53eb5c545170d310b9522385ae60a9f4d15d88e1b924c4"
+    },
+    {
+      "path": "godot-games/3a-games/马_白色.glb",
+      "bytes": 19190892,
+      "sha256": "8570a69f989cab0ee1e05b42ed2609518deb74f1e027dab19d5a113ab7dc5cc7"
     },
     {
       "path": "godot-games/tianque-arena/assets/characters/enemies/boss_cleric.glb",
@@ -144,16 +169,6 @@
       "path": "godot-games/tianque-arena/assets/characters/tianque_hero.glb",
       "bytes": 1425228,
       "sha256": "926287ca3e4bf2dae06da6d310243e83ae7d527a7709d7fb4ac7f3629ead7dd1"
-    },
-    {
-      "path": "godot-games/3a-games/许褚.glb",
-      "bytes": 24284672,
-      "sha256": "b0e17f2b5d4870ad873ad38ef722dcd7b27a09725508733484df42f0a2eb78a0"
-    },
-    {
-      "path": "godot-games/3a-games/刀-许褚.glb",
-      "bytes": 4776704,
-      "sha256": "0df36b5753bb6982cbc829a9b3e251dde4fef0467720814373d678fd90714e67"
     }
   ],
   "notes": "吕布.glb is the corrected mesh; its untouched original is under source/originals/. Other user GLBs remain byte-for-byte unchanged."

@@ -8,6 +8,11 @@ https://quaternius.com/
 https://kaylousberg.itch.io/kaykit-character-animations
 See licenses/KayKit-CC0.txt
 
+棕马、白马外观与贴图来自用户提供的Tripo模型；运行副本修复绑定。
+Horse skeleton and locomotion: Quaternius Farm Animal Pack, CC0 1.0.
+https://quaternius.com/packs/farmanimal.html
+See licenses/Horse-CC0.txt
+
 Godot Engine — MIT License
 See licenses/Godot-LICENSE.txt and licenses/Godot-THIRD-PARTY.txt
 

@@ -38,6 +38,14 @@ func _command(args: Array) -> void:
 		"menu":
 			_release_inputs()
 			game.return_to_menu()
+		"mode":
+			if args.size() >= 2 and game.phase == "menu":
+				_release_inputs()
+				game.select_combat_mode(str(args[1]))
+		"horse_color", "enemy_horse_color":
+			if args.size() >= 2 and game.phase == "menu":
+				_release_inputs()
+				game.select_horse_color(str(args[1]), str(args[0]) == "enemy_horse_color")
 		"input":
 			if args.size() >= 3 and str(args[1]) in ACTIONS:
 				if bool(args[2]):

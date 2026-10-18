@@ -9,6 +9,7 @@
   let starting = false;
   let ready = false;
   let stage = 'cover';
+  let displayedControls;
   const heldPointers = new Map();
 
   // Policy 0 leaves the backing buffer to this page. Match real display pixels
@@ -56,6 +57,34 @@
   window.wenfengStateChanged = () => {
     const data = window.__wenfengState;
     if (!data) return;
+    const mode = data.combat_mode === 'mounted' ? 'mounted' : 'foot';
+    const mounted = mode === 'mounted';
+    const horse = data.horse_color || data.player?.horse_color || 'white';
+    const enemyHorse = data.enemy_horse_color || data.enemy?.horse_color || 'brown';
+    const horseName = color => color === 'brown' ? '棕马' : '白马';
+    const controls = `${mode}:${horse}:${enemyHorse}`;
+    if (displayedControls !== controls) {
+      displayedControls = controls;
+      document.body.dataset.combatMode = mode;
+      $('controls-footer').innerHTML = mounted
+        ? 'WASD 控马 <i>·</i> J / K 马上攻击 <i>·</i> Space 冲刺 <i>·</i> Q / E / U 技能'
+        : 'WASD 移动 <i>·</i> J / K 攻击 <i>·</i> Space 闪避 <i>·</i> Q / E / U 技能';
+      $('help-mode').textContent = mounted
+        ? `选将菜单切换模式与马色。当前马战 · 己方${horseName(horse)} / 对手${horseName(enemyHorse)}`
+        : '仅选将菜单：切换步战 / 马战。当前步战';
+      $('help-movement').textContent = mounted ? '控马移动与转向，松开方向仍有惯性' : '步战移动，自动面向对手';
+      $('help-light').textContent = mounted ? '马上轻击，连续按下衔接三段连招' : '轻击，连续按下衔接三段连招';
+      $('help-heavy').textContent = mounted ? '马上重击，造成更高伤害与格挡压力' : '重击，造成更高伤害与格挡压力';
+      $('help-dodge').textContent = mounted ? '骑马短时冲刺；骑速与冲刺冷却显示在生命条下方' : '沿移动方向闪避；静止时向后撤';
+      canvas.setAttribute('aria-label', mounted
+        ? `3D 马战。己方${horseName(horse)}，对手${horseName(enemyHorse)}。WASD 控马，J 马上轻击，K 马上重击，L 格挡，空格冲刺，Q E 技能，U 绝技。选将菜单按 B 切换模式或点击选择马色。`
+        : '3D 步战。WASD 移动，J 轻击，K 重击，L 格挡，空格闪避，Q E 技能，U 绝技。选将菜单按 B 切换模式。');
+    }
+    const cooldown = Math.max(0, Number(data.player?.mount_charge_cooldown) || 0);
+    $('touch-dodge').textContent = mounted && cooldown > 0.05 ? `冲刺 ${cooldown.toFixed(1)}` : mounted ? '冲刺' : '闪避';
+    $('touch-dodge').setAttribute('aria-label', mounted
+      ? cooldown > 0.05 ? `骑马冲刺，冷却 ${cooldown.toFixed(1)} 秒` : '骑马冲刺'
+      : '闪避');
     $('sound-btn').textContent = data.muted ? '声音 关' : '声音 开';
     $('sound-btn').setAttribute('aria-pressed', String(data.muted));
     $('pause-btn').textContent = data.paused ? '继续' : '暂停';
@@ -175,8 +204,8 @@
   startButton.addEventListener('click', start);
   $('fullscreen-btn').addEventListener('click', fullscreen);
   $('sound-btn').addEventListener('click', () => { command('mute'); focusGame(); });
-  $('pause-btn').addEventListener('click', () => { command('pause'); focusGame(); });
-  $('help-btn').addEventListener('click', () => { command('blur'); $('help-dialog').showModal(); });
+  $('pause-btn').addEventListener('click', () => { releaseTouches(); command('pause'); focusGame(); });
+  $('help-btn').addEventListener('click', () => { releaseTouches(); command('blur'); $('help-dialog').showModal(); });
   $('help-dialog').addEventListener('close', () => ready && cover.hidden && focusGame());
   document.addEventListener('fullscreenchange', () => {
     $('fullscreen-btn').innerHTML = document.fullscreenElement ? '退出全屏 <span>↙</span>' : '全屏 <span>↗</span>';

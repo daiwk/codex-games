@@ -19,6 +19,9 @@ var menu_enemy: Label
 var menu_role_title: Label
 var menu_role_identity: Label
 var menu_role_skills: Array[Label] = []
+var menu_mode_hint: Label
+var menu_move_hint: Label
+var menu_horse_colors: Control
 var pause_skills: Label
 var result_title: Label
 var result_subtitle: Label
@@ -109,7 +112,7 @@ func _build_menu() -> void:
 	var mat = ShaderMaterial.new()
 	mat.shader = shader
 	veil.material = mat
-	_label(menu, "一 对 一  ·  刀 剑 决 斗", Vector2(50, 48), 13, JADE)
+	_label(menu, "一 对 一  ·  步 战 / 马 战", Vector2(50, 48), 13, JADE)
 	_label(menu, "问锋", Vector2(44, 77), 90, PAPER, 400, true)
 	_label(menu, "DUEL OF BLADES", Vector2(53, 185), 16, GOLD)
 	_label(menu, "一招有进退，一刃定胜负。", Vector2(52, 230), 18, PAPER)
@@ -135,7 +138,7 @@ func _build_menu() -> void:
 		buttons["difficulty" + str(i)] = button
 	menu_enemy = _label(menu, "", Vector2(52, 579), 12, MUTED)
 	_button(menu, "入场拔刃    →", Rect2(52, 605, 364, 57), func(): game.start_match(), true)
-	_label(menu, "WASD 移动    J 轻击    K 重击    Space 闪避", Vector2(52, 683), 12, PAPER)
+	menu_move_hint = _label(menu, "WASD 移动    J 轻击    K 重击    Space 闪避", Vector2(52, 683), 12, PAPER)
 	_label(menu, "Q / E 武将技能    U 战意满时施展绝技", Vector2(52, 710), 12, GOLD)
 	_label(menu, "L / Shift 格挡  ·  及时格挡可招架  ·  Enter 开始", Vector2(52, 744), 11, MUTED)
 	_label(menu, "青石为界  ·  点到为止", Vector2(956, 742), 14, PAPER, 280, true)
@@ -151,6 +154,37 @@ func _build_menu() -> void:
 		var line = _label(role_panel, "", Vector2(22, 89 + i * 29), 12, MUTED, 616)
 		line.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		menu_role_skills.append(line)
+	_label(menu, "对战方式  /  B 切换", Vector2(568, 263), 12, MUTED, 154)
+	buttons.mode_foot = _button(menu, "步战 · 游斗", Rect2(730, 252, 164, 42), func(): game.select_combat_mode("foot"))
+	buttons.mode_mounted = _button(menu, "马战 · 冲阵", Rect2(906, 252, 164, 42), func(): game.select_combat_mode("mounted"))
+	buttons.mode_foot.toggle_mode = true
+	buttons.mode_mounted.toggle_mode = true
+	menu_horse_colors = Control.new()
+	menu_horse_colors.position = Vector2(568, 309)
+	menu_horse_colors.size = Vector2(660, 40)
+	menu_horse_colors.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	menu_horse_colors.visible = false
+	menu.add_child(menu_horse_colors)
+	var horse_backdrop = Panel.new()
+	horse_backdrop.position = Vector2(-4, -4)
+	horse_backdrop.size = Vector2(668, 48)
+	horse_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	horse_backdrop.add_theme_stylebox_override("panel", _style(Color(0.025, 0.065, 0.08, 0.90), Color("496669")))
+	menu_horse_colors.add_child(horse_backdrop)
+	_label(menu_horse_colors, "己方坐骑", Vector2(0, 12), 12, JADE, 76)
+	_label(menu_horse_colors, "对手坐骑", Vector2(332, 12), 12, GOLD, 76)
+	buttons.horse_brown = _button(menu_horse_colors, "棕马", Rect2(84, 0, 94, 40), func(): game.select_horse_color("brown"))
+	buttons.horse_white = _button(menu_horse_colors, "白马", Rect2(190, 0, 94, 40), func(): game.select_horse_color("white"))
+	buttons.enemy_horse_brown = _button(menu_horse_colors, "棕马", Rect2(416, 0, 94, 40), func(): game.select_horse_color("brown", true))
+	buttons.enemy_horse_white = _button(menu_horse_colors, "白马", Rect2(522, 0, 94, 40), func(): game.select_horse_color("white", true))
+	for id in ["horse_brown", "horse_white", "enemy_horse_brown", "enemy_horse_white"]:
+		buttons[id].toggle_mode = true
+	menu_mode_hint = _label(menu, "", Vector2(568, 307), 12, PAPER, 660)
+	menu_mode_hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.92))
+	menu_mode_hint.add_theme_constant_override("outline_size", 4)
+	menu_mode_hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	menu_mode_hint.add_theme_constant_override("shadow_offset_x", 1)
+	menu_mode_hint.add_theme_constant_override("shadow_offset_y", 2)
 	_label(menu, "对阵武将", Vector2(568, 654), 12, MUTED)
 	var enemy_button_width = (660.0 - 10.0 * (Roster.IDS.size() - 1)) / Roster.IDS.size()
 	for i in Roster.IDS.size():
@@ -201,6 +235,17 @@ func _process(delta: float) -> void:
 	pause_panel.visible = game.paused
 	result_panel.visible = game.phase == "match_end" and not game.paused
 	if menu.visible:
+		var mounted: bool = game.combat_mode == "mounted"
+		buttons.mode_foot.set_pressed_no_signal(not mounted)
+		buttons.mode_mounted.set_pressed_no_signal(mounted)
+		menu_horse_colors.visible = mounted
+		buttons.horse_brown.set_pressed_no_signal(game.horse_color == "brown")
+		buttons.horse_white.set_pressed_no_signal(game.horse_color == "white")
+		buttons.enemy_horse_brown.set_pressed_no_signal(game.enemy_horse_color == "brown")
+		buttons.enemy_horse_white.set_pressed_no_signal(game.enemy_horse_color == "white")
+		menu_mode_hint.position.y = 365 if mounted else 307
+		menu_mode_hint.text = "WASD 控马转向 · 松开保留惯性 · Space 冲刺" if mounted else "移动周旋 · 自动面向对手 · Space 闪避"
+		menu_move_hint.text = "WASD 控马    J / K 马上攻击    Space 冲刺" if mounted else "WASD 移动    J 轻击    K 重击    Space 闪避"
 		for id in Roster.IDS:
 			buttons[id].set_pressed_no_signal(game.character_id == id)
 			buttons["enemy_" + id].set_pressed_no_signal(game.enemy.character_id == id)
@@ -223,7 +268,7 @@ func _process(delta: float) -> void:
 	if result_panel.visible:
 		result_title.text = "胜" if game.scores[0] == 2 else "惜败"
 		result_title.position.x = 556 if game.scores[0] == 2 else 490
-		result_subtitle.text = "%s  %d : %d  %s" % [game.fighter_name(game.player.character_id), game.scores[0], game.scores[1], game.fighter_name(game.enemy.character_id)]
+		result_subtitle.text = "%s  ·  %s  %d : %d  %s" % ["马战" if game.combat_mode == "mounted" else "步战", game.fighter_name(game.player.character_id), game.scores[0], game.scores[1], game.fighter_name(game.enemy.character_id)]
 	for i in 2:
 		var fighter = game.player if i == 0 else game.enemy
 		displayed_hp[i] = lerpf(displayed_hp[i], fighter.hp, 1.0 - exp(-delta * 12.0))
@@ -331,7 +376,7 @@ func _ultimate_warning() -> void:
 	var title: String = fighter.ultimate_name()
 	var width = display_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 27).x
 	_text(Vector2((1280 - width) * 0.5, 250), title, 27, accent, true)
-	var tactic = "连续追击 · 可打断" if fighter.skill_profile("ultimate").kind == "chase" else "重击蓄势 · 后撤脱离 / 闪避"
+	var tactic = "连续追击 · 可打断" if fighter.skill_profile("ultimate").kind == "chase" else ("重击蓄势 · 转向脱离 / 冲刺" if game.combat_mode == "mounted" else "重击蓄势 · 后撤脱离 / 闪避")
 	var subtitle = ("对手 · " if hostile else "己方 · ") + tactic
 	var subtitle_width = body_font.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
 	_text(Vector2((1280 - subtitle_width) * 0.5, 276), subtitle, 12, PAPER)
@@ -347,7 +392,11 @@ func _draw() -> void:
 		var color = JADE if i == 0 else GOLD
 		var name_text = game.fighter_name(fighter.character_id)
 		_text(Vector2(x, 57), name_text, 29, PAPER, true)
-		_text(Vector2(x + 85, 55), ("你  /  " if i == 0 else "对手  /  ") + Roster.weapon_name(fighter.weapon_id), 12, MUTED)
+		var equipment = Roster.weapon_name(fighter.weapon_id)
+		if game.combat_mode == "mounted":
+			var horse_color: String = game.horse_color if i == 0 else game.enemy_horse_color
+			equipment += " · " + ("棕马" if horse_color == "brown" else "白马")
+		_text(Vector2(x + 85, 55), ("你  /  " if i == 0 else "对手  /  ") + equipment, 12, MUTED)
 		draw_rect(Rect2(x, 80, 432, 13), Color(0.02, 0.06, 0.075, 0.83))
 		var width = 432 * displayed_hp[i] / 120.0
 		var fill_x = x if i == 0 else x + 432 - width
@@ -361,9 +410,13 @@ func _draw() -> void:
 		_text(Vector2(x, 138), "体力 %d    战意 %d%s" % [fighter.stamina, fighter.energy, " · 绝技就绪" if fighter.energy >= 99.99 else ""], 11, GOLD if fighter.energy >= 99.99 else MUTED)
 		for point in 2:
 			draw_circle(Vector2(x + 403 + point * 22, 133), 4.0, color if game.scores[i] > point else Color("445c60"))
-	_text(Vector2(616, 31), "问 锋", 13, GOLD, true)
+	_text(Vector2(596, 31), "问锋 · 马战" if game.combat_mode == "mounted" else "问锋 · 步战", 13, GOLD, true)
 	_text(Vector2(603, 83), "%02d" % int(ceil(game.round_time)), 43, PAPER)
 	_text(Vector2(590, 113), "第 %d 回合" % game.round_number, 13, MUTED)
+	if game.combat_mode == "mounted":
+		var cooldown: float = maxf(0.0, game.player.mount_charge_cooldown)
+		var charge_status = "冲刺冷却 %.1f 秒" % cooldown if cooldown > 0.05 else "冲刺就绪"
+		_text(Vector2(52, 164), "骑速 %.1f 米/秒  ·  %s" % [absf(game.player.mount_speed), charge_status], 12, JADE)
 	if game.phase in ["countdown", "round_end"]:
 		var title = ""
 		var subtitle = ""
@@ -391,8 +444,8 @@ func _draw() -> void:
 				draw_line(screen + Vector2(side * 31, 0), screen + Vector2(side * 26, 7), color, 1.5, true)
 	_ultimate_warning()
 	draw_texture_rect(bottom_veil, Rect2(0, 650, 1280, 150), false)
-	_text(Vector2(52, 721), "WASD  移动    J  连斩    K  重击", 12, PAPER)
-	_text(Vector2(52, 747), "L / Shift  格挡    Space  闪避", 12, PAPER)
+	_text(Vector2(52, 721), "WASD  控马    J / K  马上攻击" if game.combat_mode == "mounted" else "WASD  移动    J  连击    K  重击", 12, PAPER)
+	_text(Vector2(52, 747), "L / Shift  格挡    Space  冲刺" if game.combat_mode == "mounted" else "L / Shift  格挡    Space  闪避", 12, PAPER)
 	_text(Vector2(52, 777), "Esc  暂停    F  全屏    M  静音", 11, MUTED)
 	_skill_card(Rect2(460, 682, 210, 98), "Q", "rush")
 	_skill_card(Rect2(682, 682, 210, 98), "E", "counter")

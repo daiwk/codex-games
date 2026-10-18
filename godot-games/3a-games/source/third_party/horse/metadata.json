@@ -1,0 +1,59 @@
+{
+  "author": "Quaternius",
+  "pack": "Farm Animals Pack",
+  "license": "CC0-1.0",
+  "creator_page": "https://quaternius.com/packs/farmanimal.html",
+  "author_upload": "https://opengameart.org/content/lowpoly-animated-farm-animal-pack",
+  "gltf_page": "https://poly.pizza/m/qvTrSG9pZF",
+  "gltf_download": "https://static.poly.pizza/d37dbc87-ca61-4b2c-a2da-d2f0c4240bef.glb",
+  "source_archive": "https://opengameart.org/sites/default/files/Farm%20Animals%20by%20%40Quaternius.zip",
+  "downloaded": "2026-10-19",
+  "source_sha256": {
+    "Horse.blend": "decc922bd8d1c1a57d58b7cb3fcfa5a6138bebaab522b8dbc3ca750f7e9790ed",
+    "Horse.fbx": "6db270ddc7591e9a013f96eab445031381fa6d5d68d2feba567f964e0fe68d90",
+    "Horse.glb": "fae7a7ec91e0d6a33554efb896fac9c4e8c632644183bcb8cc962f673d3ce609"
+  },
+  "triangles": 2182,
+  "vertices": 4400,
+  "skin_joints": 50,
+  "materials": 8,
+  "clips": {
+    "Attack_Headbutt": 1.0,
+    "Attack_Kick": 1.0,
+    "Death": 1.0,
+    "Eating": 6.0,
+    "Gallop_Jump": 1.4583333730697632,
+    "Gallop": 0.5833333134651184,
+    "Idle_HitReact_Left": 0.6666666865348816,
+    "Idle_HitReact_Right": 0.6666666865348816,
+    "Jump_toIdle": 1.7083333730697632,
+    "Walk": 1.1666666269302368,
+    "Idle_Headlow": 3.3333332538604736,
+    "Idle_2": 3.3333332538604736,
+    "Idle": 3.3333332538604736
+  },
+  "geometry_alignment": {
+    "up": "+Y",
+    "forward": "+Z",
+    "source_bounds_min": [
+      -0.70346808,
+      -0.01121904,
+      -2.22329077
+    ],
+    "source_bounds_max": [
+      0.70346808,
+      4.8127272,
+      3.45282308
+    ],
+    "suggested_scene_scale": 0.46,
+    "unscaled_saddle_surface": [
+      0,
+      3.54,
+      -0.5
+    ],
+    "saddle_top_height_m": 1.6784,
+    "saddle_z_m": -0.23
+  },
+  "reference_preparation": "Remove 13 duplicate AnimalArmature| aliases; preserve all 13 unique authored clips and original geometry/bind/animation samples. No textures required.",
+  "current_runtime_preparation": "User Tripo meshes/UV/triangles are preserved, globally rotated/scaled to metres and resized to 2048px maximum textures; corrupt skins are replaced with fitted Quaternius anatomy, four separate limb weight regions, complete welded-topology tail components, fixed-length FK and ankle-following independent hoof roots. Idle/Walk/Gallop are retargeted; layered tails follow Back rigidly (25-degree whole-tail gallop lift about Tail2) and ears follow Head rigidly. See prepare_mounts.py and assets/mounts/manifest.json."
+}

@@ -2,6 +2,9 @@ extends CharacterBody3D
 class_name DuelFighter
 const RoleSkills = preload("res://scripts/skill_profiles.gd")
 const Roster = preload("res://scripts/roster.gd")
+const MountedCombat = preload("res://scripts/mounted_combat.gd")
+const HorseVisual = preload("res://scripts/horse_visual.gd")
+const RiderPose = preload("res://scripts/rider_pose.gd")
 
 signal strike_requested(fighter, attack)
 signal impact_received(fighter, outcome, position)
@@ -62,19 +65,39 @@ var grip_config: Dictionary = {}
 var right_hand_index = -1
 var left_hand_index = -1
 var grip_roll_ready = false
+var mounted = false
+var horse_color = "white"
+var mount_speed = 0.0
+var mount_charge_time = 0.0
+var mount_charge_cooldown = 0.0
+var mount_turn_rate = 0.0
+var horse: Node3D
+var rider_pose: SkeletonModifier3D
+var riding_height = 0.0
+var rider_hip_height = 0.0
 
 func _ready() -> void:
 	collision_layer = 2
 	collision_mask = 3
 	var shape = CollisionShape3D.new()
 	var capsule = CapsuleShape3D.new()
-	capsule.radius = 0.32
-	capsule.height = 1.80
+	capsule.radius = 0.62 if mounted else 0.32
+	capsule.height = 3.05 if mounted else 1.80
 	shape.shape = capsule
-	shape.position.y = 0.91
+	shape.position.y = 1.53 if mounted else 0.91
 	add_child(shape)
 	floor_snap_length = 0.2
 	_load_visuals()
+	if mounted:
+		horse = HorseVisual.new()
+		horse.setup(character_id, horse_color)
+		add_child(horse)
+		rider_pose = RiderPose.new()
+		rider_pose.setup(skeleton, model)
+		rider_pose.set_mount_width(horse.belly_width)
+		rider_hip_height = rider_pose.rest_hip_height()
+		riding_height = horse.saddle_height() - rider_hip_height
+		model.position = Vector3(0.0, riding_height, horse.saddle_z())
 	reset_fighter()
 
 func _load_visuals() -> void:
@@ -187,6 +210,10 @@ func _update_two_hand_grip(delta = 0.0, instant = false) -> void:
 	grip.global_transform = Transform3D(Basis(side, axis, side.cross(axis)), right)
 
 func _process(delta: float) -> void:
+	if mounted and is_instance_valid(horse):
+		horse.update_motion(delta, mount_speed if enabled else 0.0, mount_turn_rate, hp <= 0.0)
+		rider_pose.update(delta, mount_speed / 8.2 if enabled else 0.0)
+		model.position = Vector3(0.0, horse.saddle_height() - rider_hip_height, horse.saddle_z())
 	if is_two_handed():
 		_update_two_hand_grip(delta)
 
@@ -194,10 +221,10 @@ func is_thrust_weapon() -> bool:
 	return bool(Roster.WEAPONS[weapon_id].get("thrust_only", false))
 
 func basic_reach() -> float:
-	return float(Roster.WEAPONS[weapon_id].reach)
+	return float(Roster.WEAPONS[weapon_id].reach) + (0.30 if mounted else 0.0)
 
 func preferred_distance() -> float:
-	return float(Roster.character(character_id).distance)
+	return float(Roster.character(character_id).distance) + (0.4 if mounted else 0.0)
 
 func _light_attacks() -> Array:
 	if character_id == "xuchu":
@@ -255,12 +282,22 @@ func reset_fighter() -> void:
 	turn_speed = 0.0
 	turning_in_place = false
 	grip_roll_ready = false
+	mount_speed = 0.0
+	mount_charge_time = 0.0
+	mount_charge_cooldown = 0.0
+	mount_turn_rate = 0.0
+	if mounted and is_instance_valid(horse):
+		horse.reset_motion()
 	energy = 35.0
 	cooldowns = {"rush": 0.0, "counter": 0.0}
 	current_clip = ""
 	play_clip("Idle", 0.0)
 
 func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
+	if mounted and clip in ["Walk", "WalkBack", "StrafeLeft", "StrafeRight", "Run", "TurnLeft", "TurnRight", "Dodge"]:
+		clip = "Idle"
+	if mounted and clip == "Death":
+		clip = "Hit"
 	if not animation_names.has(clip):
 		push_error("Missing required animation: " + clip)
 		return
@@ -302,6 +339,8 @@ func ultimate_name() -> String:
 	return skill_name("ultimate")
 
 func skill_profile(id: String) -> Dictionary:
+	if mounted:
+		return MountedCombat.profile(id, is_thrust_weapon(), basic_reach())
 	return RoleSkills.for_character(character_id).get(id, {})
 
 func skill_name(id: String) -> String:
@@ -436,6 +475,17 @@ func _enter_attack() -> void:
 	action_started.emit(self, "heavy" if attack.heavy else "light")
 
 func request_dodge(direction = Vector3.ZERO) -> bool:
+	if mounted:
+		if not enabled or hp <= 0.0 or stamina < 24.0 or mount_charge_cooldown > 0.0 or state not in ["idle", "move", "block"]:
+			return false
+		stamina -= 24.0
+		regen_delay = 0.8
+		mount_charge_time = 1.15
+		mount_charge_cooldown = 3.6
+		if state == "block":
+			_idle()
+		action_started.emit(self, "charge")
+		return true
 	if not enabled or hp <= 0.0 or stamina < 24.0 or state not in ["idle", "move", "block"]:
 		return false
 	stamina -= 24.0
@@ -484,7 +534,7 @@ func _has_skill_armor(data: Dictionary) -> bool:
 func receive_strike(attacker: DuelFighter, data: Dictionary) -> String:
 	if hp <= 0.0:
 		return "dead"
-	var impact = global_position + Vector3.UP * 1.05
+	var impact = global_position + Vector3.UP * (2.1 if mounted else 1.05)
 	if is_invulnerable():
 		dodged_hits += 1
 		gain_energy(9.0)
@@ -568,6 +618,9 @@ func _physics_process(delta: float) -> void:
 	if not enabled:
 		return
 	action_time += delta
+	if mounted:
+		mount_charge_time = maxf(0.0, mount_charge_time - delta)
+		mount_charge_cooldown = maxf(0.0, mount_charge_cooldown - delta)
 	for id in cooldowns:
 		cooldowns[id] = maxf(0.0, cooldowns[id] - delta)
 	regen_delay = maxf(0.0, regen_delay - delta)
@@ -609,18 +662,32 @@ func _physics_process(delta: float) -> void:
 			velocity.z = move_toward(velocity.z, 0.0, delta * 10.0)
 		_:
 			_update_locomotion(delta)
+	if mounted:
+		_update_mount_motion(delta)
 	velocity.y -= 20.0 * delta
 	if is_on_floor() and velocity.y < 0:
 		velocity.y = -0.2
+	var before_move = position
 	move_and_slide()
 	var flat = Vector2(position.x, position.z)
-	if flat.length() > 7.6:
-		flat = flat.normalized() * 7.6
+	var arena_radius = 11.4 if mounted else 7.6
+	if flat.length() > arena_radius:
+		flat = flat.normalized() * arena_radius
 		position.x = flat.x
 		position.z = flat.y
+		if mounted:
+			mount_speed = minf(mount_speed, 1.2)
+	if mounted and delta > 0.0:
+		# Colliding with a horse or the arena edge must also stop the gait,
+		# HUD speed and cavalry damage bonus, not just the physics body.
+		var travelled_speed = maxf(0.0, (position - before_move).dot(forward()) / delta)
+		mount_speed = minf(mount_speed, travelled_speed)
 	previous_tip = blade_tip()
 
 func _update_facing(delta: float) -> void:
+	if mounted:
+		_update_mount_facing(delta)
+		return
 	var agile_step = state == "skill" and attack.get("kind", "") == "evade"
 	var chasing = state == "ultimate" and skill_profile("ultimate").kind == "chase"
 	var committed = (state in ["attack", "skill"] and action_time >= (0.32 if agile_step else 0.10))
@@ -662,6 +729,17 @@ func _update_facing(delta: float) -> void:
 	rotation.y += step
 
 func _update_locomotion(delta: float) -> void:
+	if mounted:
+		var guarding = wants_block and stamina > 1.0 and mount_charge_time <= 0.0
+		var next_state = "block" if guarding else ("move" if input_move.length() > 0.1 else "idle")
+		if state != next_state:
+			state = next_state
+			action_time = 0.0
+			play_clip("Block" if state == "block" else "Idle", 0.16)
+		if state == "block" and action_time > 0.38:
+			animation_player.seek(0.44, true)
+			animation_player.pause()
+		return
 	if wants_block and stamina > 1.0:
 		if state != "block":
 			state = "block"
@@ -711,6 +789,53 @@ func _update_locomotion(delta: float) -> void:
 	if current_clip != clip:
 		play_clip(clip, 0.16)
 	animation_player.speed_scale = gait_rate if turning_in_place else (gait_rate * movement.length() if clip != "Idle" else 1.0)
+
+func _update_mount_facing(delta: float) -> void:
+	mount_turn_rate = 0.0
+	if hp <= 0.0 or state in ["hit", "stagger"]:
+		return
+	var direction = input_move
+	if direction.length_squared() < 0.01:
+		if mount_speed > 0.5 or not is_instance_valid(opponent):
+			return
+		direction = opponent.global_position - global_position
+	direction.y = 0.0
+	if direction.length_squared() < 0.01:
+		return
+	# Commit the weapon through its contact frame, with a much wider turning
+	# circle at a gallop. The horse never strafes or reverses instantly.
+	if state == "attack" and action_time >= float(attack.active.x) - 0.08 and action_time <= float(attack.active.y):
+		return
+	var error = angle_difference(rotation.y, atan2(direction.x, direction.z))
+	var limit = 1.1 if mount_charge_time > 0.0 else lerpf(2.5, 1.65, clampf(mount_speed / 5.0, 0.0, 1.0))
+	var step = clampf(error, -limit * delta, limit * delta)
+	rotation.y += step
+	mount_turn_rate = step / maxf(delta, 0.001)
+
+func _update_mount_motion(delta: float) -> void:
+	var desired = 0.0
+	if input_move.length() > 0.1:
+		var alignment = maxf(0.0, forward().dot(input_move.normalized()))
+		desired = 4.8 * input_move.limit_length().length() * lerpf(0.12, 1.0, alignment)
+	if mount_charge_time > 0.0:
+		desired = 8.2
+	if state == "skill" and skill_id == "rush":
+		desired = maxf(desired, 3.1)
+	elif state == "ultimate" and skill_stage != "windup":
+		desired = maxf(desired, 2.5)
+	if state == "block":
+		desired = minf(desired, 1.2)
+	elif state in ["hit", "stagger", "dead"]:
+		desired = 0.0
+		mount_charge_time = 0.0
+	var acceleration = 11.0 if mount_charge_time > 0.0 else (4.6 if desired > mount_speed else 8.5)
+	mount_speed = move_toward(mount_speed, desired, delta * acceleration)
+	velocity.x = forward().x * mount_speed
+	velocity.z = forward().z * mount_speed
+	footstep_clock += delta * mount_speed
+	if mount_speed > 0.4 and footstep_clock > 1.25:
+		footstep_clock = 0.0
+		action_started.emit(self, "hoof")
 
 func _idle() -> void:
 	_cancel_skill()

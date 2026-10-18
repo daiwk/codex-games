@@ -11,6 +11,10 @@ var character_id = "zhaoyun"
 var weapon_id = "zhaoyun_spear"
 var opponent_id = ""
 var difficulty = 1
+var combat_mode = "foot"
+var horse_color = "white"
+var enemy_horse_color = "brown"
+var arena: Node3D
 var phase = "menu"
 var paused = false
 var scores = [0, 0]
@@ -48,7 +52,8 @@ func _ready() -> void:
 	testing = "--test" in OS.get_cmdline_user_args() or "--skills-test" in OS.get_cmdline_user_args() or "--role-test" in OS.get_cmdline_user_args()
 	rng.seed = 714 if testing else int(Time.get_unix_time_from_system())
 	_configure_inputs()
-	add_child(Arena.new())
+	arena = Arena.new()
+	add_child(arena)
 	fx = Effects.new()
 	add_child(fx)
 	skill_fx = SkillEffects.new()
@@ -116,6 +121,8 @@ func _spawn_fighters() -> void:
 	player.character_id = character_id
 	weapon_id = Roster.resolve_weapon(character_id, weapon_id)
 	player.weapon_id = weapon_id
+	player.mounted = combat_mode == "mounted"
+	player.horse_color = horse_color
 	player.is_player = true
 	player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(player)
@@ -123,6 +130,8 @@ func _spawn_fighters() -> void:
 	enemy.name = "Opponent"
 	enemy.character_id = String(Roster.character(character_id).opponent) if opponent_id.is_empty() else opponent_id
 	enemy.weapon_id = Roster.resolve_weapon(enemy.character_id, "")
+	enemy.mounted = combat_mode == "mounted"
+	enemy.horse_color = enemy_horse_color
 	enemy.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(enemy)
 	player.opponent = enemy
@@ -158,11 +167,36 @@ func select_opponent(id: String) -> void:
 	_spawn_fighters()
 	_position_preview()
 
+func select_combat_mode(id: String) -> void:
+	if phase != "menu" or id not in ["foot", "mounted"] or combat_mode == id:
+		return
+	combat_mode = id
+	arena.scale = Vector3(1.5, 1.0, 1.5) if id == "mounted" else Vector3.ONE
+	_spawn_fighters()
+	_position_preview()
+	_update_camera(1.0, true)
+	fx.sound("gong", -23.0, 1.2)
+
+func select_horse_color(id: String, for_enemy = false) -> void:
+	if phase != "menu" or id not in ["brown", "white"]:
+		return
+	if for_enemy:
+		if enemy_horse_color == id:
+			return
+		enemy_horse_color = id
+	else:
+		if horse_color == id:
+			return
+		horse_color = id
+	_spawn_fighters()
+	_position_preview()
+	fx.sound("step", -20.0)
+
 func _position_preview() -> void:
 	player.enabled = false
 	enemy.enabled = false
-	player.position = Vector3(1.45, 0.015, 0.7)
-	enemy.position = Vector3(3.3, 0.015, -0.9)
+	player.position = Vector3(1.1, 0.015, 0.6) if combat_mode == "mounted" else Vector3(1.45, 0.015, 0.7)
+	enemy.position = Vector3(3.8, 0.015, -2.2) if combat_mode == "mounted" else Vector3(3.3, 0.015, -0.9)
 	player.rotation.y = -0.20
 	enemy.rotation.y = -0.35
 	player.reset_fighter()
@@ -189,8 +223,9 @@ func _new_round() -> void:
 	for fighter in [player, enemy]:
 		fighter.reset_fighter()
 		fighter.enabled = false
-	player.position = Vector3(0, 0.015, 2.65)
-	enemy.position = Vector3(0, 0.015, -2.65)
+	var separation = 5.0 if combat_mode == "mounted" else 2.65
+	player.position = Vector3(0, 0.015, separation)
+	enemy.position = Vector3(0, 0.015, -separation)
 	player.rotation.y = PI
 	enemy.rotation.y = 0.0
 	phase = "countdown"
@@ -255,6 +290,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				select_character("lubu")
 			KEY_6:
 				select_character("xuchu")
+			KEY_B:
+				select_combat_mode("mounted" if combat_mode == "foot" else "foot")
 
 func _physics_process(delta: float) -> void:
 	if paused:
@@ -339,6 +376,9 @@ func _skill_hint(id: String) -> void:
 	toast_time = 1.4
 
 func _update_ai(delta: float) -> void:
+	if combat_mode == "mounted":
+		_update_mounted_ai(delta)
+		return
 	ai_think -= delta
 	ai_cooldown = maxf(0.0, ai_cooldown - delta)
 	ai_guard = maxf(0.0, ai_guard - delta)
@@ -422,6 +462,58 @@ func _update_ai(delta: float) -> void:
 			enemy.request_light()
 		ai_cooldown = rng.randf_range(0.75, 1.20) * [1.38, 1.0, 0.73][difficulty]
 
+func _update_mounted_ai(delta: float) -> void:
+	ai_think -= delta
+	ai_cooldown = maxf(0.0, ai_cooldown - delta)
+	ai_guard = maxf(0.0, ai_guard - delta)
+	enemy.wants_block = ai_guard > 0.0
+	if ai_think > 0.0:
+		return
+	ai_think = [0.22, 0.15, 0.10][difficulty]
+	var offset = player.position - enemy.position
+	offset.y = 0.0
+	var distance = offset.length()
+	var toward = offset.normalized()
+	var side = Vector3(-toward.z, 0, toward.x) * ai_strafe
+	enemy.input_move = toward
+	if enemy.state in ["dead", "hit", "stagger"]:
+		enemy.input_move = Vector3.ZERO
+		return
+	if distance < 1.8:
+		enemy.input_move = (toward * 0.15 + side).normalized()
+	if enemy.stamina < 27.0:
+		enemy.input_move = (side - toward * 0.4).normalized()
+		return
+	if player.state in ["attack", "skill", "ultimate"] and distance < 3.3 and enemy.state in ["idle", "move"]:
+		if rng.randf() < [0.12, 0.28, 0.42][difficulty]:
+			ai_guard = 0.45
+			enemy.wants_block = true
+			return
+	var facing = toward.dot(enemy.forward())
+	if distance > 5.8 and facing > 0.92 and enemy.mount_charge_cooldown <= 0.0 and rng.randf() < [0.18, 0.40, 0.65][difficulty]:
+		enemy.request_dodge(toward)
+	if enemy.state == "attack":
+		if distance < enemy.basic_reach() and enemy.action_time > 0.3 and rng.randf() < [0.15, 0.40, 0.65][difficulty]:
+			enemy.request_light()
+		return
+	if ai_cooldown > 0.0 or facing < 0.35:
+		return
+	if distance < 4.0 and enemy.skill_ready("ultimate") and rng.randf() < [0.18, 0.40, 0.60][difficulty]:
+		enemy.request_ultimate()
+		ai_cooldown = 2.6
+	elif distance < 2.7 and player.state == "block" and enemy.skill_ready("counter"):
+		enemy.request_skill("counter")
+		ai_cooldown = 1.1
+	elif distance < enemy.basic_reach() + 0.45 and distance > 2.0 and enemy.skill_ready("rush") and rng.randf() < [0.18, 0.35, 0.50][difficulty]:
+		enemy.request_skill("rush")
+		ai_cooldown = 1.0
+	elif distance < enemy.basic_reach() + 0.1:
+		if enemy.stamina > 45.0 and rng.randf() < 0.25:
+			enemy.request_heavy()
+		else:
+			enemy.request_light()
+		ai_cooldown = [1.35, 0.95, 0.70][difficulty]
+
 func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 	if phase != "fight" or attacker.hit_landed or attacker.hp <= 0.0:
 		return
@@ -440,15 +532,19 @@ func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 	# Test both the current blade and its swept tip against the body capsule.
 	# A close-range allowance covers contact hidden inside armor and the frame
 	# immediately before the imported skeleton advances.
-	var low = defender.global_position + Vector3.UP * 0.42
-	var high = defender.global_position + Vector3.UP * 1.55
+	var low = defender.global_position + Vector3.UP * (1.7 if defender.mounted else 0.42)
+	var high = defender.global_position + Vector3.UP * (3.1 if defender.mounted else 1.55)
 	var blade = Geometry3D.get_closest_points_between_segments(attacker.blade_base(), attacker.blade_tip(), low, high)
 	var sweep = Geometry3D.get_closest_points_between_segments(attacker.previous_tip, attacker.blade_tip(), low, high)
 	var contact = minf(blade[0].distance_to(blade[1]), sweep[0].distance_to(sweep[1]))
 	if data.get("shape", "") != "line" and not data.get("wave", false) and contact > 0.70 and offset.length() > 1.48:
 		return
 	attacker.hit_landed = true
-	defender.receive_strike(attacker, data)
+	var resolved = data.duplicate()
+	if attacker.mounted and attacker.mount_speed > 4.8 and data.get("kind", "") != "roar":
+		resolved.damage *= 1.0 + minf(attacker.mount_speed / 28.0, 0.30)
+		resolved["guard_cost"] = float(data.get("guard_cost", 24.0)) * 1.15
+	defender.receive_strike(attacker, resolved)
 
 func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 	var damage = int(fighter.opponent.attack.get("damage", 0)) if outcome in ["hit", "heavy_hit"] else 0
@@ -473,6 +569,10 @@ func _on_action(fighter: DuelFighter, action: String) -> void:
 			fx.sound("step", -26.0 if fighter.is_player else -30.0, rng.randf_range(0.9, 1.1))
 		"dodge":
 			fx.sound("dodge", -14.0)
+		"hoof":
+			fx.sound("step", -21.0 if fighter.is_player else -25.0, rng.randf_range(0.65, 0.80))
+		"charge":
+			fx.sound("dodge", -14.0, 0.7)
 		"ultimate_ready":
 			fx.sound("parry", -19.0, 0.75)
 
@@ -550,6 +650,10 @@ func _update_camera(delta: float, instant = false) -> void:
 		desired = Vector3(3.5 + sin(elapsed * 0.16) * 0.12, 2.55, 6.8)
 		target = Vector3(0.6, 0.98, 0.0)
 		fov = 42.0
+		if combat_mode == "mounted":
+			desired = Vector3(4.8, 3.45, 9.6)
+			target = Vector3(1.0, 1.65, 0.0)
+			fov = 44.0
 	else:
 		var axis = enemy.global_position - player.global_position
 		axis.y = 0.0
@@ -561,6 +665,11 @@ func _update_camera(delta: float, instant = false) -> void:
 		desired = middle - axis * distance + side * 1.7 + Vector3.UP * 3.25
 		target = middle + Vector3.UP * 0.92
 		fov = 54.0
+		if combat_mode == "mounted":
+			distance = clampf(8.1 + separation * 0.29, 9.0, 14.0)
+			desired = middle - axis * distance + side * 2.4 + Vector3.UP * 4.35
+			target = middle + Vector3.UP * 1.75
+			fov = 58.0
 		if player.state == "ultimate" or enemy.state == "ultimate":
 			desired += -axis * 0.45 + Vector3.UP * 0.15
 			fov = 56.0
@@ -582,11 +691,15 @@ func _update_camera(delta: float, instant = false) -> void:
 		camera.rotate_object_local(Vector3.FORWARD, sin(elapsed * 71) * shake * 0.035)
 
 func snapshot() -> Dictionary:
-	return {"phase": phase, "paused": paused, "scores": scores.duplicate(), "seconds": round_time,
+	return {"phase": phase, "paused": paused, "combat_mode": combat_mode, "horse_color": horse_color, "enemy_horse_color": enemy_horse_color, "scores": scores.duplicate(), "seconds": round_time,
 		"player": {"character": player.character_id, "weapon": player.weapon_id, "hp": player.hp,
+			"mounted": player.mounted, "mount_speed": player.mount_speed, "mount_charge_cooldown": player.mount_charge_cooldown, "heading": player.rotation.y,
+			"horse_color": player.horse_color,
 			"stamina": player.stamina, "energy": player.energy, "cooldowns": player.cooldowns.duplicate(),
 			"skill": player.skill_id, "skill_stage": player.skill_stage, "state": player.state, "combo": player.combo, "position": [player.position.x, player.position.y, player.position.z]},
 		"enemy": {"character": enemy.character_id, "weapon": enemy.weapon_id, "hp": enemy.hp,
+			"mounted": enemy.mounted, "mount_speed": enemy.mount_speed, "mount_charge_cooldown": enemy.mount_charge_cooldown, "heading": enemy.rotation.y,
+			"horse_color": enemy.horse_color,
 			"stamina": enemy.stamina, "energy": enemy.energy, "cooldowns": enemy.cooldowns.duplicate(),
 			"skill": enemy.skill_id, "skill_stage": enemy.skill_stage, "state": enemy.state, "position": [enemy.position.x, enemy.position.y, enemy.position.z]}}
 

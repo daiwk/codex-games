@@ -35,3 +35,16 @@
 ## 中文字体
 
 网页版内嵌 Noto Sans SC 和 Noto Serif SC 的游戏字符子集，使用 SIL Open Font License 1.1。完整许可保存在 `assets/fonts/NotoSans-LICENSE.txt` 和 `assets/fonts/NotoSerif-LICENSE.txt`，并随网页部署在 `dist/licenses/`。未打包系统字体。
+
+## 马匹外观与骑行动作
+
+- Horse / Farm Animals Pack by **Quaternius**, released under **CC0 1.0 Universal**.
+- Author: https://quaternius.com/packs/farmanimal.html
+- GLB: https://poly.pizza/m/qvTrSG9pZF
+- Original FBX/Blend and license: https://opengameart.org/content/lowpoly-animated-farm-animal-pack
+- Original files and provenance: `godot-games/3a-games/source/third_party/horse/`.
+- 动作来源：上述 Quaternius 马的 Idle、Walk、Gallop，经解剖标定、分腿蒙皮重绑和重定向用于新坐骑。CC0 只适用于此参考素材和动作。
+- 当前两匹马的外观来自用户提供的 Tripo 原件 `马_棕色.glb`、`马_白色.glb`；不将这些用户素材声明为 CC0。原始几何、三角形、UV 和贴图归档保留，运行副本仅统一旋转/缩放、重建损坏骨架蒙皮、缩小纹理到 2048。
+- 当前运行副本：`assets/mounts/horse_brown.glb`、`horse_white.glb`，配置与原文件 SHA256 见同目录 `manifest.json`；可用 `tools/prepare_mounts.py` 离线复现。
+- 参考原始 GLB/FBX/Blend、作者许可及解剖标定在 `godot-games/3a-games/source/third_party/horse/`。程序鞍具、缰绳与马镫由本项目生成。
+- License copy: `assets/licenses/Horse-CC0.txt`.

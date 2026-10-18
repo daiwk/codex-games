@@ -134,6 +134,15 @@ func _play_polearm_skill(fighter: DuelFighter, skill: String, stage: String, pal
 			if not crescent:
 				_spawn(fighter, "roar_core", palette, 0.18, 0.025, Vector3.ONE * 0.7, Vector3.ONE)
 
+func _play_mounted_skill(fighter: DuelFighter, skill: String, stage: String, palette: Array) -> void:
+	if stage == "finish":
+		_remove_followers(fighter.get_instance_id())
+	if stage == "start":
+		_spawn(fighter, "chase_guides" if skill == "ultimate" else "armor_heat", palette, 0.65, 0.10, Vector3.ONE * 0.7, Vector3.ONE, true)
+	elif stage in ["release", "strike", "finish"]:
+		var shape = "roar_wave" if skill == "counter" else ("forward_thrust" if fighter.is_thrust_weapon() else "sweeping_cleave")
+		_spawn(fighter, shape, palette, 0.38, 0.035, Vector3.ONE, Vector3.ONE * 1.2)
+
 func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 	if not is_instance_valid(fighter):
 		return
@@ -143,6 +152,9 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 		_ultimate_strikes.erase(owner_id)
 		return
 	var palette: Array = PALETTES.get(fighter.character_id, PALETTES.zhaoyun)
+	if fighter.mounted:
+		_play_mounted_skill(fighter, skill, stage, palette)
+		return
 	if fighter.is_two_handed():
 		_play_polearm_skill(fighter, skill, stage, palette)
 		return
@@ -242,7 +254,7 @@ func _process(delta: float) -> void:
 			if not is_instance_valid(fighter):
 				_finish_effect(id)
 				continue
-			effect.node.global_position = fighter.global_position
+			effect.node.global_position = fighter.global_position + Vector3.UP * (1.15 if fighter.mounted else 0.0)
 			effect.node.global_rotation = Vector3(0.0, fighter.global_rotation.y, 0.0)
 		if effect.shape == "charge_rings":
 			effect.mesh.rotation.y = effect.age * 0.85
@@ -275,7 +287,7 @@ func _spawn(fighter: DuelFighter, shape: String, palette: Array, lifetime: float
 	var root = Node3D.new()
 	root.name = "SkillFX_" + shape
 	add_child(root)
-	root.global_position = fighter.global_position
+	root.global_position = fighter.global_position + Vector3.UP * (1.15 if fighter.mounted else 0.0)
 	root.global_rotation.y = fighter.global_rotation.y
 	root.scale = start_scale
 	var instance = MeshInstance3D.new()

@@ -1,0 +1,51 @@
+Horse — Farm Animals Pack by Quaternius
+Downloaded 2026-10-19 for Wenfeng mounted combat.
+
+Official author page and CC0 declaration:
+https://quaternius.com/packs/farmanimal.html
+
+Original author-uploaded FBX/Blend archive:
+https://opengameart.org/content/lowpoly-animated-farm-animal-pack
+https://opengameart.org/sites/default/files/Farm%20Animals%20by%20%40Quaternius.zip
+
+Author's Poly Pizza Horse page / ready-made GLB conversion:
+https://poly.pizza/m/qvTrSG9pZF
+https://static.poly.pizza/d37dbc87-ca61-4b2c-a2da-d2f0c4240bef.glb
+
+License: CC0 1.0 Universal Public Domain Dedication.
+The archive's original License.txt is preserved unmodified here.
+Attribution is optional; credit retained: Farm Animals Pack by Quaternius.
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Horse.glb is the unmodified downloaded FBX2glTF conversion.
+Horse.fbx and Horse.blend are unmodified original author files.
+The initial low-poly runtime preview removed only duplicate animation aliases;
+geometry, skin bind data and all 13 unique authored clips remain unchanged.
+The original GLB contains 26 clips: 13 unique + 13 AnimalArmature| aliases.
+See metadata.json for hashes, clip durations, dimensions and saddle calibration.
+
+Style: low-poly brown horse with a skeletal rig, flat material colours and no textures.
+The source is suitable as a replaceable lightweight first horse; it is not a
+photoreal or armoured warhorse. Coat colours and simple tack are runtime variants.
+
+2026-10-19 user-supplied Tripo replacement horses:
+godot-games/3a-games/马_棕色.glb and 马_白色.glb are kept as original user assets.
+Their exported bones/IBM/weights are malformed and there are no animation clips.
+The runtime horse_brown.glb and horse_white.glb preserve their meshes, UVs,
+triangles and coat textures (2048 maximum in runtime), fitting a rebuilt rig
+and separate left/right fore/hind limb weights to the Quaternius anatomy.
+Idle/Walk/Gallop motion is retargeted from this CC0 reference; the user
+Tripo geometry/textures are NOT represented as CC0 licensed.
+Run sites/wenfeng-web/tools/prepare_mounts.py to reproduce runtime assets.
+mount_calibration.json records raw hoof/leg slices, axis and body centres.
+Runtime manifest.json records source hashes, scale, bounds and saddle anchors.
+
+Final retarget constraints: anatomical bone lengths remain fixed in all clips;
+independent IK foot roots follow their matching fitted leg-chain ankle endpoint.
+Whole tail-hair components are selected using welded-position connectivity;
+this analysis never changes any runtime vertex, index or UV. The full tail
+follows Back rigidly (with a whole-bundle 25-degree upward/backward gallop
+rotation about Tail2), and both ear chains follow Head rigidly, to preserve
+the replacement models' strand/ear shapes instead of transferring mismatched
+small secondary motions. The four hooves control ground alignment; long
+tail hair is allowed to brush the ground during a gallop.
