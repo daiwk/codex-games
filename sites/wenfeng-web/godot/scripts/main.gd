@@ -462,7 +462,7 @@ func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 func _on_action(fighter: DuelFighter, action: String) -> void:
 	match action:
 		"light", "heavy":
-			fx.sound("heavy" if action == "heavy" else "swing", -10.0, rng.randf_range(0.93, 1.08))
+			fx.sound("thrust" if fighter.is_thrust_weapon() else ("heavy" if action == "heavy" else "swing"), -10.0, rng.randf_range(0.93, 1.08))
 		"step":
 			fx.sound("step", -26.0 if fighter.is_player else -30.0, rng.randf_range(0.9, 1.1))
 		"dodge":

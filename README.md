@@ -59,6 +59,6 @@ godot-games/
 
 吕布模型已移除两条翎尾末端的灰色片面，未经修改的原文件保存在 `godot-games/3a-games/source/originals/吕布.glb`，修复记录保存在同目录的 `吕布.repair.json`。其他原有 GLB 的路径与内容保持原样；运行游戏使用的是 `sites/wenfeng-web/godot/` 中的网页优化资源。旧桌面工程、安装包、导入缓存、临时截图和历史测试输出已从当前目录清理。
 
-关羽、张飞、吕布的双手横斩、劈砍、旋斩与突刺使用 [KayKit Character Animations Free 1.1](https://kaylousberg.itch.io/kaykit-character-animations)（CC0），已重定向并烘焙到模型中。
+长兵器动作按武器区分：刀、戟可斩扫，蛇矛的三段连招、重击与进攻技能均为突刺。双手动作使用 [KayKit Character Animations Free 1.1](https://kaylousberg.itch.io/kaykit-character-animations)（CC0），已重定向并烘焙到模型中。
 
 需要修改游戏并重新导出时，见 [网页版开发说明](sites/wenfeng-web/README.md)。素材来源与许可见各资源目录中的许可文件和游戏内「制作与许可」。

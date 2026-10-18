@@ -16,8 +16,8 @@ const CHARACTERS = {
 const WEAPONS = {
 	"sword": {"name": "剑 · 灵巧", "path": "res://onehand_sword.glb", "reach": 2.12},
 	"saber": {"name": "刀 · 刚猛", "path": "res://onehand_saber.glb", "reach": 2.02},
-	"guandao": {"name": "青龙偃月刀 · 双手", "path": "res://assets/weapons/guandao.glb", "reach": 3.35, "blade_start": 0.72},
-	"serpent_spear": {"name": "丈八蛇矛 · 双手", "path": "res://assets/weapons/serpent_spear.glb", "reach": 3.65, "blade_start": 0.84},
+	"guandao": {"name": "青龙偃月刀 · 双手", "path": "res://assets/weapons/guandao.glb", "reach": 3.35, "blade_start": 0.72, "edge_forward": true},
+	"serpent_spear": {"name": "丈八蛇矛 · 双手", "path": "res://assets/weapons/serpent_spear.glb", "reach": 3.65, "blade_start": 0.84, "thrust_only": true},
 	"halberd": {"name": "方天画戟 · 双手", "path": "res://assets/weapons/halberd.glb", "reach": 3.55, "blade_start": 0.70},
 }
 

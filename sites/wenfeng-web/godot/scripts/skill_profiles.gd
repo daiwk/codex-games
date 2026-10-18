@@ -61,7 +61,7 @@ const GUANYU = {
 
 const ZHANGFEI = {
 	"rush": {"name": "蛇矛突刺", "description": "双手进矛 · 直取中路", "cost": 26.0, "cooldown": 5.6,
-		"kind": "thrust", "clip": "SerpentThrust", "duration": 0.94, "active": Vector2(0.34, 0.57),
+		"kind": "thrust", "clip": "SerpentThrust", "duration": 0.94, "active": Vector2(0.22, 0.43),
 		"damage": 25.0, "reach": 4.1, "half_width": 0.56, "shape": "line", "heavy": true,
 		"guard_cost": 32.0, "lunge": 8.5, "dash_from": 0.06, "dash_to": 0.27},
 	"counter": {"name": "长坂怒喝", "description": "持矛震喝 · 震退近敌", "cost": 28.0, "cooldown": 10.0,
@@ -73,9 +73,9 @@ const ZHANGFEI = {
 		"kind": "chase", "windup": 0.65, "duration": 2.65, "radius": 0.0, "reach": 4.2, "half_width": 0.62,
 		"guard_cost": 28.0, "charge_clip": "SerpentCharge",
 		"hits": [
-			{"start": 0.65, "clip": "SerpentThrust", "clip_duration": 0.50, "active": Vector2(0.86, 1.03), "damage": 16.0},
-			{"start": 1.18, "clip": "SerpentThrust", "clip_duration": 0.50, "active": Vector2(1.39, 1.56), "damage": 18.0},
-			{"start": 1.77, "clip": "SerpentThrust", "clip_duration": 0.65, "active": Vector2(2.05, 2.25), "damage": 25.0},
+			{"start": 0.65, "clip": "SerpentThrust", "clip_duration": 0.50, "active": Vector2(0.77, 0.87), "damage": 16.0},
+			{"start": 1.18, "clip": "SerpentThrust", "clip_duration": 0.50, "active": Vector2(1.30, 1.40), "damage": 18.0},
+			{"start": 1.77, "clip": "SerpentThrust", "clip_duration": 0.65, "active": Vector2(1.93, 2.08), "damage": 25.0},
 		]},
 }
 

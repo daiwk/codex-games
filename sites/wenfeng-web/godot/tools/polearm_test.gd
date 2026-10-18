@@ -54,14 +54,14 @@ func _capture_demos() -> void:
 		game.camera.position = Vector3(4.2, 2.7, 5.3)
 		game.camera.fov = 43.0
 		game.camera.look_at(Vector3(0, 1.35, 0))
-		for clip in ["Idle", "Attack1", "Attack2", "Heavy", "Block"]:
+		for clip in ["Idle", "Attack1", "Attack2", "Attack3", "Heavy", "Block"]:
 			game.player.play_clip(clip, 0.0)
 			game.player.animation_player.advance(0)
 			var animation: Animation = game.player.animation_player.get_animation(game.player.animation_names[clip])
 			game.player.animation_player.seek(animation.length * 0.48, true)
 			game.player.animation_player.pause()
 			game.player.skeleton.force_update_all_bone_transforms()
-			game.player._update_two_hand_grip()
+			game.player._update_two_hand_grip(0.0, true)
 			await frames(3)
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png("res://qa/%s-%s.png" % [id, clip.to_lower()])
@@ -119,6 +119,7 @@ func _run() -> void:
 				var right: Vector3 = game.player.palm_position(false)
 				check(id + " " + clip + " both palms on shaft", left.distance_to(Geometry3D.get_closest_point_to_segment(left, a, b)) < 0.035 and right.distance_to(Geometry3D.get_closest_point_to_segment(right, a, b)) < 0.035)
 			game.player.set_physics_process(true)
+	await _check_weapon_corrections()
 	for id in Roster.IDS:
 		for opponent in Roster.IDS:
 			game.return_to_menu()
@@ -133,6 +134,7 @@ func _run() -> void:
 		check(id + " light deals damage at polearm distance", game.enemy.hp < 120)
 		await setup_fight(id, 2.20)
 		check(id + " heavy starts", game.player.request_heavy())
+		check(id + " heavy spends the configured polearm stamina", is_equal_approx(game.player.stamina, 66.0))
 		await frames(120)
 		check(id + " heavy deals damage", game.enemy.hp < 120)
 		await setup_fight(id, 2.2)
@@ -185,3 +187,36 @@ func _run() -> void:
 	game = null
 	await frames(3)
 	quit(0 if failures.is_empty() else 1)
+
+func _check_weapon_corrections() -> void:
+	game.return_to_menu()
+	game.select_character("guanyu")
+	await frames(3)
+	game.player.set_physics_process(false)
+	for yaw in [0.0, PI * 0.5, PI, -PI * 0.5]:
+		game.player.rotation.y = yaw
+		for clip in ["Idle", "Attack1", "Attack2", "Heavy", "Block"]:
+			game.player.play_clip(clip, 0.0)
+			game.player.animation_player.advance(0)
+			var animation: Animation = game.player.animation_player.get_animation(game.player.animation_names[clip])
+			game.player.animation_player.seek(animation.length * 0.48, true)
+			game.player.animation_player.pause()
+			game.player.skeleton.force_update_all_bone_transforms()
+			game.player._update_two_hand_grip(0.0, true)
+			var edge: Vector3 = -game.player.weapon_mesh.global_basis.x.normalized()
+			check("guandao %s edge faces opponent at yaw %.2f" % [clip, yaw], edge.dot(game.player.forward()) > 0.20)
+	game.player.set_physics_process(true)
+	var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/characters/animation_manifest.json"))
+	for clip in ["Attack1", "Attack2", "Attack3", "Heavy", "SerpentThrust", "SerpentCross"]:
+		check("serpent spear " + clip + " baked from authored stab", manifest.zhangfei.clips[clip].source == "Melee_2H_Attack_Stab")
+	for index in 4:
+		for target_position in [Vector3(0, .015, 2.35), Vector3(2, .015, 2), Vector3(0, .015, -2.35)]:
+			await setup_fight("zhangfei", 2.35)
+			game.enemy.position = target_position
+			var started: bool = game.player.request_heavy() if index == 3 else game.player._begin_attack(index)
+			check("spear strike %d uses straight line geometry" % index, started and game.player.attack.get("shape", "") == "line")
+			if index == 3:
+				check("spear heavy uses charged stab timing", is_equal_approx(game.player.action_duration, 1.4) and game.player.attack.active == Vector2(0.29, 0.60))
+			game._resolve_strike(game.player, game.player.attack)
+			var in_front = target_position.x == 0 and target_position.z > 0
+			check("spear strike %d target %s obeys thrust direction" % [index, target_position], (game.enemy.hp < 120) == in_front)

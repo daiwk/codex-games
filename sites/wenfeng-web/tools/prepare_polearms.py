@@ -76,8 +76,8 @@ def clip_set(character):
         'StrafeRight': ('advanced', 'Running_Strafe_Right'),
         'Run': ('basic', 'Running_A'), 'TurnLeft': ('basic', 'Walking_A'),
         'TurnRight': ('basic', 'Walking_A'),
-        'Attack1': ('melee', 'Melee_2H_Attack_Stab' if character == 'zhangfei' else 'Melee_2H_Attack_Slice'),
-        'Attack2': ('melee', {'guanyu': 'Melee_2H_Attack_Chop', 'zhangfei': 'Melee_2H_Attack_Slice', 'lubu': 'Melee_2H_Attack_Stab'}[character]),
+        'Attack1': ('melee', 'Melee_2H_Attack_Slice'),
+        'Attack2': ('melee', 'Melee_2H_Attack_Stab' if character == 'lubu' else 'Melee_2H_Attack_Chop'),
         'Attack3': ('melee', 'Melee_2H_Attack_Spin'),
         'Heavy': ('melee', 'Melee_2H_Attack_Chop'),
         'Block': ('melee', 'Melee_2H_Idle'), 'Dodge': ('advanced', 'Dodge_Backward'),
@@ -91,10 +91,13 @@ def clip_set(character):
                      CrescentCharge=('melee', 'Melee_2H_Idle'),
                      CrescentFinish=('melee', 'Melee_2H_Attack_Spinning'))
     elif character == 'zhangfei':
-        clips.update(SerpentThrust=('melee', 'Melee_2H_Attack_Stab'),
-                     SerpentBrace=('melee', 'Melee_2H_Idle'),
-                     SerpentCharge=('melee', 'Melee_2H_Idle'),
-                     SerpentCross=('melee', 'Melee_2H_Attack_Slice'))
+        # Every serpent-spear strike uses the author's linear two-handed stab.
+        # Runtime playback rates distinguish the combo and charged thrust;
+        # neither an overhead chop nor a spinning/sweeping cut belongs here.
+        clips.update({alias: ('melee', 'Melee_2H_Attack_Stab') for alias in
+                      ['Attack1', 'Attack2', 'Attack3', 'Heavy', 'SerpentThrust', 'SerpentCross']})
+        clips.update(SerpentBrace=('melee', 'Melee_2H_Idle'),
+                     SerpentCharge=('melee', 'Melee_2H_Idle'))
     else:
         clips.update(HalberdSweep=('melee', 'Melee_2H_Attack_Spin'),
                      HalberdThrust=('melee', 'Melee_2H_Attack_Stab'),

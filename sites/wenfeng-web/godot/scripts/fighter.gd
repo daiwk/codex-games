@@ -61,6 +61,7 @@ var skill_animation_started = false
 var grip_config: Dictionary = {}
 var right_hand_index = -1
 var left_hand_index = -1
+var grip_roll_ready = false
 
 func _ready() -> void:
 	collision_layer = 2
@@ -154,7 +155,7 @@ func palm_position(left: bool) -> Vector3:
 	var local_palm = skeleton.get_bone_global_pose(index) * Vector3(p[0], p[1], p[2])
 	return skeleton.to_global(local_palm)
 
-func _update_two_hand_grip() -> void:
+func _update_two_hand_grip(delta = 0.0, instant = false) -> void:
 	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree() or not is_instance_valid(weapon_mesh) or left_hand_index < 0:
 		return
 	var right = palm_position(false)
@@ -165,13 +166,32 @@ func _update_two_hand_grip() -> void:
 	var wrist = skeleton.global_basis * skeleton.get_bone_global_pose(right_hand_index).basis
 	var side = wrist.x - axis * wrist.x.dot(axis)
 	if side.length() < 0.05:
-		side = Vector3.FORWARD.cross(axis)
+		side = Vector3.UP.cross(axis) if absf(axis.y) < 0.9 else Vector3.RIGHT.cross(axis)
 	side = side.normalized()
+	if Roster.WEAPONS[weapon_id].get("edge_forward", false):
+		# This GLB's convex cutting edge is local -X. Aim that edge along the
+		# committed facing direction, rotating only around the two-hand shaft.
+		var previous = grip.global_basis.x - axis * grip.global_basis.x.dot(axis)
+		if previous.length_squared() > 0.001:
+			previous = previous.normalized()
+		else:
+			previous = side
+		var edge = forward() - axis * forward().dot(axis)
+		var desired = -edge.normalized() if edge.length_squared() > 0.02 else previous
+		if instant or not grip_roll_ready:
+			side = desired
+		else:
+			var angle = previous.signed_angle_to(desired, axis)
+			side = previous.rotated(axis, clampf(angle, -14.0 * delta, 14.0 * delta))
+		grip_roll_ready = true
 	grip.global_transform = Transform3D(Basis(side, axis, side.cross(axis)), right)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if is_two_handed():
-		_update_two_hand_grip()
+		_update_two_hand_grip(delta)
+
+func is_thrust_weapon() -> bool:
+	return bool(Roster.WEAPONS[weapon_id].get("thrust_only", false))
 
 func basic_reach() -> float:
 	return float(Roster.WEAPONS[weapon_id].reach)
@@ -182,9 +202,14 @@ func preferred_distance() -> float:
 func _light_attacks() -> Array:
 	if not is_two_handed():
 		return ATTACKS
-	var thrust = character_id == "zhangfei"
+	if is_thrust_weapon():
+		return [
+			{"clip": "Attack1", "duration": 0.90, "active": Vector2(0.19, 0.39), "damage": 18.0, "cost": 17.0, "reach": basic_reach(), "lunge": 1.7, "heavy": false, "shape": "line", "half_width": 0.54},
+			{"clip": "Attack2", "duration": 1.00, "active": Vector2(0.21, 0.43), "damage": 21.0, "cost": 20.0, "reach": basic_reach(), "lunge": 1.4, "heavy": false, "shape": "line", "half_width": 0.56},
+			{"clip": "Attack3", "duration": 1.14, "active": Vector2(0.24, 0.49), "damage": 28.0, "cost": 24.0, "reach": basic_reach() + 0.15, "lunge": 1.1, "heavy": false, "shape": "line", "half_width": 0.60},
+		]
 	return [
-		{"clip": "Attack1", "duration": 0.98, "active": Vector2(0.32, 0.54), "damage": 18.0, "cost": 17.0, "reach": basic_reach(), "lunge": 1.7, "heavy": false, "shape": "line" if thrust else "sector", "half_width": 0.58, "min_dot": -0.12},
+		{"clip": "Attack1", "duration": 0.98, "active": Vector2(0.32, 0.54), "damage": 18.0, "cost": 17.0, "reach": basic_reach(), "lunge": 1.7, "heavy": false, "shape": "sector", "min_dot": -0.12},
 		{"clip": "Attack2", "duration": 1.10, "active": Vector2(0.35, 0.61), "damage": 21.0, "cost": 20.0, "reach": basic_reach(), "lunge": 1.4, "heavy": false, "min_dot": -0.16},
 		{"clip": "Attack3", "duration": 1.34, "active": Vector2(0.42, 0.80), "damage": 28.0, "cost": 24.0, "reach": basic_reach() + 0.15, "lunge": 1.1, "heavy": false, "min_dot": -0.30},
 	]
@@ -223,6 +248,7 @@ func reset_fighter() -> void:
 	velocity = Vector3.ZERO
 	turn_speed = 0.0
 	turning_in_place = false
+	grip_roll_ready = false
 	energy = 35.0
 	cooldowns = {"rush": 0.0, "counter": 0.0}
 	current_clip = ""
@@ -257,7 +283,9 @@ func request_heavy() -> bool:
 	combo = 0
 	attack = HEAVY.duplicate()
 	if is_two_handed():
-		attack.merge({"duration": 1.48, "active": Vector2(0.48, 0.83), "damage": 38.0, "cost": 34.0, "reach": basic_reach() + 0.12, "lunge": 1.8})
+		attack.merge({"duration": 1.48, "active": Vector2(0.48, 0.83), "damage": 38.0, "cost": 34.0, "reach": basic_reach() + 0.12, "lunge": 1.8}, true)
+	if is_thrust_weapon():
+		attack.merge({"duration": 1.40, "active": Vector2(0.29, 0.60), "shape": "line", "half_width": 0.62}, true)
 	_apply_weapon_stats()
 	_enter_attack()
 	return true

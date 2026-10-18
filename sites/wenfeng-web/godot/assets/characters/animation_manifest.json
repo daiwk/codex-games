@@ -658,22 +658,22 @@
         "samples": 49
       },
       "Attack2": {
-        "source": "Melee_2H_Attack_Slice",
+        "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
-        "seconds": 1.100000023841858,
-        "samples": 34
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Attack3": {
-        "source": "Melee_2H_Attack_Spin",
+        "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
-        "seconds": 2.4000000953674316,
-        "samples": 73
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Heavy": {
-        "source": "Melee_2H_Attack_Chop",
+        "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
-        "seconds": 1.6333333253860474,
-        "samples": 50
+        "seconds": 1.600000023841858,
+        "samples": 49
       },
       "Block": {
         "source": "Melee_2H_Idle",
@@ -717,6 +717,12 @@
         "seconds": 1.600000023841858,
         "samples": 49
       },
+      "SerpentCross": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49
+      },
       "SerpentBrace": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
@@ -728,12 +734,6 @@
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
         "samples": 33
-      },
-      "SerpentCross": {
-        "source": "Melee_2H_Attack_Slice",
-        "library": "KayKit Free 1.1",
-        "seconds": 1.100000023841858,
-        "samples": 34
       }
     },
     "grip": {
