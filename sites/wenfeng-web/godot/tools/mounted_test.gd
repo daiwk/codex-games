@@ -389,18 +389,31 @@ func _check_colors_and_gaits() -> void:
 		for index in leg_ids:
 			standing[index] = rig.get_bone_pose_rotation(index)
 		fighter.input_move = Vector3(0, 0, 1)
-		await frames(42)
+		var walk_motion: Dictionary = {}
+		for index in leg_ids:
+			walk_motion[index] = 0.0
+		# A moving leg can briefly cross its standing rotation. Observe a short
+		# window instead of declaring that valid gait phase a frozen limb.
+		for tick in 42:
+			await frames(1)
+			for index in leg_ids:
+				walk_motion[index] = maxf(walk_motion[index], rig.get_bone_pose_rotation(index).angle_to(Quaternion(standing[index])))
 		check(color + " actual travel drives walking gait", fighter.mount_speed > 2.0 and float(tree.get("parameters/Gait/blend_position")) > 1.0)
 		var walking: Dictionary = {}
 		for index in leg_ids:
 			walking[index] = rig.get_bone_pose_rotation(index)
-			check(color + " walking moves limb independently " + str(index), Quaternion(walking[index]).angle_to(Quaternion(standing[index])) > 0.005)
+			check(color + " walking moves limb independently " + str(index), walk_motion[index] > 0.005)
 		check(color + " gallop starts through actual Space", fighter.request_dodge())
-		await frames(38)
+		var gallop_motion: Dictionary = {}
+		for index in leg_ids:
+			gallop_motion[index] = 0.0
+		for tick in 38:
+			await frames(1)
+			for index in leg_ids:
+				gallop_motion[index] = maxf(gallop_motion[index], rig.get_bone_pose_rotation(index).angle_to(Quaternion(walking[index])))
 		check(color + " actual charge drives galloping gait", fighter.mount_speed > 7.0 and float(tree.get("parameters/Gait/blend_position")) > 5.0)
 		for index in leg_ids:
-			var galloping = rig.get_bone_global_pose(index)
-			check(color + " galloping moves limb independently " + str(index), rig.get_bone_pose_rotation(index).angle_to(Quaternion(walking[index])) > 0.005 and galloping.origin.is_finite())
+			check(color + " galloping moves limb independently " + str(index), gallop_motion[index] > 0.005 and rig.get_bone_global_pose(index).origin.is_finite())
 
 func _check_ai_and_foot_regression() -> void:
 	await prepare("xuchu", "mounted", "sword", 5.0)

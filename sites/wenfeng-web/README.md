@@ -56,7 +56,9 @@ python3 tools/fetch_web_resources.py
 
 用户提供的 `马_棕色.glb` / `马_白色.glb` 原件仅用于归档：原导出无动画，骨骼静止变换与逆绑定矩阵异常且几乎所有权重集中于Root，不能直接用于跑步。网页副本保留外观、UV和贴图，按已验证的四足参考骨架重新绑定并接入CC0站立/行走/奔跑动作；转换方式与数据详见 `tools/prepare_mounts.py` 及 `assets/mounts/` 内记录。
 
-`马鞍.glb` 原件也完整保留。运行 `python3 tools/prepare_saddle.py` 生成 `assets/mounts/saddle.glb` 与 `saddle_manifest.json`：保留原三角形、UV与上部鞍架，将贴图缩为2048px，仅把下垂侧垫贴合到两匹马的肋部。白马适配使用同一模型的形态键，不复制整套纹理。此可选素材准备步骤需要NumPy、SciPy和Pillow，直接运行已打包的游戏无需安装这些库。
+`马鞍.glb` 原件也完整保留。运行 `python3 tools/prepare_saddle.py` 生成 `assets/mounts/saddle.glb` 与 `saddle_manifest.json`：保留原三角形、UV、鞍桥和厚度，将贴图缩为2048px。运行副本纵长约68cm（原约90cm），两端平滑缩短而保留中央座区，鞍与骑手前移7.5cm，侧垫分别贴合两匹马。白马适配使用同一模型的形态键，不复制整套纹理。位置参考 [BHS骑具检查](https://www.bhs.org.uk/media/uddbc0np/connemara-champs-activity-plans.pdf) 与 [World Horse Welfare / Animal Health Trust](https://storage.googleapis.com/worldhorsewelfare-cloud/2021/11/9c136a57-saddlery-leaflet-2021.pdf) 的肩胛避让、承重区域与骑手居中原则；尺寸按游戏网格标定。此可选素材准备步骤需要NumPy、SciPy和Pillow，直接运行已打包的游戏无需安装这些库。
+
+马匹使用独立的站立、行走和奔跑片段，奔跑保留原动作的收腿、伸展与腾空。低速至1.8m/s使用完整Walk，1.8–3.6m/s平滑过渡到完整Gallop，普通4.8m/s快跑不再掺入Walk；Space冲刺提高完整奔跑片段的节奏。切换与节奏连续，骨长和马GLB保持不变。`godot --headless --path godot --script res://tools/horse_gait_test.gd` 验证实际腿部摆幅、骨长、速度切换及停止/重置。
 
 ## 突刺接触
 

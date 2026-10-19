@@ -13,6 +13,13 @@ const MANIFEST_PATH = "res://assets/mounts/manifest.json"
 const SADDLE_SCENE_PATH = "res://assets/mounts/saddle.glb"
 const SADDLE_MANIFEST_PATH = "res://assets/mounts/saddle_manifest.json"
 const MODEL_SCALE = 1.0
+# Keep the blend-space coordinate stable, but finish the walk/run transition
+# below normal cruising speed. Ordinary travel must use the authored gallop,
+# rather than indefinitely averaging it with alternating walking steps.
+const WALK_FULL_SPEED = 1.8
+const GALLOP_FULL_SPEED = 3.6
+const GALLOP_BLEND_POSITION = 7.2
+const CHARGE_SPEED = 8.2
 
 var character_id = "guanyu"
 var horse_color = "brown"
@@ -20,6 +27,7 @@ var belly_width = 0.68
 var _saddle_surface = Vector3(0, 1.6, -0.18)
 var _head_anchor = Vector3(0, 1.95, 1.075)
 var _seat_offset_y = 0.05
+var _seat_offset_z = 0.0
 var _model: Node3D
 var _skeleton: Skeleton3D
 var _animation_player: AnimationPlayer
@@ -80,8 +88,18 @@ func update_motion(delta: float, speed: float, turn_rate: float, defeated = fals
 	_motion_speed = lerpf(_motion_speed, target, 1.0 - exp(-maxf(delta, 0.0) * 8.0))
 	if _motion_speed < 0.035:
 		_motion_speed = 0.0
-	_animation_tree.set("parameters/Gait/blend_position", clampf(_motion_speed, 0.0, 7.2))
-	var cadence = clampf(_motion_speed / 4.8, 0.78, 1.35) if _motion_speed > 3.4 else clampf(_motion_speed / 1.65, 0.78, 1.20)
+	var gallop_weight = smoothstep(WALK_FULL_SPEED, GALLOP_FULL_SPEED, _motion_speed)
+	var gait_position = minf(_motion_speed, WALK_FULL_SPEED)
+	if _motion_speed > WALK_FULL_SPEED:
+		gait_position = lerpf(WALK_FULL_SPEED, GALLOP_BLEND_POSITION, gallop_weight)
+	_animation_tree.set("parameters/Gait/blend_position", gait_position)
+	# Gallop has its own paired stride and airborne phase at half the walk's
+	# cycle length. Fade cadence continuously as that clip takes over; Space
+	# then increases the full gallop's frequency instead of speeding up Walk.
+	var walk_cadence = clampf(_motion_speed / 1.65, 0.72, 1.15)
+	var charge_ratio = clampf((_motion_speed - GALLOP_FULL_SPEED) / (CHARGE_SPEED - GALLOP_FULL_SPEED), 0.0, 1.0)
+	var gallop_cadence = lerpf(0.90, 1.42, charge_ratio)
+	var cadence = lerpf(walk_cadence, gallop_cadence, gallop_weight)
 	_animation_tree.set("parameters/Cadence/scale", 0.80 if _motion_speed < 0.1 else cadence)
 	# Deliberately keep a standing horse under a defeated rider. The authored
 	# sideways Death clip is reserved for a future proper dismount animation.
@@ -153,6 +171,7 @@ func _ensure_visual() -> void:
 	var saddle_manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SADDLE_MANIFEST_PATH))
 	_saddle_fit = saddle_manifest.fits[horse_color]
 	_seat_offset_y = float(_saddle_fit.rider_seat_y)
+	_seat_offset_z = float(_saddle_fit.get("rider_seat_z", 0.0))
 	var scene = load(HORSE_SCENES[horse_color]) as PackedScene
 	assert(scene != null, "The selected user horse GLB is required")
 	_model = scene.instantiate()
@@ -199,9 +218,9 @@ func _material(color: Color, metallic: float) -> StandardMaterial3D:
 func _build_gait_tree() -> void:
 	var gait = AnimationNodeBlendSpace1D.new()
 	gait.min_space = 0.0
-	gait.max_space = 7.2
+	gait.max_space = GALLOP_BLEND_POSITION
 	gait.sync = true
-	for data in [["Idle", 0.0], ["Walk", 1.8], ["Gallop", 7.2]]:
+	for data in [["Idle", 0.0], ["Walk", WALK_FULL_SPEED], ["Gallop", GALLOP_BLEND_POSITION]]:
 		var clip = AnimationNodeAnimation.new()
 		clip.animation = _clips[data[0]]
 		gait.add_blend_point(clip, float(data[1]), -1, StringName(data[0]))
@@ -242,9 +261,9 @@ func _marker(parent: Node3D, label: String, position_m: Vector3) -> Marker3D:
 
 func _build_tack() -> void:
 	_saddle_frame = _bone_frame("MountSaddle", _saddle_surface)
-	_seat = _marker(_saddle_frame, "RiderSeat", Vector3(0, _seat_offset_y, 0))
-	_hand_left = _marker(_saddle_frame, "LeftReinHand", Vector3(-0.16, _seat_offset_y + 0.17, 0.22))
-	_hand_right = _marker(_saddle_frame, "RightReinHand", Vector3(0.16, _seat_offset_y + 0.17, 0.22))
+	_seat = _marker(_saddle_frame, "RiderSeat", Vector3(0, _seat_offset_y, _seat_offset_z))
+	_hand_left = _marker(_saddle_frame, "LeftReinHand", Vector3(-0.16, _seat_offset_y + 0.17, _seat_offset_z + 0.22))
+	_hand_right = _marker(_saddle_frame, "RightReinHand", Vector3(0.16, _seat_offset_y + 0.17, _seat_offset_z + 0.22))
 	# The supplied textured saddle replaces both temporary thin cloth surfaces
 	# and their decorative rods. It shares the same animated back socket.
 	var saddle_scene = load(SADDLE_SCENE_PATH) as PackedScene
@@ -423,7 +442,7 @@ func _update_stirrup_straps() -> void:
 		if not is_instance_valid(frame) or not frame.is_inside_tree() or not is_instance_valid(strap) or not strap.is_inside_tree():
 			continue
 		var side = 1.0 if index == 0 else -1.0
-		var anchor = Vector3(side * 0.255, 0.09, 0.06)
+		var anchor = Vector3(side * 0.255, 0.09, float(_saddle_fit.saddle_offset[2]) + 0.06)
 		var end = _saddle_frame.to_local(frame.to_global(Vector3(0, 0.085, 0)))
 		var delta = end - anchor
 		strap.position = (anchor + end) * 0.5

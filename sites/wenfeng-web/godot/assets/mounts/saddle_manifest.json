@@ -4,11 +4,18 @@
   "source_sha256": "39d17b346c02c4a8387a1fae3ef37bc9088abdd176468e592bffdd7b5620edbe",
   "file": "saddle.glb",
   "runtime_bytes": 1774188,
+  "runtime_sha256": "97f1ff37c2170e1b1b411d0a89fd60cf340153ebe7e55438c1a0ef06a5471b9b",
   "vertices": 9714,
   "triangles": 9790,
   "texture_maximum": 2048,
   "source_to_runtime": {
-    "uniform_scale": 0.9,
+    "width_scale": 0.82,
+    "height_scale": 0.78,
+    "length_mapping": {
+      "linear": 0.85,
+      "cubic": -0.68,
+      "formula": "z = linear * source_x + cubic * source_x^3"
+    },
     "yaw_degrees": -90.0,
     "source_contact": [
       0.0,
@@ -21,52 +28,77 @@
       0.0
     ]
   },
+  "dimensions_m": {
+    "overall_length": 0.6798339033918237,
+    "upper_frame_length": 0.6520337944722376,
+    "upper_frame_source_y_min": 0.58,
+    "height": 0.722490234375,
+    "previous_overall_length": 0.8995606541633606,
+    "sitting_zone_length": 0.32912,
+    "sitting_zone_source_x": [
+      -0.2,
+      0.2
+    ]
+  },
   "fits": {
     "brown": {
       "saddle_offset": [
         0.0,
-        0.035,
-        0.0
+        0.03,
+        0.075
       ],
-      "seat_surface_y": 0.177011,
-      "rider_seat_y": 0.237011,
+      "seat_surface_y": 0.1530762,
+      "rider_seat_y": 0.2130762,
+      "rider_seat_z": 0.075,
       "flank_clearance_m": 0.016,
-      "panel_adjusted_vertices": 1766,
-      "panel_max_expansion_m": 0.07240619973859033,
+      "central_bearing_samples": 294,
+      "minimum_central_back_clearance_m": 0.015631177940846452,
+      "spine_channel_clearance_m": 0.04948392005735758,
+      "panel_adjusted_vertices": 2350,
+      "panel_max_expansion_m": 0.08398712097717748,
       "bounds_min": [
-        -0.40682106138808033,
-        -0.526887,
-        -0.4497803270816803
+        -0.380776727523534,
+        -0.4566354,
+        -0.33991695169591185
       ],
       "bounds_max": [
-        0.40131231386062943,
-        0.306755578125,
-        0.4497803270816803
+        0.37975441236402724,
+        0.265854834375,
+        0.33991695169591185
       ]
     },
     "white": {
       "saddle_offset": [
         0.0,
-        0.035,
-        0.0
+        0.03,
+        0.075
       ],
-      "seat_surface_y": 0.177011,
-      "rider_seat_y": 0.237011,
+      "seat_surface_y": 0.1530762,
+      "rider_seat_y": 0.2130762,
+      "rider_seat_z": 0.075,
       "flank_clearance_m": 0.016,
-      "panel_adjusted_vertices": 1801,
-      "panel_max_expansion_m": 0.11404484147792604,
+      "central_bearing_samples": 294,
+      "minimum_central_back_clearance_m": 0.01177945397879454,
+      "spine_channel_clearance_m": 0.0560864710725848,
+      "panel_adjusted_vertices": 2257,
+      "panel_max_expansion_m": 0.12180317874448487,
       "bounds_min": [
-        -0.43935764423532575,
-        -0.526887,
-        -0.4497803270816803
+        -0.3971658760353061,
+        -0.4566354,
+        -0.33991695169591185
       ],
       "bounds_max": [
-        0.43681064625747423,
-        0.306755578125,
-        0.4497803270816803
+        0.42158273307162464,
+        0.265854834375,
+        0.33991695169591185
       ]
     }
   },
   "white_blend_shape": "WhiteFit",
-  "provenance": "User-supplied Tripo saddle; original remains unchanged. Original triangles/UV and textured upper seat/frame preserved. Lower hanging panels fit each supplied horse flank."
+  "fitting_references": [
+    "https://www.bhs.org.uk/media/uddbc0np/connemara-champs-activity-plans.pdf",
+    "https://storage.googleapis.com/worldhorsewelfare-cloud/2021/11/9c136a57-saddlery-leaflet-2021.pdf"
+  ],
+  "fitting_note": "References guide shoulder clearance, central rider placement and separation of bearing saddle from hanging cloth. Dimensions are calibrated to these game meshes; no anatomical last-rib location or period-exact saddle reconstruction is claimed.",
+  "provenance": "User-supplied Tripo saddle; original remains unchanged. Triangles, UV, texture, panel thickness and raised bridges retained; smooth length compression chiefly shortens the ends. Lower hanging panels fit each supplied horse flank."
 }
