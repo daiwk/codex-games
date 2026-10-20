@@ -5,7 +5,7 @@ const Progress = preload("res://scripts/rpg_progress.gd")
 const World = preload("res://scripts/rpg_world.gd")
 const HUD = preload("res://scripts/rpg_hud.gd")
 const Effects = preload("res://scripts/combat_fx.gd")
-const SkillEffects = preload("res://scripts/skill_fx.gd")
+const SkillEffects = preload("res://scripts/rpg_skill_fx.gd")
 const SAVE_KEY = "changban-rpg-save-v1"
 const SAVE_FILE = "user://changban-rpg-v1.json"
 const INTRO = [
@@ -55,6 +55,10 @@ var publish_clock = 0.0
 var camera_yaw = 0.0
 var camera_distance = 12.0
 var camera_drag = false
+var camera_base_position = Vector3.ZERO
+var camera_shake = 0.0
+var impact_zoom = 0.0
+var hit_stop_until = 0
 var testing = false
 var _web_callback: JavaScriptObject
 
@@ -164,14 +168,20 @@ func _build_spawns() -> void:
 		minion_spawns.append({"id": "raider_%02d" % i, "position": groups[i][0], "level": groups[i][1]})
 
 func _process(delta: float) -> void:
+	if hit_stop_until > 0 and Time.get_ticks_msec() >= hit_stop_until:
+		Engine.time_scale = 1.0
+		hit_stop_until = 0
 	if not is_instance_valid(player):
 		return
 	if not paused:
+		var real_delta = delta / maxf(Engine.time_scale, 0.01)
+		camera_shake = move_toward(camera_shake, 0.0, real_delta * 0.95)
+		impact_zoom = move_toward(impact_zoom, 0.0, real_delta * 9.0)
 		elapsed += delta
 		toast_clock = maxf(0.0, toast_clock - delta)
 		if toast_clock <= 0.0:
 			toast = ""
-		_update_camera(delta)
+		_update_camera(real_delta)
 	if is_instance_valid(hud):
 		hud.refresh(snapshot())
 	publish_clock += delta
@@ -401,8 +411,21 @@ func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 	if outcome in ["hit", "heavy_hit"]:
 		fx._floating_text(resolved.contact_point + Vector3.UP * 0.3, str(int(ceil(before - defender.hp))), Color("fff1d8"))
 
-func _on_impact(_fighter: DuelFighter, outcome: String, at: Vector3) -> void:
+func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 	fx.burst(at, outcome)
+	if outcome == "evade":
+		return
+	var heavy = outcome in ["heavy_hit", "parry", "counter", "break"]
+	if skill_fx.has_method("impact"):
+		skill_fx.call("impact", at, outcome, -fighter.forward(), 1.35 if heavy else 0.8)
+	if player.position.distance_to(at) > 14.0:
+		return
+	camera_shake = maxf(camera_shake, 0.13 if heavy else 0.055)
+	impact_zoom = maxf(impact_zoom, 1.6 if heavy else 0.55)
+	# Stop only a real contact, and restore by wall clock even while paused.
+	if not testing and not paused and phase == "explore":
+		Engine.time_scale = 0.14
+		hit_stop_until = Time.get_ticks_msec() + (68 if heavy else 42)
 
 func _on_action(actor: DuelFighter, action: String) -> void:
 	match action:
@@ -414,6 +437,11 @@ func _on_action(actor: DuelFighter, action: String) -> void:
 func _on_skill(actor: DuelFighter, id: String, stage: String) -> void:
 	skill_fx.play_skill(actor, id, stage)
 	if stage == "start": fx.sound("charge", -18.0)
+	elif stage in ["release", "finish"]:
+		fx.sound("ultimate" if id == "ultimate" else ("thrust" if actor.is_thrust_weapon() else "heavy"), -16.0)
+		if actor == player:
+			camera_shake = maxf(camera_shake, 0.09 if stage == "finish" else 0.035)
+			impact_zoom = maxf(impact_zoom, 1.4 if id == "ultimate" else 0.5)
 
 func _claim_reward(id: String, actor: RPGActor) -> void:
 	reward_claimed[id] = elapsed
@@ -443,6 +471,7 @@ func _apply_progress_stats(heal: bool) -> void:
 		fx.sound("parry", -18.0, 1.2)
 
 func _on_player_death() -> void:
+	_reset_hit_feedback()
 	dead = true
 	phase = "defeat"
 	active_boss = ""
@@ -485,6 +514,7 @@ func interact() -> void:
 		_notify(interaction.text)
 
 func _show_dialogue(lines: Array, after: String = "") -> void:
+	_reset_hit_feedback()
 	phase = "dialogue"
 	dialogue = lines.duplicate(true)
 	dialogue_index = 0
@@ -541,6 +571,8 @@ func rest() -> void:
 	_save_game()
 
 func return_to_camp() -> void:
+	_reset_hit_feedback()
+	skill_fx.clear()
 	get_tree().paused = false
 	paused = false
 	map_open = false
@@ -581,6 +613,7 @@ func _toggle_overlay(which: String) -> void:
 		inventory_open = false
 	paused = inventory_open or map_open or dead
 	get_tree().paused = paused
+	if paused: _reset_hit_feedback()
 	_release_inputs()
 
 func toggle_pause() -> void:
@@ -593,6 +626,7 @@ func toggle_pause() -> void:
 	else:
 		paused = not paused or dead
 	get_tree().paused = paused
+	if paused: _reset_hit_feedback()
 	_release_inputs()
 	_save_game()
 
@@ -608,6 +642,7 @@ func command(action: String, payload: Variant = null) -> void:
 		"return_to_camp", "camp", "respawn": return_to_camp()
 		"return_to_menu":
 			_save_game()
+			_reset_hit_feedback()
 			if OS.has_feature("web"): JavaScriptBridge.eval("location.reload()")
 		"horse_color":
 			if str(payload) in ["white", "brown"] and _interaction().get("kind", "") == "station":
@@ -648,9 +683,39 @@ func _unhandled_input(event: InputEvent) -> void:
 func _update_camera(delta: float, instant: bool = false) -> void:
 	var target = player.position + Vector3.UP * 1.65
 	var offset = Vector3(0, camera_distance * 0.68, camera_distance).rotated(Vector3.UP, camera_yaw)
-	var desired = target + offset
-	camera.position = desired if instant else camera.position.lerp(desired, 1.0 - exp(-delta * 7.0))
+	var desired = _clear_camera_position(target, target + offset)
+	var smooth = desired if instant else camera_base_position.lerp(desired, 1.0 - exp(-delta * 7.0))
+	# Recheck the interpolated position so a quick turn cannot cross a roof.
+	camera_base_position = _clear_camera_position(target, smooth)
+	var tremor = Vector3(sin(Time.get_ticks_msec() * 0.091), cos(Time.get_ticks_msec() * 0.079) * 0.65, 0.0) * camera_shake
+	camera.position = _clear_camera_position(target, camera_base_position + camera.basis * tremor)
 	camera.look_at(target)
+	var fov = 55.0 if player.state == "ultimate" and player.action_time < 0.5 else 58.0
+	camera.fov = lerpf(camera.fov, fov + impact_zoom, 1.0 - exp(-delta * 9.0))
+	for label in labels.values():
+		if is_instance_valid(label):
+			label.scale = Vector3.ONE * clampf(camera.position.distance_to(label.global_position) / 12.0, 0.12, 1.15)
+
+func _clear_camera_position(target: Vector3, desired: Vector3) -> Vector3:
+	var direction = desired - target
+	if direction.length_squared() < 0.0001:
+		return target + Vector3.UP * 0.2
+	# Layer 2 contains the combatants and must never pull the camera inward.
+	var query = PhysicsRayQueryParameters3D.create(target, desired, 1 | 4)
+	var hit = get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return desired
+	var distance = target.distance_to(hit.position)
+	return target + direction.normalized() * maxf(0.15, distance - 0.5)
+
+func _reset_hit_feedback() -> void:
+	Engine.time_scale = 1.0
+	hit_stop_until = 0
+	camera_shake = 0.0
+	impact_zoom = 0.0
+
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 
 func _notify(text: String, duration: float = 4.5) -> void:
 	toast = text
@@ -700,7 +765,7 @@ func snapshot() -> Dictionary:
 	var quest = _quest()
 	quest.target_position = _point(quest.target_position)
 	for entry in bosses: entry.position = _point(entry.position)
-	return {"ready": true, "game_mode": "rpg", "phase": phase, "paused": paused, "dead": dead, "inventory_open": inventory_open, "map_open": map_open, "horse_color": progress.horse_color, "region": world.zone_at(player.position), "player": {"name": "赵云", "character": "zhaoyun", "level": progress.level, "hp": player.hp, "max_hp": player.max_hp, "stamina": player.stamina, "max_stamina": 100.0, "xp": progress.xp, "xp_to_next": progress.xp_to_next(), "attack": stats.attack, "armor": stats.armor, "energy": player.energy, "position": _point(player.position), "facing": player.rotation.y, "state": player.state, "weapon": player.weapon_id, "mount_speed": player.mount_speed, "contact_active": player.contact_active, "contact_latched": player.contact_latched}, "quest": quest, "target": target, "interaction": _interaction().get("text", ""), "dialogue": current_dialogue, "toast": toast, "bosses": bosses, "pois": pois, "inventory": progress.inventory.duplicate(), "equipped": progress.equipped.duplicate(), "save_label": save_label, "defeated": progress.defeated.duplicate(), "kills": progress.kills, "enemies": visible_enemies, "active_boss": active_boss, "seconds": elapsed, "muted": fx.muted, "fps": Engine.get_frames_per_second(), "coordinates": "metres; Y up; X east; Z south. Continuous circular world radius 155m."}
+	return {"ready": true, "game_mode": "rpg", "phase": phase, "paused": paused, "dead": dead, "inventory_open": inventory_open, "map_open": map_open, "horse_color": progress.horse_color, "region": world.zone_at(player.position), "player": {"name": "赵云", "character": "zhaoyun", "level": progress.level, "hp": player.hp, "max_hp": player.max_hp, "stamina": player.stamina, "max_stamina": 100.0, "xp": progress.xp, "xp_to_next": progress.xp_to_next(), "attack": stats.attack, "armor": stats.armor, "energy": player.energy, "position": _point(player.position), "facing": player.rotation.y, "state": player.state, "weapon": player.weapon_id, "mount_speed": player.mount_speed, "contact_active": player.contact_active, "contact_latched": player.contact_latched}, "quest": quest, "target": target, "interaction": _interaction().get("text", ""), "dialogue": current_dialogue, "toast": toast, "bosses": bosses, "pois": pois, "inventory": progress.inventory.duplicate(), "equipped": progress.equipped.duplicate(), "save_label": save_label, "defeated": progress.defeated.duplicate(), "kills": progress.kills, "enemies": visible_enemies, "active_boss": active_boss, "seconds": elapsed, "muted": fx.muted, "effects": skill_fx.call("debug_state"), "fps": Engine.get_frames_per_second(), "coordinates": "metres; Y up; X east; Z south. Continuous circular world radius 155m."}
 
 func _point(value: Vector3) -> Array:
 	return [value.x, value.y, value.z]

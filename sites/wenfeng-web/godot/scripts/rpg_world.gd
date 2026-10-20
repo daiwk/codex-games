@@ -26,6 +26,7 @@ var _materials: Dictionary = {}
 var _meshes: Dictionary = {}
 var _batches: Dictionary = {}
 var _obstacles: StaticBody3D
+var _camera_obstacles: StaticBody3D
 var _road_material: ShaderMaterial
 var _flag_shader: Shader
 var _fires: Array[Node3D] = []
@@ -43,6 +44,12 @@ func _ready() -> void:
 	_obstacles.collision_layer = 1
 	_obstacles.collision_mask = 0
 	add_child(_obstacles)
+	# Flags and high roofs affect the view, while riders still pass beneath them.
+	_camera_obstacles = StaticBody3D.new()
+	_camera_obstacles.name = "CameraObstacles"
+	_camera_obstacles.collision_layer = 4
+	_camera_obstacles.collision_mask = 0
+	add_child(_camera_obstacles)
 	_build_lighting()
 	_build_ground()
 	_build_roads()
@@ -206,6 +213,16 @@ func _trunk_collider(at: Vector3, radius: float, height: float) -> void:
 	_obstacles.add_child(collision)
 
 
+func _camera_box(at: Vector3, size: Vector3, yaw = 0.0) -> void:
+	var shape = BoxShape3D.new()
+	shape.size = size
+	var collision = CollisionShape3D.new()
+	collision.shape = shape
+	collision.position = at
+	collision.rotation.y = yaw
+	_camera_obstacles.add_child(collision)
+
+
 func _build_lighting() -> void:
 	var sky_material = ProceduralSkyMaterial.new()
 	sky_material.sky_top_color = Color("6d9daf")
@@ -354,6 +371,7 @@ void fragment(){float border=step(.06,UV.x)*step(UV.x,.94)*step(.035,UV.y)*step(
 	cloth.size = Vector2(1.45, 2.55)
 	_visual(cloth, mat, at + Vector3(0, height - 1.6, 0))
 	_label(text, at + Vector3(0, height - 1.52, 0.13), Color("e5ce96"), 77, 0.010)
+	_camera_box(at + Vector3(0, height - 1.6, 0), Vector3(1.85, 2.9, 0.55))
 
 
 func _roof(at: Vector3, width: float, depth: float, yaw = 0.0) -> void:
@@ -371,6 +389,7 @@ func _roof(at: Vector3, width: float, depth: float, yaw = 0.0) -> void:
 	_stamp("roof", _mat("314c4b"), at, Vector3(width, width * 0.65, depth), yaw, true)
 	_stamp("roof", _mat("4d6660"), at + Vector3.UP * 0.12, Vector3(width * 0.89, width * 0.65, depth * 0.86), yaw, true)
 	_stamp("box", _mat("263f3c"), at, Vector3(width, 0.16, depth), yaw, true)
+	_camera_box(at + Vector3.UP * width * 0.085, Vector3(width + 0.3, width * 0.17 + 0.5, depth + 0.3), yaw)
 
 
 func _gate(at: Vector3, text: String, width = 10.0, yaw = 0.0, stone = false) -> void:
@@ -382,6 +401,7 @@ func _gate(at: Vector3, text: String, width = 10.0, yaw = 0.0, stone = false) ->
 		_stamp("box", pillar, p + Vector3.UP * 2.8, Vector3(0.58, 5.6, 0.58), yaw, true)
 		_box_collider(p + Vector3.UP * 2.8, Vector3(0.72, 5.6, 0.72), yaw)
 	_stamp("box", pillar, at + Vector3.UP * 5.2, Vector3(width + 1.2, 0.36, 0.58), yaw, true)
+	_camera_box(at + Vector3.UP * 5.0, Vector3(width + 1.3, 1.1, 1.2), yaw)
 	_roof(at + Vector3.UP * 5.5, width + 2.0, 2.4, yaw)
 	_stamp("box", _mat("233e3c"), at + Vector3.UP * 4.7 + basis * Vector3(0, 0, 0.37), Vector3(3.7, 0.82, 0.15), yaw)
 	var label = _label(text, at + Vector3.UP * 4.7 + basis * Vector3(0, 0, 0.46), Color("d9c38c"), 76, 0.009)
@@ -409,6 +429,7 @@ func _tent(at: Vector3, yaw: float, color: String) -> void:
 	var roof = _roof_mesh_tent()
 	var instance = _visual(roof, _mat(color), at, Vector3(4.8, 3.0, 5.1), true)
 	instance.rotation.y = yaw
+	_camera_box(at + Vector3.UP * 1.5, Vector3(5.0, 3.2, 5.3), yaw)
 	_stamp("box", _mat("423f30"), at + basis * Vector3(0, 1.15, 2.43), Vector3(2.2, 2.3, 0.06), yaw)
 	for side in [-1.0, 1.0]:
 		_stamp("cylinder", _mat("675b3c"), at + basis * Vector3(0, 1.55, side * 2.55), Vector3(0.06, 3.1, 0.06))
