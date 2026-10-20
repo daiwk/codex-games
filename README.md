@@ -50,15 +50,17 @@ sites/wenfeng-web/
   dist/                            可直接运行、部署的完整网页游戏
   web/                             网页外壳、加载器、样式与浏览器桥接源码
   godot/                           网页版 Godot 游戏源码、优化资源与回归工具
+  source-assets/                   原始人物、武器、坐骑、动作与许可
   tools/                           可选的 Web 重建工具
   .openai/hosting.json              已有 Sites 项目标识
 godot-games/
-  3a-games/                        保留的原始人物、武器和动画 GLB
   tianque-arena/                   保留的其他已有角色 GLB
-  glb-manifest.json                34 个归档 GLB（含吕布原始备份、免费动画与两匹用户提供的战马） 的路径、大小与 SHA256
+  glb-manifest.json                上述独立项目的 5 个 GLB 校验记录
 ```
 
-吕布模型已移除两条翎尾末端的灰色片面，未经修改的原文件保存在 `godot-games/3a-games/source/originals/吕布.glb`，修复记录保存在同目录的 `吕布.repair.json`。其他原有 GLB 的路径与内容保持原样；运行游戏使用的是 `sites/wenfeng-web/godot/` 中的网页优化资源。旧桌面工程、安装包、导入缓存、临时截图和历史测试输出已从当前目录清理。
+网站相关素材已统一迁入 `sites/wenfeng-web/source-assets/`，包括六位武将、八把武器、棕白马、马鞍、当前使用的免费动作及许可。刀、剑和赵云、马超的原枪均保留。该目录的 `glb-manifest.json` 记录 24 个原始 GLB 的相对路径、大小与 SHA256；迁移未改动任何保留的 GLB 内容。
+
+吕布模型已移除两条翎尾末端的灰色片面，未经修改的原文件保存在 `sites/wenfeng-web/source-assets/originals/吕布.glb`，修复记录在同目录。运行游戏使用 `sites/wenfeng-web/godot/` 中的网页优化资源。未使用的人物历史版本、重复马匹格式及旧 `3a-games/` 目录已清理；`tianque-arena/` 属于另一个项目，独立保留。
 
 长兵器动作按武器区分：刀、戟可斩扫，枪、蛇矛的三段连招、重击与进攻技能均为突刺。双手动作使用 [KayKit Character Animations Free 1.1](https://kaylousberg.itch.io/kaykit-character-animations)（CC0），已重定向并烘焙到模型中。
 

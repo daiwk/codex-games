@@ -23,11 +23,11 @@ from scipy.spatial import cKDTree
 from scipy.spatial.transform import Rotation as R, Slerp
 from gltf_tools import GLB, compact_buffers, write_glb
 
-ROOT = Path(__file__).resolve().parents[3]
-RAW = ROOT / 'godot-games/3a-games'
-REFERENCE = RAW / 'source/third_party/horse/Horse.glb'
-CALIBRATION = RAW / 'source/third_party/horse/mount_calibration.json'
-OUT = Path(__file__).resolve().parents[1] / 'godot/assets/mounts'
+ROOT = Path(__file__).resolve().parents[1]
+RAW = ROOT / 'source-assets/mounts'
+REFERENCE = ROOT / 'source-assets/animations/horse/Horse.glb'
+CALIBRATION = ROOT / 'source-assets/animations/horse/mount_calibration.json'
+OUT = ROOT / 'godot/assets/mounts'
 SCALE = .46
 IDENTITY = np.array([0., 0., 0., 1.])
 COLORS = {'brown': ('马_棕色.glb', 2.67), 'white': ('马_白色.glb', 2.33)}

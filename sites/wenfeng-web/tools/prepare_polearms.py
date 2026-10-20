@@ -18,16 +18,16 @@ from scipy.spatial.transform import Rotation as R, Slerp
 from gltf_tools import GLB, compact_buffers, write_glb
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT.parents[1] / "godot-games/3a-games"
+ASSETS = ROOT / "source-assets"
 GAME = ROOT / "godot"
-KAY = ASSETS / "source/third_party/kaykit"
+KAY = ASSETS / "animations/kaykit"
 CHARACTERS = {
-    'zhaoyun': ('assets/characters/zhaoyun.glb', 3.05),
-    'machao': ('assets/characters/machao.glb', 3.05),
-    'guanyu': ('关羽.glb', 2.85),
-    'zhangfei': ('张飞.glb', 3.05),
-    'lubu': ('吕布.glb', 3.15),
-    'xuchu': ('许褚.glb', 1.25),
+    'zhaoyun': ('characters/zhaoyun.glb', 3.05),
+    'machao': ('characters/machao.glb', 3.05),
+    'guanyu': ('characters/关羽.glb', 2.85),
+    'zhangfei': ('characters/张飞.glb', 3.05),
+    'lubu': ('characters/吕布.glb', 3.15),
+    'xuchu': ('characters/许褚.glb', 1.25),
 }
 
 
@@ -578,7 +578,7 @@ def prepare_weapons(characters=None):
             ('lubu', 'halberd', '方天画戟.glb', (0., -0.00390625))]:
         if character not in selected:
             continue
-        scene = GLB(ASSETS / file)
+        scene = GLB(ASSETS / 'weapons' / file)
         center_weapon_shaft(scene, center)
         if name == 'serpent_spear':
             refine_polearm_head(scene, 0.713, 0.705, (0.70, 0.70, 0.48), (0.36, 0.395))
@@ -588,18 +588,18 @@ def prepare_weapons(characters=None):
         if character not in selected:
             continue
         name = character + '_spear'
-        scene = GLB(ASSETS / (name + '.glb'))
+        scene = GLB(ASSETS / 'weapons' / (name + '.glb'))
         normalize_horizontal_spear(scene, center)
         refine_polearm_head(scene, 0.82 if character == 'zhaoyun' else 0.775,
                            0.78 if character == 'zhaoyun' else 0.774, (0.65, 0.65, 0.65), (0.42, 0.60))
         write_glb(weapons / (name + '.glb'), scene.j, resize_images(scene.j, scene.bin, 1024))
     if 'xuchu' in selected:
-        scene = GLB(ASSETS / '刀-许褚.glb')
+        scene = GLB(ASSETS / 'weapons/刀-许褚.glb')
         normalize_xuchu_saber(scene)
         write_glb(weapons / 'xuchu_saber.glb', scene.j,
                   resize_images(scene.j, scene.bin, 1024, normal_maximum=512))
     if characters is None:
-        saber = GLB(ASSETS / 'onehand_saber.glb')
+        saber = GLB(ASSETS / 'weapons/onehand_saber.glb')
         center_weapon_shaft(saber, (-5.7, 0.))
         write_glb(GAME / 'onehand_saber.glb', saber.j, resize_images(saber.j, saber.bin, 512))
 
@@ -615,7 +615,7 @@ def main():
         return
     sources = {key: Sampler(KAY / ('Rig_Medium_' + name + '.glb')) for key, name in [
         ('melee', 'CombatMelee'), ('general', 'General'), ('basic', 'MovementBasic'), ('advanced', 'MovementAdvanced')]}
-    fingers = Sampler(ASSETS / 'source/third_party/ual1/UAL1_Standard.glb')
+    fingers = Sampler(ASSETS / 'animations/ual1/UAL1_Standard.glb')
     manifest_path = GAME / 'assets/characters/animation_manifest.json'
     manifest = json.loads(manifest_path.read_text())
     for character in args.characters or CHARACTERS:

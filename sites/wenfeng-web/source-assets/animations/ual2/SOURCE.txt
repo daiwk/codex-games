@@ -1,0 +1,10 @@
+Author: Quaternius
+Source: https://quaternius.itch.io/universal-animation-library-2
+Edition: free Standard
+License: CC0 1.0 Universal
+Retrieved: 2026-10-15
+Official non-root-motion Godot GLB.
+
+2026-10-20 repository cleanup: UAL2_Standard.glb was removed because the
+current website asset preparation uses KayKit plus UAL1 finger poses only.
+This historical source record and the original license are retained.

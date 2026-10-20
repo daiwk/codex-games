@@ -1,7 +1,7 @@
 {
   "zhaoyun": {
     "source": {
-      "file": "assets/characters/zhaoyun.glb",
+      "file": "characters/zhaoyun.glb",
       "sha256": "c843b2849facb8dd53f9806acad81d6e21b2909e878ea2bc072839cefcc21bec"
     },
     "clips": {
@@ -164,7 +164,7 @@
   },
   "machao": {
     "source": {
-      "file": "assets/characters/machao.glb",
+      "file": "characters/machao.glb",
       "sha256": "dd78c0c73ca6f1776e69bf1d51f1d05010e92eee177d306230c15f97cef65716"
     },
     "clips": {
@@ -333,7 +333,7 @@
   },
   "guanyu": {
     "source": {
-      "file": "关羽.glb",
+      "file": "characters/关羽.glb",
       "sha256": "8a3eec371c6b959e5a92b2d4eb0a25ca83d5bf4e9e3d4dee6651c89521c16310"
     },
     "clips": {
@@ -496,7 +496,7 @@
   },
   "zhangfei": {
     "source": {
-      "file": "张飞.glb",
+      "file": "characters/张飞.glb",
       "sha256": "60fe6eab6dce29d8df4b2214d6643322c14f3f107da54a6825dd52210d42f975"
     },
     "clips": {
@@ -653,7 +653,7 @@
   },
   "lubu": {
     "source": {
-      "file": "吕布.glb",
+      "file": "characters/吕布.glb",
       "sha256": "f52a3bbdca491a9b92861e1c3d31f8bfbe4fe97489eaee577d5d18ec35e2582e"
     },
     "clips": {
@@ -810,7 +810,7 @@
   },
   "xuchu": {
     "source": {
-      "file": "许褚.glb",
+      "file": "characters/许褚.glb",
       "sha256": "b0e17f2b5d4870ad873ad38ef722dcd7b27a09725508733484df42f0a2eb78a0"
     },
     "clips": {

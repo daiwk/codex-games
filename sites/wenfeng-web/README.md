@@ -36,7 +36,7 @@ python3 tools/fetch_web_resources.py
 
 ## 重新烘焙双手动作（可选）
 
-完整 GitHub 仓库保留了六位武将及武器的原始 GLB，以及 KayKit 免费版动画和原始许可。安装 `numpy scipy Pillow` 后，在本目录运行 `python3 tools/prepare_polearms.py`，再执行 Web 构建。吕布原模型的两个灰色翎尾片面通过 `tools/repair_lubu.py` 删除，原版保存在归档内；修复脚本可重复运行。烘焙工具只读取模型，通过 T-pose 重定向、保留骨长的双臂 IK、闭合手指和地面校正生成 `godot/assets/` 下的网页副本；普通本地游玩和 Web 重建均不需要这些库。Sites 源码快照自带烘焙后的运行资源，重新烘焙时使用完整 GitHub 仓库。
+本目录的 `source-assets/` 保留六位武将及武器的原始 GLB、KayKit 免费动作、UAL1 手指姿势、马匹参考动作与原始许可；无需依赖目录外的旧游戏工程。素材分类、校验清单和重建命令见 [原始素材说明](source-assets/README.md)。安装 `numpy scipy Pillow` 后，在本目录运行 `python3 tools/prepare_polearms.py`，再执行 Web 构建。吕布原模型的两个灰色翎尾片面通过 `tools/repair_lubu.py` 删除，原版保存在 `source-assets/originals/`；修复脚本可重复运行。烘焙工具只读取模型，通过 T-pose 重定向、保留骨长的双臂 IK、闭合手指和地面校正生成 `godot/assets/` 下的网页副本；普通本地游玩和 Web 重建均不需要这些库。
 
 蛇矛网页副本已局部收窄刃头：刃长和厚度为原来的70%、宽度48%，连接处平滑过渡；蛇形弯折、杆身、红缨、总长及刀尖纵向位置保留。三把长兵器和单手刀的网页副本已按实际柄心归中，原始归档GLB均保留。单独重新生成武器可运行 `python3 tools/prepare_polearms.py --weapons-only`，无需重新烘焙角色动作。
 
@@ -52,7 +52,7 @@ python3 tools/fetch_web_resources.py
 
 选将菜单可切换步战/马战（B）；默认步战。马战复用所有六将，WASD控马转向，Space冲刺（24体力、3.6秒冷却），J/K和Q/E/U为马上攻击。松键后有短暂减速过程；骑速超过4.8m/s时对命中的武器攻击提供最高30%伤害加成。马战场地与镜头已放大。双方均骑乘，以武将生命判胜，当前无上下马/落马系统。
 
-`horse_visual.gd` 使用 `assets/mounts/horse_brown.glb`、`horse_white.glb`，保留用户提供的真实毛色和贴图，双方坐骑可分别选色。鞍座与鞍垫使用用户提供的马鞍，侧垫分别适配两匹马，马镫跟随骑手靴子；`rider_pose.gd` 在动画后通过SkeletonModifier3D固定髋部和跨马双腿，保留上身攻防，不修改原始人物GLB；`mounted_combat.gd`定义枪刺、刀戟挥斩和骑乘技能。站立马匹的身体碰撞与骑乘者合并为同一角色碰撞体，当前不支持独立击杀马匹。原始马匹和许可保存在完整GitHub仓库的`godot-games/3a-games/source/third_party/horse/`。
+`horse_visual.gd` 使用 `assets/mounts/horse_brown.glb`、`horse_white.glb`，保留用户提供的真实毛色和贴图，双方坐骑可分别选色。鞍座与鞍垫使用用户提供的马鞍，侧垫分别适配两匹马，马镫跟随骑手靴子；`rider_pose.gd` 在动画后通过SkeletonModifier3D固定髋部和跨马双腿，保留上身攻防，不修改原始人物GLB；`mounted_combat.gd`定义枪刺、刀戟挥斩和骑乘技能。站立马匹的身体碰撞与骑乘者合并为同一角色碰撞体，当前不支持独立击杀马匹。用户马匹原件在 `source-assets/mounts/`，参考骨架、动作和许可在 `source-assets/animations/horse/`。
 
 用户提供的 `马_棕色.glb` / `马_白色.glb` 原件仅用于归档：原导出无动画，骨骼静止变换与逆绑定矩阵异常且几乎所有权重集中于Root，不能直接用于跑步。网页副本保留外观、UV和贴图，按已验证的四足参考骨架重新绑定并接入CC0站立/行走/奔跑动作；转换方式与数据详见 `tools/prepare_mounts.py` 及 `assets/mounts/` 内记录。
 

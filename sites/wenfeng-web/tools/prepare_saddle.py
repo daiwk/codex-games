@@ -16,10 +16,10 @@ from PIL import Image
 from scipy.spatial import cKDTree
 from gltf_tools import GLB, write_glb
 
-ROOT = Path(__file__).resolve().parents[3]
-WEB = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / 'godot-games/3a-games/马鞍.glb'
-OUTPUT = WEB / 'godot/assets/mounts/saddle.glb'
+ROOT = Path(__file__).resolve().parents[1]
+ASSETS = ROOT / 'source-assets'
+SOURCE = ASSETS / 'mounts/马鞍.glb'
+OUTPUT = ROOT / 'godot/assets/mounts/saddle.glb'
 CONFIG = OUTPUT.with_name('saddle_manifest.json')
 WIDTH_SCALE = .82
 HEIGHT_SCALE = .78
@@ -210,9 +210,9 @@ def main():
     upper = raw_positions[:, 1] >= .58
     manifest = {'source': str(SOURCE.relative_to(ROOT)), 'source_bytes': SOURCE.stat().st_size, 'source_sha256': hashlib.sha256(SOURCE.read_bytes()).hexdigest(), 'file': OUTPUT.name, 'runtime_bytes': OUTPUT.stat().st_size, 'runtime_sha256': hashlib.sha256(OUTPUT.read_bytes()).hexdigest(), 'vertices': len(base), 'triangles': len(triangles), 'texture_maximum': 2048, 'source_to_runtime': {'width_scale': WIDTH_SCALE, 'height_scale': HEIGHT_SCALE, 'length_mapping': {'linear': LENGTH_LINEAR, 'cubic': -LENGTH_CUBIC, 'formula': 'z = linear * source_x + cubic * source_x^3'}, 'yaw_degrees': -90., 'source_contact': CONTACT.tolist(), 'source_seat': SEAT.tolist()}, 'dimensions_m': {'overall_length': float(np.ptp(base[:, 2])), 'upper_frame_length': float(np.ptp(base[upper, 2])), 'upper_frame_source_y_min': .58, 'height': float(np.ptp(base[:, 1])), 'previous_overall_length': float(np.ptp(raw_positions[:, 0]) * .90), 'sitting_zone_length': float(2. * (LENGTH_LINEAR * .20 - LENGTH_CUBIC * .20 ** 3)), 'sitting_zone_source_x': [-.20, .20]}, 'fits': fits, 'white_blend_shape': 'WhiteFit', 'fitting_references': FIT_REFERENCES, 'fitting_note': 'References guide shoulder clearance, central rider placement and separation of bearing saddle from hanging cloth. Dimensions are calibrated to these game meshes; no anatomical last-rib location or period-exact saddle reconstruction is claimed.', 'provenance': 'User-supplied Tripo saddle; original remains unchanged. Triangles, UV, texture, panel thickness and raised bridges retained; smooth length compression chiefly shortens the ends. Lower hanging panels fit each supplied horse flank.'}
     CONFIG.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
-    archive = ROOT / 'godot-games/glb-manifest.json'
+    archive = ASSETS / 'glb-manifest.json'
     saved = json.loads(archive.read_text())
-    path = str(SOURCE.relative_to(ROOT))
+    path = str(SOURCE.relative_to(ASSETS))
     old = [e for e in saved['files'] if e['path'] == path]
     record = {'path': path, 'bytes': SOURCE.stat().st_size, 'sha256': manifest['source_sha256']}
     if old:

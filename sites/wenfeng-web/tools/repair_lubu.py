@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Remove the two grey triangle fans at Lu Bu's plume tips, preserving his rig.
 
-Run from the complete repository. The unedited input is backed up once under
-godot-games/3a-games/source/originals/ before the corrected main GLB is written.
+Paths are relative to this website directory. The unedited input is backed up
+once under source-assets/originals/ before the corrected character GLB is written.
 """
 import hashlib
 import json
@@ -12,13 +12,13 @@ import numpy as np
 
 from gltf_tools import GLB, write_glb
 
-ROOT = Path(__file__).resolve().parents[3]
-ASSETS = ROOT / 'godot-games/3a-games'
+ROOT = Path(__file__).resolve().parents[1]
+ASSETS = ROOT / 'source-assets'
 
 
 def main():
-    path = ASSETS / '吕布.glb'
-    backup = ASSETS / 'source/originals/吕布.glb'
+    path = ASSETS / 'characters/吕布.glb'
+    backup = ASSETS / 'originals/吕布.glb'
     raw = path.read_bytes()
     source = GLB(path)
     primitive = source.j['meshes'][0]['primitives'][0]

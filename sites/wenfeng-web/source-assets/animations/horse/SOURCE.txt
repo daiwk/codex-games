@@ -18,7 +18,10 @@ Attribution is optional; credit retained: Farm Animals Pack by Quaternius.
 https://creativecommons.org/publicdomain/zero/1.0/
 
 Horse.glb is the unmodified downloaded FBX2glTF conversion.
-Horse.fbx and Horse.blend are unmodified original author files.
+Horse.fbx and Horse.blend were original author files; redundant local copies
+were removed on 2026-10-20. Their download provenance and hashes remain in
+metadata.json. Horse.glb contains all reference geometry, skin and motions
+used by the current preparation script.
 The initial low-poly runtime preview removed only duplicate animation aliases;
 geometry, skin bind data and all 13 unique authored clips remain unchanged.
 The original GLB contains 26 clips: 13 unique + 13 AnimalArmature| aliases.
@@ -29,7 +32,7 @@ The source is suitable as a replaceable lightweight first horse; it is not a
 photoreal or armoured warhorse. Coat colours and simple tack are runtime variants.
 
 2026-10-19 user-supplied Tripo replacement horses:
-godot-games/3a-games/马_棕色.glb and 马_白色.glb are kept as original user assets.
+sites/wenfeng-web/source-assets/mounts/马_棕色.glb and 马_白色.glb are kept as original user assets.
 Their exported bones/IBM/weights are malformed and there are no animation clips.
 The runtime horse_brown.glb and horse_white.glb preserve their meshes, UVs,
 triangles and coat textures (2048 maximum in runtime), fitting a rebuilt rig

@@ -55,5 +55,9 @@
     "saddle_z_m": -0.23
   },
   "reference_preparation": "Remove 13 duplicate AnimalArmature| aliases; preserve all 13 unique authored clips and original geometry/bind/animation samples. No textures required.",
-  "current_runtime_preparation": "User Tripo meshes/UV/triangles are preserved, globally rotated/scaled to metres and resized to 2048px maximum textures; corrupt skins are replaced with fitted Quaternius anatomy, four separate limb weight regions, complete welded-topology tail components, fixed-length FK and ankle-following independent hoof roots. Idle/Walk/Gallop are retargeted; layered tails follow Back rigidly (25-degree whole-tail gallop lift about Tail2) and ears follow Head rigidly. See prepare_mounts.py and assets/mounts/manifest.json."
+  "current_runtime_preparation": "User Tripo meshes/UV/triangles are preserved, globally rotated/scaled to metres and resized to 2048px maximum textures; corrupt skins are replaced with fitted Quaternius anatomy, four separate limb weight regions, complete welded-topology tail components, fixed-length FK and ankle-following independent hoof roots. Idle/Walk/Gallop are retargeted; layered tails follow Back rigidly (25-degree whole-tail gallop lift about Tail2) and ears follow Head rigidly. See prepare_mounts.py and assets/mounts/manifest.json.",
+  "retained_model_files": [
+    "Horse.glb"
+  ],
+  "archive_note": "Redundant Horse.fbx and Horse.blend copies removed on 2026-10-20; source_sha256 retains their historical downloaded hashes. Current preparation reads Horse.glb and mount_calibration.json."
 }
