@@ -1,0 +1,63 @@
+{
+  "game": "changban-rpg",
+  "engine": "Godot 4.7.2",
+  "entry_scene": "res://rpg.tscn",
+  "threaded": false,
+  "assets": {
+    "index.wasm": {
+      "type": "application/wasm",
+      "decoded_bytes": 39514754,
+      "download_bytes": 10054758,
+      "sha256": "fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0",
+      "file": "index.wasm.gz"
+    },
+    "index.pck": {
+      "type": "application/octet-stream",
+      "decoded_bytes": 123576828,
+      "download_bytes": 120837669,
+      "sha256": "53424db31f2911341b12a83b036d3ca3f3a1bef060ce8aa977aa648d0c446826",
+      "chunks": [
+        {
+          "file": "index.pck.gz.part00",
+          "bytes": 16777216,
+          "sha256": "038f4735915151f88ff3fe8c7b27fcfaa017bf538dcf19b45acce5e5ca532bfd"
+        },
+        {
+          "file": "index.pck.gz.part01",
+          "bytes": 16777216,
+          "sha256": "b29c5d46fd345e5f414cee42057c67d654e709cb5c85c533da5c4c7b2ebdc3ec"
+        },
+        {
+          "file": "index.pck.gz.part02",
+          "bytes": 16777216,
+          "sha256": "c6e0f18f4e0821c30a3241da92e83ab146a636ae2e4623c03063c130f02818a7"
+        },
+        {
+          "file": "index.pck.gz.part03",
+          "bytes": 16777216,
+          "sha256": "0d47437dce201f7139b62e7bebbc5d6e95e9c781dde9821828a66b173801d209"
+        },
+        {
+          "file": "index.pck.gz.part04",
+          "bytes": 16777216,
+          "sha256": "135c97e731b36394e9ea7bfae08f5ebb8013fa7180b7a351b739a1974857b78f"
+        },
+        {
+          "file": "index.pck.gz.part05",
+          "bytes": 16777216,
+          "sha256": "7a3291cfc03c2f0b6c47f0438f4ab464c3f2223c88d15804f5f96198f07088c0"
+        },
+        {
+          "file": "index.pck.gz.part06",
+          "bytes": 16777216,
+          "sha256": "c9c8848ccd1399c2d25c4fb21171d66ee74b9e58ca49cedb5469349f31c89bce"
+        },
+        {
+          "file": "index.pck.gz.part07",
+          "bytes": 3397157,
+          "sha256": "595317249f116b0b8f3d9c11624937316dbb9c0e160b47ceb76a026d9ff6c608"
+        }
+      ]
+    }
+  }
+}

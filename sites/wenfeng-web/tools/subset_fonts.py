@@ -34,6 +34,8 @@ def source_characters():
     files = sorted((ROOT / "godot/scripts").rglob("*.gd"))
     files += sorted(path for path in (ROOT / "web").rglob("*")
                     if path.is_file() and path.suffix in WEB_SUFFIXES)
+    files += sorted(path for path in (ROOT.parent / "changban-rpg/web").rglob("*")
+                    if path.is_file() and path.suffix in WEB_SUFFIXES)
     characters = {ord(character) for path in files
                   for character in path.read_text(encoding="utf-8")
                   if character.isprintable()}

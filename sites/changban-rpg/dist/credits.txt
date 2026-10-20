@@ -1,0 +1,29 @@
+长坂行 · 赵云传 / Changban Journey
+
+以三国人物为背景的架空骑马探索外传。
+原创游戏代码、程序地图、封面插画、程序特效与合成音效。
+共享素材来自同仓库的问锋项目；网站运行文件独立打包。
+
+角色（含山贼）、兵器、棕白马外观及马鞍来自用户提供的模型。
+这些用户素材不被声明为 CC0。
+
+武将动作：KayKit Character Animations Free 1.1, Kay Lousberg, CC0 1.0.
+https://kaylousberg.itch.io/kaykit-character-animations
+See licenses/KayKit-CC0.txt
+
+握持手指姿势及归档单手动作：Quaternius Universal Animation Library 1 & 2, CC0 1.0.
+https://quaternius.com/
+See licenses/Quaternius-UAL1-CC0.txt and Quaternius-UAL2-CC0.txt
+
+马匹骨架与骑行动作：Quaternius Farm Animals Pack, CC0 1.0.
+https://quaternius.com/packs/farmanimal.html
+See licenses/Horse-CC0.txt
+
+Godot Engine — MIT License
+See licenses/Godot-LICENSE.txt and Godot-THIRD-PARTY.txt
+
+Chinese fonts: Noto Sans SC / Noto Serif SC, SIL Open Font License 1.1.
+See licenses/NotoSans-LICENSE.txt and NotoSerif-LICENSE.txt
+
+Additional asset provenance: licenses/Game-THIRD-PARTY.txt
+RPG-only bandit geometry and rig reconstruction: licenses/RPG-THIRD-PARTY.txt

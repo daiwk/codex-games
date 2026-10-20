@@ -14,6 +14,9 @@ const CHARACTERS = {
 		"identity": "方天画戟双手劈扫，横纵相接；旋戟连斩，锋压四方。", "weapons": ["halberd"], "opponent": "guanyu", "distance": 2.70},
 	"xuchu": {"name": "许褚", "courtesy": "仲康", "style": "虎痴重刃", "color": "d8ad63", "scale": 2.15,
 		"identity": "重刀横斩，虎威震阵；可选专用大刀、单手刀或剑。", "weapons": ["xuchu_saber", "saber", "sword"], "opponent": "machao", "distance": 1.95},
+	# RPG-only enemy. IDS remains the original six selectable duel heroes.
+	"bandit": {"name": "山贼游骑", "courtesy": "", "style": "流寇", "color": "c48c72", "scale": 1.80,
+		"identity": "沿路袭扰行旅的游骑。", "weapons": ["serpent_spear"], "opponent": "zhaoyun", "distance": 2.05},
 }
 const WEAPONS = {
 	"sword": {"name": "剑 · 灵巧", "path": "res://onehand_sword.glb", "reach": 2.12},

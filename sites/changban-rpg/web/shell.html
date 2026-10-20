@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#172d29">
+  <meta name="description" content="长坂行·赵云传：一骑入中原，穿林过桥，清剿游骑，历经五将试锋。探索连续郊野、升级装备，在浏览器中继续自己的征程。">
+  <title>长坂行 · 赵云传</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="web.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="./" aria-label="长坂行首页">长坂行<span>赵 云 传</span></a>
+    <nav aria-label="游戏工具">
+      <button id="pause-btn" disabled>暂停</button>
+      <button id="sound-btn" aria-pressed="false" disabled>声音 开</button>
+      <button id="help-btn">操作说明 <span>?</span></button>
+      <button id="fullscreen-btn">全屏 <span>↗</span></button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="stage" aria-label="长坂行·赵云传游戏">
+      <canvas id="canvas" width="1280" height="800" tabindex="0" aria-label="3D骑马探索。WASD策马，空格冲刺，J轻击，K重击，L格挡，Q E技能，U绝技；F交互，I行囊，M地图，N静音，Enter继续对话。"></canvas>
+      <div id="cover">
+        <div class="cover-art" aria-hidden="true"></div>
+        <div class="cover-copy">
+          <p class="eyebrow">三 国 外 传 · 纵 马 山 河</p>
+          <h1>长坂行<span>赵 云 传</span></h1>
+          <p class="tagline">一骑入风尘，<br>长路见英雄。</p>
+          <p class="intro">穿林过桥，清剿游骑，历经五将试锋。<br>沿途升级、收集战利品，装配自己的兵器。</p>
+          <button id="start-btn">策马启程 <span>→</span></button>
+          <div id="load-progress" hidden>
+            <div class="progress-track"><div id="progress-fill"></div></div>
+            <p id="status" role="status" aria-live="polite">正在准备行装…</p>
+          </div>
+          <p id="error" role="alert" hidden></p>
+          <p id="save-note" class="cover-note">征程自动保存在当前浏览器 · 支持触屏</p>
+        </div>
+        <div class="journey-note" aria-hidden="true"><span>山川可往</span><span>一骑可行</span></div>
+        <div class="seal" aria-hidden="true">常山<br>子龙</div>
+      </div>
+
+      <div id="browser-notice" role="status" hidden></div>
+      <div id="rotate-hint">横屏策马，视野更开阔 ↻</div>
+      <div id="touch-shortcuts" aria-label="触屏旅途工具" hidden>
+        <button id="touch-interact" data-command="interact">交互 F</button>
+        <button id="touch-inventory" data-command="toggle_inventory" aria-pressed="false">行囊 I</button>
+        <button id="touch-map" data-command="toggle_map" aria-pressed="false">地图 M</button>
+      </div>
+      <div id="dialogue-actions" hidden>
+        <button id="touch-continue" data-command="continue_dialogue">继续对话 <span>Enter →</span></button>
+      </div>
+      <div id="touch-controls" aria-label="触屏移动与战斗" hidden>
+        <div class="direction-pad">
+          <button data-action="move_up" aria-label="向前策马">↑</button>
+          <button data-action="move_left" aria-label="向左转向">←</button>
+          <button data-action="move_down" aria-label="向后策马">↓</button>
+          <button data-action="move_right" aria-label="向右转向">→</button>
+        </div>
+        <div class="action-pad">
+          <button data-action="skill_rush">Q 进攻</button>
+          <button data-action="skill_counter">E 战术</button>
+          <button data-action="ultimate" class="ultimate">U 绝技</button>
+          <button data-action="guard">格挡</button>
+          <button data-action="dodge">冲刺</button>
+          <button data-action="heavy">重击</button>
+          <button data-action="light" class="primary-action">轻击</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>WASD 策马 <i>·</i> Space 冲刺 <i>·</i> J / K / Q / E / U 战斗 <i>·</i> F 交互 <i>·</i> I 行囊 <i>·</i> M 地图</span><a href="credits.txt" target="_blank" rel="noopener">制作与许可 ↗</a></footer>
+
+  <dialog id="help-dialog" aria-labelledby="help-title">
+    <form method="dialog"><button class="close-dialog" aria-label="关闭操作说明">×</button></form>
+    <p class="eyebrow">长 坂 行 · 赵 云 传</p>
+    <h2 id="help-title">长路虽远，一骑可行。</h2>
+    <dl class="controls-list">
+      <div><dt><kbd>W A S D</kbd> / 方向键</dt><dd>策马移动与转向；松开方向后会逐渐减速</dd></div>
+      <div><dt><kbd>Space</kbd></dt><dd>短时冲刺，留意体力与冷却</dd></div>
+      <div><dt><kbd>J</kbd> / 鼠标左键</dt><dd>轻击，连续按下衔接连招</dd></div>
+      <div><dt><kbd>K</kbd> / 鼠标右键</dt><dd>重击，消耗更多体力</dd></div>
+      <div><dt><kbd>L</kbd> / <kbd>Shift</kbd></dt><dd>按住格挡</dd></div>
+      <div><dt><kbd>Q</kbd> / <kbd>E</kbd> / <kbd>U</kbd></dt><dd>进攻技 / 战术技 / 战意绝技</dd></div>
+      <div><dt><kbd>F</kbd></dt><dd>靠近人物、营地或驿站后交互</dd></div>
+      <div><dt><kbd>I</kbd> / <kbd>M</kbd></dt><dd>打开或关闭行囊 / 地图；查看装备与征程</dd></div>
+      <div><dt><kbd>Enter</kbd></dt><dd>继续对话；触屏可点“继续对话”</dd></div>
+      <div><dt><kbd>Esc</kbd> / <kbd>N</kbd></dt><dd>暂停与继续 / 切换声音</dd></div>
+      <div><dt>鼠标中键拖动 / 滚轮</dt><dd>旋转视角 / 调整远近</dd></div>
+    </dl>
+    <p class="help-note">沿路清剿游骑获得经验，提升等级后依次挑战马超、许褚、张飞、关羽与吕布。胜出可收集装备，在行囊中装配；营地与驿站可整备。征程自动保存在当前浏览器，清除浏览器数据会移除存档。此作为以三国人物为背景的架空外传。</p>
+  </dialog>
+
+  <script>window.CHANGBAN_CONFIG = $GODOT_CONFIG;</script>
+  <script src="$GODOT_URL"></script>
+  <script src="web-app.js"></script>
+</body>
+</html>

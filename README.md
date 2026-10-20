@@ -4,6 +4,10 @@
 
 [在线游玩](https://wenfeng-duel.stormyyew5.chatgpt.site)
 
+另有独立的骑马探索 RPG「长坂行 · 赵云传」：控制赵云在连续郊野中行旅，清剿游骑升级，按 2 / 4 / 6 / 8 / 10 级依次挑战马超、许褚、张飞、关羽和吕布，胜出获得装备与经验。两款游戏使用不同的网站入口和独立的浏览器存档，复用同一套原始素材。
+
+RPG 的构建说明见 [长坂行目录](sites/changban-rpg/README.md)，新增素材建模可用 [Tripo 提示词](sites/changban-rpg/ASSET_PROMPTS.md)。山贼原始 GLB 单独保存在 `sites/changban-rpg/source-assets/characters/`。
+
 ## 在本地游玩
 
 安装 **Python 3.9 或更新版本**，克隆或下载整个仓库。游戏已经构建好，无需安装 Godot、Node.js 或 Python 第三方库。
@@ -24,6 +28,8 @@ python3 play.py
 python3 play.py --port 8080        # 指定端口
 python3 play.py --no-browser       # 只启动服务，不自动打开浏览器
 python3 play.py --check            # 检查游戏资源完整性
+python3 play.py --game rpg         # 启动独立的长坂行 RPG
+python3 play.py --game rpg --check # 检查 RPG 资源完整性
 ```
 
 浏览器需支持 WebGL 2 和 DecompressionStream，建议开启硬件加速。首次载入会下载游戏资源；高清模式会增加显卡负载。
@@ -46,6 +52,8 @@ python3 play.py --check            # 检查游戏资源完整性
 
 ```text
 play.py / play.command / play.bat   本地启动入口
+play-rpg.command / play-rpg.bat     RPG 本地启动入口
+sites/changban-rpg/                独立 RPG 网页、输出、构建工具及 Tripo 提示词
 sites/wenfeng-web/
   dist/                            可直接运行、部署的完整网页游戏
   web/                             网页外壳、加载器、样式与浏览器桥接源码

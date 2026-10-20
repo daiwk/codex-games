@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the included Web game locally using only the Python standard library."""
+"""Run either included Web game locally using only the Python standard library."""
 import argparse
 import errno
 import functools
@@ -74,11 +74,14 @@ def verify_assets(full=False):
 
 
 def main():
+    global DIST
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--game", choices=("duel", "rpg"), default="duel", help="duel: Wenfeng 1v1 (default); rpg: Changban open-world RPG")
     parser.add_argument("--port", type=int, help="Local port (default: 8000, or a free port if busy; 0 picks a free port)")
     parser.add_argument("--no-browser", action="store_true", help="Print the URL without opening a browser")
     parser.add_argument("--check", action="store_true", help="Verify the included WASM/PCK assets and exit")
     args = parser.parse_args()
+    DIST = ROOT / "sites" / ("changban-rpg" if args.game == "rpg" else "wenfeng-web") / "dist"
     if args.port is not None and not 0 <= args.port <= 65535:
         parser.error("--port must be between 0 and 65535")
     try:
@@ -100,7 +103,7 @@ def main():
 
     with server:
         url = "http://127.0.0.1:" + str(server.server_port) + "/"
-        print("Wenfeng - Duel of Blades", flush=True)
+        print("Changban - Zhao Yun RPG" if args.game == "rpg" else "Wenfeng - Duel of Blades", flush=True)
         print("Open: " + url, flush=True)
         print("Press Ctrl+C to stop the local server.", flush=True)
         if not args.no_browser:

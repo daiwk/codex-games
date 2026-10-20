@@ -115,6 +115,13 @@ def clip_set(character):
                           ['DragonThrust', 'DragonCross', 'DragonBackCut']})
             clips.update(CloudStep=('advanced', 'Dodge_Backward'),
                          DragonCharge=('melee', 'Melee_2H_Idle'))
+            # Optional RPG equipment uses this same rig and calibrated palms.
+            # Keep every duel alias intact; these authored cuts are selected
+            # only by RPGActor when wielding a guandao or halberd.
+            clips.update(RPGSlash=('melee', 'Melee_2H_Attack_Slice'),
+                         RPGChop=('melee', 'Melee_2H_Attack_Chop'),
+                         RPGSpin=('melee', 'Melee_2H_Attack_Spin'),
+                         RPGFinish=('melee', 'Melee_2H_Attack_Spinning'))
         else:
             clips.update({alias: ('melee', 'Melee_2H_Attack_Stab') for alias in
                           ['TigerThrust', 'TigerFinish', 'TigerSweep', 'TigerSlam']})

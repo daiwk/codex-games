@@ -83,6 +83,8 @@ var contact_point = Vector3.ZERO
 var contact_retraction = 0.0
 var _thrust_segment_data: Dictionary = {}
 var _contact_backstep_requested = false
+# Zero retains the duel's foot/mounted arena; other modes may set a world limit.
+var movement_radius = 0.0
 
 func _ready() -> void:
 	collision_layer = 2
@@ -131,7 +133,7 @@ func _load_visuals() -> void:
 	var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/characters/animation_manifest.json"))
 	var config: Dictionary = manifest[character_id]["grip"]
 	grip_config = config
-	weapon_id = Roster.resolve_weapon(character_id, weapon_id)
+	weapon_id = resolve_equipped_weapon(weapon_id)
 	if config.get("mode", "one_hand") == "two_hand":
 		_load_two_handed_weapon()
 		_tune_materials(model)
@@ -161,6 +163,9 @@ func _load_visuals() -> void:
 
 func is_two_handed() -> bool:
 	return grip_config.get("mode", "one_hand") == "two_hand"
+
+func resolve_equipped_weapon(selected: String) -> String:
+	return Roster.resolve_weapon(character_id, selected)
 
 func _load_two_handed_weapon() -> void:
 	for index in skeleton.get_bone_count():
@@ -727,7 +732,7 @@ func _physics_process(delta: float) -> void:
 	var before_move = position
 	move_and_slide()
 	var flat = Vector2(position.x, position.z)
-	var arena_radius = 11.4 if mounted else 7.6
+	var arena_radius = movement_radius if movement_radius > 0.0 else (11.4 if mounted else 7.6)
 	if flat.length() > arena_radius:
 		flat = flat.normalized() * arena_radius
 		position.x = flat.x

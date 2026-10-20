@@ -1,0 +1,10 @@
+{
+  "files": [
+    {
+      "path": "characters/山贼.glb",
+      "bytes": 17970968,
+      "sha256": "097023c37f5e2dacc7dc13f5c3d389240eaca8e0a39781a8da9de72d9c33cd4c"
+    }
+  ],
+  "provenance": "User-supplied Tripo character geometry and textures. Not CC0. Original bytes preserved; only runtime derivatives are rebound and animated."
+}
