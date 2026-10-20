@@ -55,6 +55,9 @@ var publish_clock = 0.0
 var camera_yaw = 0.0
 var camera_distance = 12.0
 var camera_drag = false
+var camera_drag_distance = 0.0
+var locked_target_id = ""
+var lock_marker: Sprite3D
 var camera_base_position = Vector3.ZERO
 var camera_shake = 0.0
 var impact_zoom = 0.0
@@ -79,6 +82,7 @@ func _ready() -> void:
 	camera.fov = 58.0
 	camera.current = true
 	add_child(camera)
+	_build_lock_marker()
 	var loaded = _load_game() if not testing else false
 	if not loaded:
 		progress.position = World.START
@@ -120,6 +124,7 @@ func _configure_inputs() -> void:
 			InputMap.action_add_event(pair[0], event)
 
 func _spawn_player(at: Vector3, heal: bool) -> void:
+	_clear_lock()
 	var previous_hp = player.hp if is_instance_valid(player) else 120.0
 	if is_instance_valid(player):
 		var previous_id = player.get_instance_id()
@@ -195,8 +200,16 @@ func _physics_process(delta: float) -> void:
 	if player.hp <= 0.0:
 		_on_player_death()
 		return
+	_update_target()
 	var direction = Vector3(Input.get_action_strength("move_right") - Input.get_action_strength("move_left"), 0.0, Input.get_action_strength("move_down") - Input.get_action_strength("move_up"))
-	player.input_move = direction.rotated(Vector3.UP, camera_yaw).limit_length()
+	var locked = _locked_actor()
+	if is_instance_valid(locked):
+		var toward = (locked.position - player.position) * Vector3(1, 0, 1)
+		toward = toward.normalized()
+		var right = toward.cross(Vector3.UP)
+		player.input_move = (right * direction.x - toward * direction.z).limit_length()
+	else:
+		player.input_move = direction.rotated(Vector3.UP, camera_yaw).limit_length()
 	player.wants_block = Input.is_action_pressed("guard")
 	if Input.is_action_just_pressed("light"):
 		player.request_light()
@@ -222,9 +235,16 @@ func _physics_process(delta: float) -> void:
 		_save_game()
 
 func _update_target() -> void:
+	var locked = _locked_actor()
+	if not is_instance_valid(locked) and locked_target_id != "":
+		_clear_lock()
+	player.lock_facing = is_instance_valid(locked)
 	# A committed strike keeps one target through its contact window. Selecting
 	# a closer passer-by mid-thrust would redirect the same physical spear.
 	if player.state in ["attack", "skill", "ultimate"] and is_instance_valid(player.opponent) and player.opponent.hp > 0.0 and _hostile(String(player.opponent.get_meta("rpg_id", ""))):
+		return
+	if is_instance_valid(locked):
+		player.opponent = locked
 		return
 	var nearest: RPGActor = null
 	var distance = 9.0
@@ -237,6 +257,85 @@ func _update_target() -> void:
 			nearest = actor
 			distance = gap
 	player.opponent = nearest
+
+func _locked_actor() -> RPGActor:
+	if locked_target_id == "" or not enemies.has(locked_target_id) or not is_instance_valid(player):
+		return null
+	var actor: RPGActor = enemies[locked_target_id]
+	if not is_instance_valid(actor) or actor.hp <= 0.0 or not _hostile(locked_target_id) or player.position.distance_to(actor.position) > 24.0:
+		return null
+	return actor
+
+func _lock_candidates() -> Array:
+	var candidates: Array = []
+	for id in enemies:
+		var actor: RPGActor = enemies[id]
+		if not is_instance_valid(actor) or actor.hp <= 0.0 or not _hostile(id) or player.position.distance_to(actor.position) > 18.0:
+			continue
+		var query = PhysicsRayQueryParameters3D.create(player.position + Vector3.UP * 2.2, actor.position + Vector3.UP * 2.2, 1)
+		if not get_world_3d().direct_space_state.intersect_ray(query).is_empty():
+			continue
+		candidates.append(id)
+	candidates.sort_custom(func(a, b):
+		var da = player.position.distance_squared_to(enemies[a].position)
+		var db = player.position.distance_squared_to(enemies[b].position)
+		return a < b if is_equal_approx(da, db) else da < db)
+	return candidates
+
+func toggle_lock() -> void:
+	if paused or dead or phase != "explore": return
+	if locked_target_id != "":
+		_clear_lock()
+		_notify("已解除锁定 · 自由策马")
+		return
+	var candidates = _lock_candidates()
+	if candidates.is_empty():
+		_notify("附近没有可锁定的敌人 · 守将需先按 F 挑战")
+		return
+	_set_lock(candidates[0])
+
+func cycle_lock() -> void:
+	if paused or dead or phase != "explore": return
+	var candidates = _lock_candidates()
+	if candidates.is_empty():
+		if not is_instance_valid(_locked_actor()): _clear_lock()
+		_notify("附近没有可切换的敌人")
+		return
+	var index = candidates.find(locked_target_id)
+	_set_lock(candidates[(index + 1) % candidates.size()])
+
+func _set_lock(id: String) -> void:
+	locked_target_id = id
+	_update_target()
+	_notify("锁定 · " + ("山贼游骑" if id.begins_with("raider_") else Progress.BOSSES[_boss_index(id)].name) + " · R 切换目标")
+
+func _clear_lock() -> void:
+	# Preserve the current camera azimuth so unlocking does not spin the view.
+	if locked_target_id != "" and is_instance_valid(camera) and is_instance_valid(player):
+		var offset = camera.position - player.position
+		if Vector2(offset.x, offset.z).length_squared() > 0.01:
+			camera_yaw = atan2(offset.x, offset.z)
+	locked_target_id = ""
+	if is_instance_valid(player): player.lock_facing = false
+	if is_instance_valid(lock_marker): lock_marker.visible = false
+
+func _build_lock_marker() -> void:
+	var texture = Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	texture.fill(Color.TRANSPARENT)
+	for y in 64:
+		for x in 64:
+			var p = Vector2(x - 31.5, y - 31.5)
+			var radius = p.length()
+			if absf(radius - 20.0) < 1.7 or (radius > 25.0 and radius < 30.0 and (absf(p.x) < 1.5 or absf(p.y) < 1.5)):
+				texture.set_pixel(x, y, Color("d5fcff"))
+	lock_marker = Sprite3D.new()
+	lock_marker.texture = ImageTexture.create_from_image(texture)
+	lock_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lock_marker.pixel_size = 0.012
+	lock_marker.no_depth_test = false
+	lock_marker.shaded = false
+	lock_marker.visible = false
+	add_child(lock_marker)
 
 func _hostile(id: String) -> bool:
 	return id.begins_with("raider_") or id == active_boss
@@ -301,6 +400,7 @@ func _spawn_enemy(id: String, at: Vector3, level: int, boss: bool) -> void:
 func _despawn(id: String) -> void:
 	if not enemies.has(id):
 		return
+	if id == locked_target_id: _clear_lock()
 	var actor = enemies[id]
 	if is_instance_valid(actor):
 		if player.opponent == actor:
@@ -471,6 +571,7 @@ func _apply_progress_stats(heal: bool) -> void:
 		fx.sound("parry", -18.0, 1.2)
 
 func _on_player_death() -> void:
+	_clear_lock()
 	_reset_hit_feedback()
 	dead = true
 	phase = "defeat"
@@ -514,6 +615,7 @@ func interact() -> void:
 		_notify(interaction.text)
 
 func _show_dialogue(lines: Array, after: String = "") -> void:
+	_clear_lock()
 	_reset_hit_feedback()
 	phase = "dialogue"
 	dialogue = lines.duplicate(true)
@@ -538,6 +640,7 @@ func _continue_dialogue() -> void:
 			enemies[active_boss].reset_fighter()
 			_notify("交锋开始 · " + Progress.BOSSES[_boss_index(active_boss)].name)
 	_set_enabled(true)
+	if after.begins_with("boss:") and enemies.has(active_boss): _set_lock(active_boss)
 	_save_game()
 
 func _set_enabled(value: bool) -> void:
@@ -571,6 +674,7 @@ func rest() -> void:
 	_save_game()
 
 func return_to_camp() -> void:
+	_clear_lock()
 	_reset_hit_feedback()
 	skill_fx.clear()
 	get_tree().paused = false
@@ -636,11 +740,14 @@ func command(action: String, payload: Variant = null) -> void:
 		"interact": interact()
 		"toggle_inventory": _toggle_overlay("inventory")
 		"toggle_map": _toggle_overlay("map")
+		"toggle_lock": toggle_lock()
+		"cycle_lock": cycle_lock()
 		"equip", "equip_item": equip(str(payload))
 		"toggle_pause", "pause", "resume": toggle_pause()
 		"rest": rest()
 		"return_to_camp", "camp", "respawn": return_to_camp()
 		"return_to_menu":
+			_clear_lock()
 			_save_game()
 			_reset_hit_feedback()
 			if OS.has_feature("web"): JavaScriptBridge.eval("location.reload()")
@@ -672,17 +779,49 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_ESCAPE: toggle_pause()
 			KEY_R:
 				if dead: return_to_camp()
+				else: cycle_lock()
+			KEY_TAB: toggle_lock()
 			KEY_N: fx.muted = not fx.muted
 	elif event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_MIDDLE: camera_drag = event.pressed
+		if event.button_index == MOUSE_BUTTON_MIDDLE:
+			if event.pressed:
+				camera_drag = true
+				camera_drag_distance = 0.0
+			else:
+				var clicked = camera_drag and camera_drag_distance < 6.0
+				camera_drag = false
+				if clicked: toggle_lock()
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP: camera_distance = maxf(7.5, camera_distance - 0.8)
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN: camera_distance = minf(19.0, camera_distance + 0.8)
 	elif event is InputEventMouseMotion and camera_drag and not paused:
-		camera_yaw -= event.relative.x * 0.006
+		if not (event.button_mask & MOUSE_BUTTON_MASK_MIDDLE):
+			camera_drag = false
+			camera_drag_distance = 0.0
+			return
+		camera_drag_distance += event.relative.length()
+		if camera_drag_distance >= 6.0:
+			_clear_lock()
+			camera_yaw -= event.relative.x * 0.006
 
 func _update_camera(delta: float, instant: bool = false) -> void:
 	var target = player.position + Vector3.UP * 1.65
-	var offset = Vector3(0, camera_distance * 0.68, camera_distance).rotated(Vector3.UP, camera_yaw)
+	var view_distance = camera_distance
+	var view_yaw = camera_yaw
+	var view_height = 0.68
+	var locked = _locked_actor()
+	if is_instance_valid(locked):
+		view_height = 0.62
+		var separation = (locked.position - player.position) * Vector3(1, 0, 1)
+		target = player.position.lerp(locked.position, 0.4) + Vector3.UP * 1.8
+		view_distance = maxf(camera_distance, minf(22.0, separation.length() * 0.8 + 8.0))
+		if separation.length_squared() > 0.01:
+			view_yaw = atan2(-separation.x, -separation.z) + 0.18
+		lock_marker.position = locked.position + Vector3.UP * 2.9
+		lock_marker.visible = true
+		lock_marker.scale = Vector3.ONE * clampf(camera.position.distance_to(lock_marker.position) / 12.0, 0.7, 1.7)
+	else:
+		lock_marker.visible = false
+	var offset = Vector3(0, view_distance * view_height, view_distance).rotated(Vector3.UP, view_yaw)
 	var desired = _clear_camera_position(target, target + offset)
 	var smooth = desired if instant else camera_base_position.lerp(desired, 1.0 - exp(-delta * 7.0))
 	# Recheck the interpolated position so a quick turn cannot cross a roof.
@@ -751,6 +890,10 @@ func snapshot() -> Dictionary:
 	for station in camps:
 		pois.append({"id": station.get("id", station.name), "name": station.name, "kind": "camp", "position": _point(station.position), "discovered": true})
 	var target: Dictionary = {}
+	var lock_state = {"active": false, "target_id": "", "name": "", "position": [], "distance": 0.0}
+	var locked = _locked_actor()
+	if is_instance_valid(locked):
+		lock_state = {"active": true, "target_id": locked_target_id, "name": "山贼游骑" if locked_target_id.begins_with("raider_") else Progress.BOSSES[_boss_index(locked_target_id)].name, "position": _point(locked.position), "distance": player.position.distance_to(locked.position)}
 	if is_instance_valid(player.opponent) and player.opponent.hp > 0.0:
 		var actor = player.opponent
 		var id: String = actor.get_meta("rpg_id")
@@ -765,7 +908,7 @@ func snapshot() -> Dictionary:
 	var quest = _quest()
 	quest.target_position = _point(quest.target_position)
 	for entry in bosses: entry.position = _point(entry.position)
-	return {"ready": true, "game_mode": "rpg", "phase": phase, "paused": paused, "dead": dead, "inventory_open": inventory_open, "map_open": map_open, "horse_color": progress.horse_color, "region": world.zone_at(player.position), "player": {"name": "赵云", "character": "zhaoyun", "level": progress.level, "hp": player.hp, "max_hp": player.max_hp, "stamina": player.stamina, "max_stamina": 100.0, "xp": progress.xp, "xp_to_next": progress.xp_to_next(), "attack": stats.attack, "armor": stats.armor, "energy": player.energy, "position": _point(player.position), "facing": player.rotation.y, "state": player.state, "weapon": player.weapon_id, "mount_speed": player.mount_speed, "contact_active": player.contact_active, "contact_latched": player.contact_latched}, "quest": quest, "target": target, "interaction": _interaction().get("text", ""), "dialogue": current_dialogue, "toast": toast, "bosses": bosses, "pois": pois, "inventory": progress.inventory.duplicate(), "equipped": progress.equipped.duplicate(), "save_label": save_label, "defeated": progress.defeated.duplicate(), "kills": progress.kills, "enemies": visible_enemies, "active_boss": active_boss, "seconds": elapsed, "muted": fx.muted, "effects": skill_fx.call("debug_state"), "fps": Engine.get_frames_per_second(), "coordinates": "metres; Y up; X east; Z south. Continuous circular world radius 155m."}
+	return {"ready": true, "game_mode": "rpg", "lock_on": lock_state, "phase": phase, "paused": paused, "dead": dead, "inventory_open": inventory_open, "map_open": map_open, "horse_color": progress.horse_color, "region": world.zone_at(player.position), "player": {"name": "赵云", "character": "zhaoyun", "level": progress.level, "hp": player.hp, "max_hp": player.max_hp, "stamina": player.stamina, "max_stamina": 100.0, "xp": progress.xp, "xp_to_next": progress.xp_to_next(), "attack": stats.attack, "armor": stats.armor, "energy": player.energy, "position": _point(player.position), "facing": player.rotation.y, "state": player.state, "weapon": player.weapon_id, "mount_speed": player.mount_speed, "contact_active": player.contact_active, "contact_latched": player.contact_latched}, "quest": quest, "target": target, "interaction": _interaction().get("text", ""), "dialogue": current_dialogue, "toast": toast, "bosses": bosses, "pois": pois, "inventory": progress.inventory.duplicate(), "equipped": progress.equipped.duplicate(), "save_label": save_label, "defeated": progress.defeated.duplicate(), "kills": progress.kills, "enemies": visible_enemies, "active_boss": active_boss, "seconds": elapsed, "muted": fx.muted, "effects": skill_fx.call("debug_state"), "fps": Engine.get_frames_per_second(), "coordinates": "metres; Y up; X east; Z south. Continuous circular world radius 155m."}
 
 func _point(value: Vector3) -> Array:
 	return [value.x, value.y, value.z]
@@ -817,6 +960,8 @@ func _web_command(args: Array) -> void:
 	_publish()
 
 func _release_inputs() -> void:
+	camera_drag = false
+	camera_drag_distance = 0.0
 	for id in ["move_left", "move_right", "move_up", "move_down", "light", "heavy", "guard", "dodge", "skill_rush", "skill_counter", "ultimate"]:
 		Input.action_release(id)
 	if is_instance_valid(player):

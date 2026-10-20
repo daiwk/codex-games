@@ -22,7 +22,7 @@
 
   <main>
     <section id="stage" aria-label="长坂行·赵云传游戏">
-      <canvas id="canvas" width="1280" height="800" tabindex="0" aria-label="3D骑马探索。WASD策马，空格冲刺，J轻击，K重击，L格挡，Q E技能，U绝技；F交互，I行囊，M地图，N静音，Enter继续对话。"></canvas>
+      <canvas id="canvas" width="1280" height="800" tabindex="0" aria-label="3D骑马探索。WASD策马，Tab或中键点击锁定，R切换目标；锁定后W/S进退、A/D绕敌，目标过远或死亡自动解除。空格冲刺，J轻击，K重击，L格挡，Q E技能，U绝技；F交互，I行囊，M地图，N静音，Enter继续对话。"></canvas>
       <div id="cover">
         <div class="cover-art" aria-hidden="true"></div>
         <div class="cover-copy">
@@ -45,6 +45,7 @@
       <div id="browser-notice" role="status" hidden></div>
       <div id="rotate-hint">横屏策马，视野更开阔 ↻</div>
       <div id="touch-shortcuts" aria-label="触屏旅途工具" hidden>
+        <button id="touch-lock" data-command="toggle_lock" aria-pressed="false" aria-label="锁定附近敌人" disabled>锁定</button>
         <button id="touch-interact" data-command="interact">交互 F</button>
         <button id="touch-inventory" data-command="toggle_inventory" aria-pressed="false">行囊 I</button>
         <button id="touch-map" data-command="toggle_map" aria-pressed="false">地图 M</button>
@@ -72,14 +73,16 @@
     </section>
   </main>
 
-  <footer><span>WASD 策马 <i>·</i> Space 冲刺 <i>·</i> J / K / Q / E / U 战斗 <i>·</i> F 交互 <i>·</i> I 行囊 <i>·</i> M 地图</span><a href="credits.txt" target="_blank" rel="noopener">制作与许可 ↗</a></footer>
+  <footer><span>Tab / 中键 锁定 <i>·</i> 锁定后 W/S 进退、A/D 绕敌 <i>·</i> R 切换目标 <i>·</i> 目标过远/死亡自动解锁 <i>·</i> J/K/Q/E/U 战斗 <i>·</i> F 交互 <i>·</i> I 行囊 <i>·</i> M 地图</span><a href="credits.txt" target="_blank" rel="noopener">制作与许可 ↗</a></footer>
 
   <dialog id="help-dialog" aria-labelledby="help-title">
     <form method="dialog"><button class="close-dialog" aria-label="关闭操作说明">×</button></form>
     <p class="eyebrow">长 坂 行 · 赵 云 传</p>
     <h2 id="help-title">长路虽远，一骑可行。</h2>
     <dl class="controls-list">
-      <div><dt><kbd>W A S D</kbd> / 方向键</dt><dd>策马移动与转向；松开方向后会逐渐减速</dd></div>
+      <div><dt><kbd>W A S D</kbd> / 方向键</dt><dd>自由策马；锁定后 W/S 进退、A/D 围绕目标移动，松开方向后逐渐减速</dd></div>
+      <div><dt><kbd>Tab</kbd> / 中键点击</dt><dd>锁定或解除附近敌人；目标过远或死亡时自动解除。触屏可点“锁定”</dd></div>
+      <div><dt><kbd>R</kbd></dt><dd>锁定时切换附近目标</dd></div>
       <div><dt><kbd>Space</kbd></dt><dd>短时冲刺，留意体力与冷却</dd></div>
       <div><dt><kbd>J</kbd> / 鼠标左键</dt><dd>轻击，连续按下衔接连招</dd></div>
       <div><dt><kbd>K</kbd> / 鼠标右键</dt><dd>重击，消耗更多体力</dd></div>
@@ -89,12 +92,12 @@
       <div><dt><kbd>I</kbd> / <kbd>M</kbd></dt><dd>打开或关闭行囊 / 地图；查看装备与征程</dd></div>
       <div><dt><kbd>Enter</kbd></dt><dd>继续对话；触屏可点“继续对话”</dd></div>
       <div><dt><kbd>Esc</kbd> / <kbd>N</kbd></dt><dd>暂停与继续 / 切换声音</dd></div>
-      <div><dt>鼠标中键拖动 / 滚轮</dt><dd>旋转视角 / 调整远近</dd></div>
+      <div><dt>鼠标中键拖动 / 滚轮</dt><dd>自由旋转视角 / 调整远近；拖动中键不会触发点击锁定</dd></div>
     </dl>
     <p class="help-note">沿路清剿游骑获得经验，提升等级后依次挑战马超、许褚、张飞、关羽与吕布。胜出可收集装备，在行囊中装配；营地与驿站可整备。征程自动保存在当前浏览器，清除浏览器数据会移除存档。此作为以三国人物为背景的架空外传。</p>
   </dialog>
 
-  <script>window.CHANGBAN_CONFIG = {"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":123593460,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};</script>
+  <script>window.CHANGBAN_CONFIG = {"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":123606564,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};</script>
   <script src="index.js"></script>
   <script src="web-app.js"></script>
 </body>

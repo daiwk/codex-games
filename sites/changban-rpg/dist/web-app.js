@@ -74,6 +74,10 @@
     $('sound-btn').setAttribute('aria-pressed', String(!!data.muted));
     $('touch-controls').hidden = !coarsePointer.matches || !exploring;
     $('touch-shortcuts').hidden = !coarsePointer.matches || !playing || data.phase === 'dialogue';
+    const lockOn = data.lock_on || {};
+    $('touch-lock').disabled = !exploring;
+    $('touch-lock').setAttribute('aria-pressed', String(!!lockOn.active));
+    $('touch-lock').setAttribute('aria-label', lockOn.active ? `解除锁定：${lockOn.name || '当前目标'}` : '锁定附近敌人');
     $('touch-interact').disabled = !exploring || !data.interaction;
     $('touch-interact').setAttribute('aria-label', data.interaction ? `交互：${data.interaction}` : '靠近人物或驿站后交互');
     $('touch-inventory').setAttribute('aria-pressed', String(!!data.inventory_open));
