@@ -1,11 +1,17 @@
 extends Node3D
 
-const Fighter = preload("res://scripts/fighter.gd")
+const Fighter = preload("res://scripts/duel_actor.gd")
 const Arena = preload("res://scripts/arena.gd")
+const CavalryArena = preload("res://scripts/duel_cavalry_arena.gd")
+const CavalryDirector = preload("res://scripts/duel_cavalry_director.gd")
 const Effects = preload("res://scripts/combat_fx.gd")
 const HUD = preload("res://scripts/hud.gd")
-const SkillEffects = preload("res://scripts/skill_fx.gd")
+const SkillEffects = preload("res://scripts/duel_skill_fx.gd")
+const Specials = preload("res://scripts/duel_specials.gd")
+const Director = preload("res://scripts/duel_director.gd")
 const Roster = preload("res://scripts/roster.gd")
+const ImpactFeedback = preload("res://scripts/impact_feedback.gd")
+const CombatCamera = preload("res://scripts/combat_camera.gd")
 
 var character_id = "zhaoyun"
 var weapon_id = "serpent_spear"
@@ -28,6 +34,14 @@ var enemy: DuelFighter
 var camera: Camera3D
 var fx: DuelFX
 var skill_fx: DuelSkillFX
+var specials
+var duel_director = Director.new()
+var cavalry_director = CavalryDirector.new()
+var special_hit_counts: Dictionary = {}
+var last_special_hit: Dictionary = {}
+var resolving_special = ""
+var resolving_melee_before_hp = -1.0
+var last_melee_hit: Dictionary = {}
 var hud: DuelHUD
 var toast = ""
 var toast_time = 0.0
@@ -42,12 +56,25 @@ var impact_zoom = 0.0
 var camera_base_position = Vector3.ZERO
 var camera_base_fov = 54.0
 var hit_stop_until = 0
+var hit_feedback = ImpactFeedback.new()
+var camera_motion = CombatCamera.new()
+var camera_axis_yaw = 0.0
+var camera_axis_ready = false
+var camera_look_position = Vector3.ZERO
+var camera_look_ready = false
 var testing = false
 var elapsed = 0.0
 var screenshot_pending = false
 var camera_override = false
+var lock_on = false
+const COMBAT_INPUTS = ["light", "heavy", "dodge", "skill_rush", "skill_counter", "ultimate", "cavalry_left", "cavalry_right", "jump"]
+var pending_input = ""
+var pending_input_until = 0
+var captured_inputs: Dictionary = {}
 
 func _ready() -> void:
+	if OS.has_feature("web"):
+		get_viewport().scaling_3d_scale = 0.78
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	testing = "--test" in OS.get_cmdline_user_args() or "--skills-test" in OS.get_cmdline_user_args() or "--role-test" in OS.get_cmdline_user_args()
 	rng.seed = 714 if testing else int(Time.get_unix_time_from_system())
@@ -58,6 +85,9 @@ func _ready() -> void:
 	add_child(fx)
 	skill_fx = SkillEffects.new()
 	add_child(skill_fx)
+	specials = Specials.new()
+	add_child(specials)
+	specials.hit_requested.connect(_on_special_hit)
 	camera = Camera3D.new()
 	camera.near = 0.08
 	camera.far = 120
@@ -95,8 +125,9 @@ func fighter_name(id: String) -> String:
 func _configure_inputs() -> void:
 	var keys = {"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
 		"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN],
-		"light": [KEY_J], "heavy": [KEY_K], "guard": [KEY_L, KEY_SHIFT], "dodge": [KEY_SPACE],
-		"skill_rush": [KEY_Q], "skill_counter": [KEY_E], "ultimate": [KEY_U]}
+		"light": [KEY_J], "heavy": [KEY_K], "guard": [KEY_L, KEY_SHIFT], "dodge": [KEY_SPACE], "jump": [KEY_V],
+		"skill_rush": [KEY_Q], "skill_counter": [KEY_E], "ultimate": [KEY_U],
+		"cavalry_left": [KEY_Z], "cavalry_right": [KEY_C], "cavalry_brake": [KEY_X]}
 	for action in keys:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
@@ -122,6 +153,7 @@ func _spawn_fighters() -> void:
 	weapon_id = Roster.resolve_weapon(character_id, weapon_id)
 	player.weapon_id = weapon_id
 	player.mounted = combat_mode == "mounted"
+	player.movement_radius = 28.0 if player.mounted else 7.6
 	player.horse_color = horse_color
 	player.is_player = true
 	player.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -131,6 +163,7 @@ func _spawn_fighters() -> void:
 	enemy.character_id = String(Roster.character(character_id).opponent) if opponent_id.is_empty() else opponent_id
 	enemy.weapon_id = Roster.resolve_weapon(enemy.character_id, "")
 	enemy.mounted = combat_mode == "mounted"
+	enemy.movement_radius = 28.0 if enemy.mounted else 7.6
 	enemy.horse_color = enemy_horse_color
 	enemy.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(enemy)
@@ -141,6 +174,8 @@ func _spawn_fighters() -> void:
 		fighter.impact_received.connect(_on_impact)
 		fighter.action_started.connect(_on_action)
 		fighter.skill_triggered.connect(_on_skill)
+		if fighter.has_signal("duel_landed"):
+			fighter.connect("duel_landed", _on_duel_landed.bind(fighter))
 		fx.register_fighter(fighter)
 
 func select_character(id: String) -> void:
@@ -171,7 +206,10 @@ func select_combat_mode(id: String) -> void:
 	if phase != "menu" or id not in ["foot", "mounted"] or combat_mode == id:
 		return
 	combat_mode = id
-	arena.scale = Vector3(1.5, 1.0, 1.5) if id == "mounted" else Vector3.ONE
+	remove_child(arena)
+	arena.queue_free()
+	arena = CavalryArena.new() if id == "mounted" else Arena.new()
+	add_child(arena)
 	_spawn_fighters()
 	_position_preview()
 	_update_camera(1.0, true)
@@ -203,6 +241,9 @@ func _position_preview() -> void:
 	enemy.reset_fighter()
 
 func start_match() -> void:
+	_clear_combat_input()
+	lock_on = true
+	_reset_hit_feedback()
 	get_tree().paused = false
 	paused = false
 	Engine.time_scale = 1.0
@@ -217,13 +258,22 @@ func start_match() -> void:
 
 func _new_round() -> void:
 	skill_fx.clear()
-	shake = 0.0
-	impact_zoom = 0.0
+	specials.clear()
+	duel_director.reset()
+	cavalry_director.reset()
+	special_hit_counts.clear()
+	last_special_hit.clear()
+	last_melee_hit.clear()
+	_clear_combat_input()
+	_reset_hit_feedback()
+	camera_axis_ready = false
+	camera_look_ready = false
 	round_number = scores[0] + scores[1] + 1
 	for fighter in [player, enemy]:
 		fighter.reset_fighter()
+		fighter.energy = 65.0
 		fighter.enabled = false
-	var separation = 5.0 if combat_mode == "mounted" else 2.65
+	var separation = 14.0 if combat_mode == "mounted" else 2.65
 	player.position = Vector3(0, 0.015, separation)
 	enemy.position = Vector3(0, 0.015, -separation)
 	player.rotation.y = PI
@@ -241,9 +291,17 @@ func _new_round() -> void:
 	fx.sound("gong", -17.0)
 
 func return_to_menu() -> void:
+	_clear_combat_input()
+	specials.clear()
+	duel_director.reset()
+	cavalry_director.reset()
+	lock_on = false
+	if is_instance_valid(player):
+		player.set("lock_facing", false)
 	skill_fx.clear()
-	shake = 0.0
-	impact_zoom = 0.0
+	_reset_hit_feedback()
+	camera_axis_ready = false
+	camera_look_ready = false
 	get_tree().paused = false
 	paused = false
 	Engine.time_scale = 1.0
@@ -256,11 +314,49 @@ func toggle_pause() -> void:
 	if phase == "menu" or phase == "match_end":
 		return
 	paused = not paused
+	_clear_combat_input()
 	get_tree().paused = paused
-	Engine.time_scale = 1.0
-	hit_stop_until = 0
+	_reset_hit_feedback()
+
+func _lock_available() -> bool:
+	return phase in ["fight", "countdown"] and is_instance_valid(player) and is_instance_valid(enemy) and player.hp > 0.0 and enemy.hp > 0.0
+
+func lock_active() -> bool:
+	return lock_on and _lock_available()
+
+func toggle_lock() -> bool:
+	if paused or not _lock_available():
+		return false
+	lock_on = not lock_on
+	_sync_lock()
+	toast = ("标记对手 · W/S 调速 · A/D 转马" if combat_mode == "mounted" else "锁定对手 · W/S 进退 · A/D 绕行") if lock_on else ("策马视角" if combat_mode == "mounted" else "双人视角")
+	toast_time = 1.8
+	return true
+
+func _sync_lock() -> void:
+	if is_instance_valid(player):
+		player.set("lock_facing", lock_active())
+
+func _locked_movement(input: Vector2) -> Vector3:
+	if not is_instance_valid(player) or not is_instance_valid(enemy):
+		return Vector3.ZERO
+	var toward = (enemy.global_position - player.global_position).slide(Vector3.UP)
+	toward = toward.normalized() if toward.length_squared() > 0.01 else player.forward()
+	return (toward.cross(Vector3.UP) * input.x - toward * input.y).limit_length()
+
+func _input(event: InputEvent) -> void:
+	if paused or not _lock_available():
+		return
+	if (event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_TAB) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_MIDDLE):
+		toggle_lock()
+		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	for action in COMBAT_INPUTS:
+		if event.is_action_pressed(action, false):
+			queue_combat_input(action)
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
 			KEY_ESCAPE:
@@ -294,6 +390,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				select_combat_mode("mounted" if combat_mode == "foot" else "foot")
 
 func _physics_process(delta: float) -> void:
+	_sync_lock()
 	if paused:
 		return
 	toast_time = maxf(0.0, toast_time - delta)
@@ -339,26 +436,69 @@ func _player_input() -> void:
 	var forward = -camera.global_basis.z
 	right.y = 0.0
 	forward.y = 0.0
-	player.input_move = right.normalized() * input.x + forward.normalized() * -input.y
+	if player.mounted:
+		# Riders face +Z, so their right is forward.cross(UP), or -local X.
+		# Convert player left/right reins to geometric yaw here; AI already
+		# supplies world-space signed angles through set_cavalry_input().
+		player.call("set_cavalry_input", -input.y, -input.x, Input.is_action_pressed("cavalry_brake"))
+		player.input_move = player.forward() * -input.y
+	else:
+		player.input_move = _locked_movement(input) if lock_active() else right.normalized() * input.x + forward.normalized() * -input.y
 	player.wants_block = Input.is_action_pressed("guard")
-	if Input.is_action_just_pressed("ultimate"):
-		if not player.request_ultimate():
-			_skill_hint("ultimate")
-	elif Input.is_action_just_pressed("skill_rush"):
-		if not player.request_skill("rush"):
-			_skill_hint("rush")
-	elif Input.is_action_just_pressed("skill_counter"):
-		if not player.request_skill("counter"):
-			_skill_hint("counter")
-	elif Input.is_action_just_pressed("dodge"):
-		if not player.request_dodge(player.input_move) and player.stamina < 24.0:
-			_stamina_hint()
-	elif Input.is_action_just_pressed("heavy"):
-		if not player.request_heavy() and player.state in ["idle", "move", "block"]:
-			_stamina_hint()
-	elif Input.is_action_just_pressed("light"):
-		if not player.request_light() and player.state in ["idle", "move", "block"]:
-			_stamina_hint()
+	for action in COMBAT_INPUTS:
+		if Input.is_action_just_pressed(action) and not captured_inputs.has(action):
+			queue_combat_input(action)
+	captured_inputs.clear()
+	_consume_combat_input()
+
+func queue_combat_input(action: String) -> void:
+	if paused or phase != "fight" or not is_instance_valid(player) or player.hp <= 0.0:
+		return
+	if action in ["cavalry_left", "cavalry_right"] and not player.mounted: return
+	if action == "jump":
+		# Jump is orthogonal to combat; V and Q/E/U in one frame must not
+		# replace one another in the short combat-intent buffer.
+		captured_inputs[action] = true
+		player.request_jump()
+		return
+	pending_input = action
+	pending_input_until = Time.get_ticks_msec() + 260
+	captured_inputs[action] = true
+
+func _clear_combat_input() -> void:
+	pending_input = ""
+	pending_input_until = 0
+	captured_inputs.clear()
+	for action in COMBAT_INPUTS:
+		Input.action_release(action)
+	Input.action_release("cavalry_brake")
+	if is_instance_valid(player) and player.mounted and player.has_method("set_cavalry_input"):
+		player.call("set_cavalry_input", 0.0, 0.0, false)
+
+func _consume_combat_input() -> void:
+	if pending_input == "": return
+	if Time.get_ticks_msec() > pending_input_until:
+		if pending_input == "ultimate": _skill_hint("ultimate")
+		elif pending_input == "skill_rush": _skill_hint("rush")
+		elif pending_input == "skill_counter": _skill_hint("counter")
+		elif player.stamina < 17.0: _stamina_hint()
+		pending_input = ""
+		return
+	var accepted = false
+	if player.mounted and pending_input in ["light", "heavy", "cavalry_left", "cavalry_right"]:
+		var side = 0
+		if pending_input == "cavalry_left": side = 1
+		elif pending_input == "cavalry_right": side = -1
+		player.call("set_cavalry_attack_side", side)
+	match pending_input:
+		"light": accepted = player.request_light()
+		"cavalry_left", "cavalry_right": accepted = player.request_light()
+		"heavy": accepted = player.request_heavy()
+		"dodge": accepted = player.request_dodge(player.input_move)
+		"skill_rush": accepted = player.request_skill("rush")
+		"skill_counter": accepted = player.request_skill("counter")
+		"ultimate": accepted = player.request_ultimate()
+	if accepted: pending_input = ""
 
 func _stamina_hint() -> void:
 	toast = "体力不足 · 拉开距离调息"
@@ -378,160 +518,29 @@ func _skill_hint(id: String) -> void:
 func _update_ai(delta: float) -> void:
 	if combat_mode == "mounted":
 		_update_mounted_ai(delta)
-		return
-	ai_think -= delta
-	ai_cooldown = maxf(0.0, ai_cooldown - delta)
-	ai_guard = maxf(0.0, ai_guard - delta)
-	enemy.wants_block = ai_guard > 0.0
-	if ai_think > 0.0:
-		return
-	ai_think = [0.23, 0.16, 0.115][difficulty]
-	var toward = player.position - enemy.position
-	toward.y = 0.0
-	var distance = toward.length()
-	toward = toward.normalized()
-	var side = Vector3(-toward.z, 0, toward.x) * ai_strafe
-	enemy.input_move = Vector3.ZERO
-	if rng.randf() < 0.08:
-		ai_strafe *= -1.0
-	if enemy.state in ["hit", "stagger", "dodge", "dead", "skill", "ultimate"]:
-		return
-	if player.state == "ultimate" and distance < maxf(3.6, player.ultimate_radius() + 0.5):
-		if player.skill_stage == "windup" and distance < 1.9 and ai_cooldown <= 0.0 and rng.randf() < [0.08, 0.30, 0.48][difficulty]:
-			if enemy.request_heavy():
-				ai_cooldown = 1.0
-				return
-		var evade_at = INF
-		for hit in player.skill_profile("ultimate").hits:
-			if player.action_time <= hit.active.y:
-				evade_at = hit.active.x - 0.13
-				break
-		if player.action_time >= evade_at and rng.randf() < [0.30, 0.60, 0.85][difficulty]:
-			if enemy.request_dodge((side - toward * 0.8).normalized()):
-				return
-		enemy.input_move = (-toward + side * 0.5).normalized()
-		return
-	if ai_cooldown <= 0.0 and distance < (4.2 if enemy.character_id == "zhaoyun" else 3.5) and enemy.skill_ready("ultimate") and rng.randf() < [0.20, 0.42, 0.64][difficulty]:
-		if enemy.request_ultimate():
-			ai_cooldown = 3.2
-			return
-	var thrust_role: bool = enemy.is_thrust_weapon()
-	var use_offensive_q = distance > 2.8 and distance < 5.2 if thrust_role else distance < enemy.basic_reach() + 0.6 and distance > 1.2
-	if use_offensive_q and ai_cooldown <= 0.0 and rng.randf() < [0.12, 0.25, 0.36][difficulty]:
-		if enemy.request_skill("rush"):
-			ai_cooldown = 1.05
-			return
-	if enemy.character_id in ["machao", "zhangfei", "xuchu"] and player.state == "block" and distance < 2.7 and ai_cooldown <= 0.0:
-		if rng.randf() < [0.20, 0.50, 0.78][difficulty] and enemy.request_skill("counter"):
-			ai_cooldown = 1.2
-			return
-	if enemy.character_id == "lubu" and distance > 1.6 and distance < 4.2 and ai_cooldown <= 0.0:
-		if rng.randf() < [0.12, 0.26, 0.40][difficulty] and enemy.request_skill("counter"):
-			ai_cooldown = 1.2
-			return
-	if enemy.state == "attack":
-		if enemy.action_time > 0.28 and enemy.combo < 2 and rng.randf() < [0.18, 0.47, 0.72][difficulty]:
-			enemy.request_light()
-		return
-	if enemy.stamina < 27:
-		enemy.input_move = (-toward + side * 0.30).normalized() if distance < 3.5 else side * 0.35
-		return
-	if player.state in ["attack", "skill"] and distance < 2.8 and player.action_time < 0.42:
-		var reaction = [0.23, 0.11, 0.045][difficulty]
-		if player.action_time >= reaction:
-			if enemy.character_id in ["zhaoyun", "guanyu"] and rng.randf() < [0.10, 0.24, 0.40][difficulty] and enemy.request_skill("counter"):
-				ai_cooldown = 0.9
-				return
-			if player.attack.get("heavy", false) and rng.randf() < [0.15, 0.48, 0.72][difficulty]:
-				if enemy.request_dodge((side - toward * 0.3).normalized()):
-					ai_cooldown = 0.38
-					return
-			if rng.randf() < [0.30, 0.52, 0.72][difficulty]:
-				ai_guard = 0.45 + rng.randf() * 0.25
-				enemy.wants_block = true
-				return
-	# Spears now require actual blade contact. Approach into a normal stroke's
-	# physical range instead of spending stamina at the former broad-phase edge.
-	var normal_range = minf(enemy.basic_reach(), 2.6) if thrust_role else enemy.basic_reach()
-	var desired_distance = minf(enemy.preferred_distance(), 2.15) if thrust_role else enemy.preferred_distance()
-	if distance > desired_distance:
-		enemy.input_move = (toward + side * 0.14).normalized()
-	elif ai_cooldown > 0.0:
-		enemy.input_move = side * 0.42 + (-toward * 0.25 if distance < 1.25 else Vector3.ZERO)
-	if distance < normal_range and ai_cooldown <= 0.0 and ai_guard <= 0.0:
-		var heavy_chance = 0.56 if player.state == "block" else 0.25
-		if enemy.stamina > 48.0 and rng.randf() < heavy_chance:
-			enemy.request_heavy()
-		else:
-			enemy.request_light()
-		ai_cooldown = rng.randf_range(0.75, 1.20) * [1.38, 1.0, 0.73][difficulty]
+	else:
+		duel_director.update(self, delta)
 
 func _update_mounted_ai(delta: float) -> void:
-	ai_think -= delta
-	ai_cooldown = maxf(0.0, ai_cooldown - delta)
-	ai_guard = maxf(0.0, ai_guard - delta)
-	enemy.wants_block = ai_guard > 0.0
-	if ai_think > 0.0:
-		return
-	ai_think = [0.22, 0.15, 0.10][difficulty]
-	var offset = player.position - enemy.position
-	offset.y = 0.0
-	var distance = offset.length()
-	var toward = offset.normalized()
-	var side = Vector3(-toward.z, 0, toward.x) * ai_strafe
-	enemy.input_move = toward
-	if enemy.state in ["dead", "hit", "stagger"]:
-		enemy.input_move = Vector3.ZERO
-		return
-	if distance < 1.8:
-		enemy.input_move = (toward * 0.15 + side).normalized()
-	if enemy.stamina < 27.0:
-		enemy.input_move = (side - toward * 0.4).normalized()
-		return
-	if player.state in ["attack", "skill", "ultimate"] and distance < 3.3 and enemy.state in ["idle", "move"]:
-		if rng.randf() < [0.12, 0.28, 0.42][difficulty]:
-			ai_guard = 0.45
-			enemy.wants_block = true
-			return
-	var facing = toward.dot(enemy.forward())
-	if distance > 5.8 and facing > 0.92 and enemy.mount_charge_cooldown <= 0.0 and rng.randf() < [0.18, 0.40, 0.65][difficulty]:
-		enemy.request_dodge(toward)
-	if enemy.state == "attack":
-		if distance < enemy.basic_reach() and enemy.action_time > 0.3 and rng.randf() < [0.15, 0.40, 0.65][difficulty]:
-			enemy.request_light()
-		return
-	if ai_cooldown > 0.0 or facing < 0.35:
-		return
-	if distance < 4.0 and enemy.skill_ready("ultimate") and rng.randf() < [0.18, 0.40, 0.60][difficulty]:
-		enemy.request_ultimate()
-		ai_cooldown = 2.6
-	elif distance < 2.7 and player.state == "block" and enemy.skill_ready("counter"):
-		enemy.request_skill("counter")
-		ai_cooldown = 1.1
-	elif distance < enemy.basic_reach() + 0.45 and distance > 2.0 and enemy.skill_ready("rush") and rng.randf() < [0.18, 0.35, 0.50][difficulty]:
-		enemy.request_skill("rush")
-		ai_cooldown = 1.0
-	elif distance < (minf(enemy.basic_reach() + 0.1, 2.25 + enemy.mount_speed * 0.22) if enemy.is_thrust_weapon() else enemy.basic_reach() + 0.1):
-		if enemy.stamina > 45.0 and rng.randf() < 0.25:
-			enemy.request_heavy()
-		else:
-			enemy.request_light()
-		ai_cooldown = [1.35, 0.95, 0.70][difficulty]
+	cavalry_director.update(self, delta)
 
 func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
-	if phase != "fight" or attacker.hit_landed or attacker.hp <= 0.0:
+	if phase != "fight" or attacker.hit_landed or attacker.hp <= 0.0 or bool(data.get("external_only", false)):
+		return
+	if attacker.has_method("duel_weapon_is_thrown") and bool(attacker.call("duel_weapon_is_thrown")):
 		return
 	var defender: DuelFighter = attacker.opponent
 	var offset = defender.global_position - attacker.global_position
 	offset.y = 0.0
+	var strike_forward: Vector3 = attacker.call("duel_strike_forward") if attacker.has_method("duel_strike_forward") else attacker.forward()
 	if offset.length() > float(data.reach):
 		return
 	if data.get("shape", "") == "line":
-		var projection = offset.dot(attacker.forward())
-		var sideways = (offset - attacker.forward() * projection).length()
+		var projection = offset.dot(strike_forward)
+		var sideways = (offset - strike_forward * projection).length()
 		if projection < 0.0 or sideways > float(data.get("half_width", 0.5)):
 			return
-	if not data.get("radial", false) and offset.normalized().dot(attacker.forward()) < float(data.get("min_dot", 0.12)):
+	if not data.get("radial", false) and offset.normalized().dot(strike_forward) < float(data.get("min_dot", 0.12)):
 		return
 	# A thrust must actually touch the body, including when a skill carries the
 	# wave flag. Its reach/line tests are only a broad phase, not a ranged hit.
@@ -553,21 +562,72 @@ func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 		if normal.length_squared() < 0.01:
 			normal = -attacker.forward()
 		resolved["contact_point"] = nearest[1] + normal * defender.thrust_body_radius()
-	if attacker.mounted and attacker.mount_speed > 4.8 and data.get("kind", "") != "roar":
-		resolved.damage *= 1.0 + minf(attacker.mount_speed / 28.0, 0.30)
-		resolved["guard_cost"] = float(data.get("guard_cost", 24.0)) * 1.15
+	if attacker.mounted and attacker.has_method("cavalry_impact_data"):
+		resolved = attacker.call("cavalry_impact_data", defender, resolved)
+	resolving_melee_before_hp = defender.hp
+	var hp_before = defender.hp
 	var outcome = defender.receive_strike(attacker, resolved)
+	resolving_melee_before_hp = -1.0
+	last_melee_hit = {"attacker":attacker.character_id,"damage":hp_before-defender.hp,"outcome":outcome,
+		"mounted":attacker.mounted,"speed":attacker.mount_speed,"data":resolved.duplicate(true)}
 	if physical_thrust and outcome not in ["evade", "dead"]:
 		attacker.register_thrust_contact(resolved.contact_point)
 
+func _on_special_hit(attacker: DuelFighter, defender: DuelFighter, data: Dictionary, at: Vector3) -> void:
+	if paused or phase != "fight" or not is_instance_valid(attacker) or not is_instance_valid(defender) or attacker.hp <= 0.0 or defender.hp <= 0.0:
+		return
+	if attacker not in [player, enemy] or defender not in [player, enemy] or attacker == defender:
+		return
+	var resolved = data.duplicate(true)
+	resolved["contact_point"] = at
+	var before = defender.hp
+	# Each swept projectile/front owns one contact. It deliberately does not
+	# reuse the hand-held attack's hit_landed flag or broad-phase reach check.
+	resolving_special = String(data.get("special", ""))
+	var outcome = defender.receive_strike(attacker, resolved)
+	resolving_special = ""
+	var damage = maxf(0.0, before - defender.hp)
+	var kind = String(data.get("special", ""))
+	if damage > 0.0:
+		fx._floating_text(at + Vector3.UP * 0.22, str(int(ceil(damage))), Color("fff1d8"))
+	if outcome in ["hit", "heavy_hit", "break", "block"] and defender.hp > 0.0 and defender.has_method("apply_duel_impulse"):
+		var direction: Vector3 = data.get("impact_direction", defender.position - attacker.position)
+		var power = float(data.get("knockback", 1.0)) * (0.35 if outcome == "block" else 1.0)
+		defender.call("apply_duel_impulse", direction, power)
+	special_hit_counts[kind] = int(special_hit_counts.get(kind, 0)) + 1
+	last_special_hit = {"type": kind, "damage": damage, "outcome": outcome,
+		"volley_id": data.get("volley_id", 0), "projectile_index": data.get("projectile_index", 0),
+		"point": [at.x, at.y, at.z]}
+	if kind in ["shockwave", "roar", "air_slam"] and outcome != "evade":
+		shake = maxf(shake, 0.14)
+		impact_zoom = maxf(impact_zoom, 2.6)
+
+func _on_duel_landed(_at: Vector3, fighter: DuelFighter) -> void:
+	if phase != "fight" or fighter.hp <= 0.0 or fighter.skill_id != "ultimate": return
+	var special: Dictionary = fighter.skill_profile("ultimate").get("special", {})
+	if special.get("type", "") == "air_slam" and special.get("trigger", "") == "landing":
+		specials.play_skill(fighter, "ultimate", "landing")
+		skill_fx.play_skill(fighter, "ultimate", "landing")
+		fx.sound("heavy", -10.0, 0.64)
+		shake = maxf(shake, 0.11)
+
 func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 	var damage = int(fighter.opponent.attack.get("damage", 0)) if outcome in ["hit", "heavy_hit"] else 0
+	if resolving_melee_before_hp >= 0.0 and outcome in ["hit", "heavy_hit"]:
+		damage = int(ceil(maxf(0.0,resolving_melee_before_hp-fighter.hp)))
+	# Projectile contacts report their actual resolved damage once, after guard
+	# and mitigation. The wielder's current melee envelope is unrelated.
+	if not resolving_special.is_empty(): damage = 0
 	fx.burst(at, outcome, damage)
 	if outcome != "evade":
-		shake = maxf(shake, 0.10 if outcome in ["heavy_hit", "parry", "counter", "break"] else 0.045)
-		if not testing:
-			Engine.time_scale = 0.12
-			hit_stop_until = Time.get_ticks_msec() + (75 if outcome in ["heavy_hit", "parry"] else 48)
+		var heavy = outcome in ["heavy_hit", "parry", "counter", "break"]
+		skill_fx.impact(at, outcome, -fighter.forward(), 1.35 if heavy else 0.8)
+		shake = maxf(shake, 0.10 if heavy else 0.045)
+		camera_motion.kick(-fighter.forward(), heavy)
+		impact_zoom = maxf(impact_zoom, 1.8 if heavy else 0.65)
+		if not testing and not paused and phase == "fight":
+			var stop = 20 if resolving_special in ["flying_blades", "cavalry", "weapon_array"] else (65 if heavy else 32)
+			hit_stop_until = hit_feedback.request(stop, 0.10)
 	if outcome == "parry":
 		toast = "招架成功 · 趁势反击" if fighter.is_player else "被招架 · 注意出招节奏"
 		toast_time = 1.5
@@ -576,9 +636,10 @@ func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 		toast_time = 1.5
 
 func _on_action(fighter: DuelFighter, action: String) -> void:
+	skill_fx.action(fighter, action)
 	match action:
-		"light", "heavy":
-			fx.sound("thrust" if fighter.is_thrust_weapon() else ("heavy" if action == "heavy" else "swing"), -10.0, rng.randf_range(0.93, 1.08))
+		"swing_light", "swing_heavy":
+			fx.sound("thrust" if fighter.is_thrust_weapon() else ("heavy" if action == "swing_heavy" else "swing"), -10.0, rng.randf_range(0.93, 1.08))
 		"step":
 			fx.sound("step", -26.0 if fighter.is_player else -30.0, rng.randf_range(0.9, 1.1))
 		"dodge":
@@ -592,44 +653,39 @@ func _on_action(fighter: DuelFighter, action: String) -> void:
 
 func _on_skill(fighter: DuelFighter, id: String, stage: String) -> void:
 	skill_fx.play_skill(fighter, id, stage)
-	if fighter.is_two_handed():
-		if stage == "start":
-			fx.sound("charge" if id == "ultimate" else "swing", -14.0, 0.8)
-		elif stage in ["release", "strike", "finish"]:
-			var piercing = fighter.is_thrust_weapon() and fighter.skill_profile(id).get("kind", "") != "roar"
-			fx.sound("thrust" if piercing else "heavy", -13.0)
-			if id == "ultimate":
-				shake = maxf(shake, 0.13 if stage == "finish" else 0.065)
+	specials.play_skill(fighter, id, stage)
+	var special: Dictionary = fighter.skill_profile(id).get("special", {})
+	if stage == "release" and special.get("type", "") == "air_slam" and not fighter.mounted:
+		fighter.call("begin_duel_aerial", float(special.get("launch_speed", 10.5)))
+	var data: Dictionary = skill_fx.presentation_profile(fighter, id)
+	var profile: Dictionary = fighter.skill_profile(id)
+	var kind = String(profile.get("kind", ""))
+	if stage == "start":
+		if id == "ultimate" or kind == "charge":
+			fx.sound("charge", -15.0, 0.85)
+		elif kind == "evade":
+			fx.sound("dodge", -16.0)
 		return
+	if stage in ["guard", "parry"]:
+		fx.sound("clang", -15.0)
+		return
+	if stage not in ["release", "strike", "finish"]:
+		return
+	# A sequenced skill sounds on its actual per-hit events, not twice on
+	# the same release frame or simply because the role owns a spear.
+	if stage == "release" and id == "ultimate" and profile.has("hits"):
+		return
+	var radial = String(data.get("shape", "")) == "radial"
+	var voice = kind == "roar" or ("serpent" in String(data.get("fx_style", "")) and radial)
+	var sound = "roar" if voice else ("thrust" if String(data.get("shape", "")) == "line" else "heavy")
+	fx.sound(sound, -12.0 if stage == "finish" else -15.0, 0.85 if stage == "finish" else 1.0)
 	if id == "ultimate":
-		if stage == "start":
-			fx.sound("charge", -11.0, 1.50 if fighter.character_id == "zhaoyun" else 0.72)
-		elif stage == "release":
-			fx.sound("thrust" if fighter.character_id == "zhaoyun" else "heavy", -12.0)
-		elif stage in ["strike", "finish"]:
-			if fighter.character_id == "zhaoyun":
-				fx.sound("thrust", -10.0, 1.10 if stage == "finish" else 1.35)
-				shake = maxf(shake, 0.08 if stage == "finish" else 0.035)
-			else:
-				fx.sound("ultimate", -8.0, 0.92)
-				shake = maxf(shake, 0.27)
-				impact_zoom = maxf(impact_zoom, 3.8)
-	elif id == "rush":
-		if stage in ["start", "release"]:
-			if fighter.character_id == "zhaoyun":
-				fx.sound("dodge" if stage == "start" else "thrust", -12.0)
-			else:
-				fx.sound("heavy", -13.0 if stage == "start" else -10.0, 0.8)
-	elif id == "counter":
-		if stage == "start":
-			fx.sound("dodge" if fighter.character_id == "zhaoyun" else "heavy", -16.0, 0.9)
-		elif stage == "release":
-			fx.sound("thrust" if fighter.character_id == "zhaoyun" else "roar", -10.0)
-			if fighter.character_id == "machao":
-				shake = maxf(shake, 0.15)
-				impact_zoom = maxf(impact_zoom, 1.8)
+		shake = maxf(shake, 0.13 if stage == "finish" else 0.055)
 
 func _end_round(winner: int) -> void:
+	_clear_combat_input()
+	specials.clear()
+	_reset_hit_feedback()
 	scores[winner] += 1
 	last_winner = winner
 	phase = "round_end"
@@ -644,15 +700,16 @@ func _end_round(winner: int) -> void:
 	fx.sound("gong", -21.0, 1.05 if winner == 0 else 0.85)
 
 func _process(delta: float) -> void:
-	if hit_stop_until > 0 and Time.get_ticks_msec() >= hit_stop_until:
-		Engine.time_scale = 1.0
-		hit_stop_until = 0
+	# The pose pauses on contact; camera recovery follows real elapsed time.
+	var real_delta = delta / maxf(Engine.time_scale, 0.01)
+	hit_stop_until = hit_feedback.tick()
 	if paused:
 		return
 	elapsed += delta
-	shake = move_toward(shake, 0.0, delta * 0.55)
-	impact_zoom = move_toward(impact_zoom, 0.0, delta * 12.0)
-	_update_camera(delta)
+	shake = move_toward(shake, 0.0, real_delta * 0.75)
+	impact_zoom = move_toward(impact_zoom, 0.0, real_delta * 12.0)
+	camera_motion.update(real_delta)
+	_update_camera(real_delta)
 
 func _update_camera(delta: float, instant = false) -> void:
 	if not is_instance_valid(player) or camera_override:
@@ -672,7 +729,12 @@ func _update_camera(delta: float, instant = false) -> void:
 		var axis = enemy.global_position - player.global_position
 		axis.y = 0.0
 		var separation = axis.length()
-		axis = axis.normalized() if separation > 0.05 else Vector3.FORWARD
+		# Retain the last readable side when bodies cross at close range.
+		if separation > 0.65 and combat_mode != "mounted":
+			var wanted_yaw = atan2(axis.x, axis.z)
+			camera_axis_yaw = wanted_yaw if instant or not camera_axis_ready else rotate_toward(camera_axis_yaw, wanted_yaw, delta * 2.8)
+			camera_axis_ready = true
+		axis = Vector3(sin(camera_axis_yaw), 0, cos(camera_axis_yaw))
 		var side = Vector3(-axis.z, 0, axis.x)
 		var middle = (player.global_position + enemy.global_position) * 0.5
 		var distance = clampf(5.4 + separation * 0.30, 6.0, 8.6)
@@ -684,40 +746,95 @@ func _update_camera(delta: float, instant = false) -> void:
 			desired = middle - axis * distance + side * 2.4 + Vector3.UP * 4.35
 			target = middle + Vector3.UP * 1.75
 			fov = 58.0
-		if player.state == "ultimate" or enemy.state == "ultimate":
-			desired += -axis * 0.45 + Vector3.UP * 0.15
-			fov = 56.0
-			for fighter in [player, enemy]:
-				if fighter.state == "ultimate" and fighter.character_id == "machao":
-					# A restrained push-in releases into the wider impact view.
-					fov = 52.0 if fighter.action_time < 1.0 else 58.0
-	var weight = 1.0 if instant else 1.0 - exp(-delta * 5.2)
+		if lock_active():
+			# Shoulder framing keeps the target ahead; the arena view remains
+			# available without changing either fighter's committed attack aim.
+			var vertical_span = absf(player.position.y - enemy.position.y)
+			var wide_special = 0.0
+			for group in specials.groups.values():
+				if group.type in ["cavalry", "flying_blades", "weapon_array"]:
+					wide_special = 0.85
+			var behind = clampf(3.7 + separation * 0.22 + vertical_span * 0.45 + wide_special, 4.25, 8.2)
+			var anchor = player.global_position
+			anchor.y = minf(player.position.y, enemy.position.y)
+			var anticipation = (player.velocity + enemy.velocity * 0.4).slide(Vector3.UP).limit_length(6.0) * 0.07
+			# Armour and two-handed weapons need a clear lane past the shoulder.
+			# The smaller offset hid the opponent behind the player's torso.
+			var shoulder = clampf(2.05 + (2.5 - separation) * 0.18, 1.85, 2.35)
+			desired = anchor - axis * behind + side * shoulder + Vector3.UP * (2.12 + vertical_span * 0.22)
+			target = player.global_position.lerp(enemy.global_position, 0.48) + Vector3.UP * 1.08 + anticipation
+			fov = 60.0 + wide_special * 2.5
+		if phase == "fight":
+			fov -= maxf(CombatCamera.anticipation(player), CombatCamera.anticipation(enemy))
+	if combat_mode == "mounted" and phase != "menu":
+		# The horse keeps its own heading. Marking an enemy only biases the
+		# rider's view a little; a passed foe cannot spin the camera backwards.
+		var speed = player.mount_speed
+		var heading = player.forward()
+		var wanted = player.rotation.y
+		if lock_active():
+			var bearing = heading.signed_angle_to((enemy.position-player.position).slide(Vector3.UP).normalized(),Vector3.UP)
+			wanted += clampf(bearing,-0.28,0.28)
+		camera_axis_yaw = wanted if instant or not camera_axis_ready else rotate_toward(camera_axis_yaw,wanted,delta*2.0)
+		camera_axis_ready=true
+		var view_heading=Vector3(sin(camera_axis_yaw),0,cos(camera_axis_yaw))
+		var lateral=Vector3(view_heading.z,0,-view_heading.x)
+		desired=player.position-view_heading*(7.0+minf(speed,12.0)*0.14)+lateral*2.1+Vector3.UP*3.30
+		target=player.position+view_heading*(3.3+speed*.22)+Vector3.UP*1.85
+		fov=61.0+minf(speed,12.0)*0.40
+	# The courtyard's decorative walls have no physics shape. Keep the low
+	# foot camera inside their inner faces even when fighters separate widely.
+	if combat_mode == "foot" and phase != "menu":
+		desired.x = clampf(desired.x, -11.6, 11.6)
+		desired.z = maxf(desired.z, -11.2)
+	var weight = 1.0 if instant else 1.0 - exp(-delta * 7.0)
 	# Keep the smoothed pose separate so repeated shake cannot drift the framing.
 	camera_base_position = desired if instant else camera_base_position.lerp(desired, weight)
+	if combat_mode == "foot" and phase != "menu":
+		camera_base_position.x = clampf(camera_base_position.x, -11.6, 11.6)
+		camera_base_position.z = maxf(camera_base_position.z, -11.2)
 	camera_base_fov = fov if instant else lerpf(camera_base_fov, fov, weight)
-	camera.position = camera_base_position
+	camera.position = camera_base_position + camera_motion.recoil
 	camera.fov = camera_base_fov + impact_zoom
 	if shake > 0.0:
-		var tremor = Vector3(sin(elapsed * 91), cos(elapsed * 79) * 0.65, sin(elapsed * 63) * 0.3)
+		var clock = Time.get_ticks_msec() * 0.001
+		var tremor = Vector3(sin(clock * 91), cos(clock * 79) * 0.65, sin(clock * 63) * 0.3)
 		camera.position += camera.basis * tremor * shake
-	camera.look_at(target, Vector3.UP)
+	if instant or not camera_look_ready:
+		camera_look_position = target
+		camera_look_ready = true
+	else:
+		camera_look_position = camera_look_position.lerp(target, 1.0 - exp(-delta * 10.5))
+	camera.look_at(camera_look_position, Vector3.UP)
 	if shake > 0.0:
 		camera.rotate_object_local(Vector3.FORWARD, sin(elapsed * 71) * shake * 0.035)
 
+func _reset_hit_feedback() -> void:
+	hit_feedback.reset()
+	camera_motion.reset()
+	hit_stop_until = 0
+	shake = 0.0
+	impact_zoom = 0.0
+
+func _exit_tree() -> void:
+	_reset_hit_feedback()
+
 func snapshot() -> Dictionary:
-	return {"phase": phase, "paused": paused, "combat_mode": combat_mode, "horse_color": horse_color, "enemy_horse_color": enemy_horse_color, "scores": scores.duplicate(), "seconds": round_time,
-		"player": {"character": player.character_id, "weapon": player.weapon_id, "hp": player.hp,
+	return {"last_melee_hit": last_melee_hit.duplicate(true), "specials": specials.debug_state() if is_instance_valid(specials) else {}, "special_hits": special_hit_counts.duplicate(), "last_special_hit": last_special_hit.duplicate(), "boss_phase": duel_director.phase, "boss_intent": cavalry_director.phase if combat_mode == "mounted" else duel_director.decision, "lock_on": {"active": lock_active(), "available": _lock_available() and not paused, "target": enemy.character_id if lock_active() else "", "position": [enemy.position.x, enemy.position.y, enemy.position.z] if lock_active() else []}, "phase": phase, "paused": paused, "combat_mode": combat_mode, "horse_color": horse_color, "enemy_horse_color": enemy_horse_color, "scores": scores.duplicate(), "seconds": round_time,
+		"player": {"instance_id": player.get_instance_id(), "character": player.character_id, "weapon": player.weapon_id, "hp": player.hp,
+			"jump": player.jump_status(), "cavalry": player.call("cavalry_status") if player.mounted and player.has_method("cavalry_status") else {}, "airborne": player.call("duel_is_airborne"), "weapon_thrown": player.call("duel_weapon_is_thrown"),
 			"mounted": player.mounted, "mount_speed": player.mount_speed, "mount_charge_cooldown": player.mount_charge_cooldown, "heading": player.rotation.y,
 			"contact_active": player.contact_active, "contact_latched": player.contact_latched, "contact_retraction": player.contact_retraction,
 			"horse_color": player.horse_color,
 			"stamina": player.stamina, "energy": player.energy, "cooldowns": player.cooldowns.duplicate(),
-			"skill": player.skill_id, "skill_stage": player.skill_stage, "state": player.state, "action_time": player.action_time, "combo": player.combo, "position": [player.position.x, player.position.y, player.position.z]},
-		"enemy": {"character": enemy.character_id, "weapon": enemy.weapon_id, "hp": enemy.hp,
+			"clip": player.current_clip, "skill_hit_index": player.skill_hit_index, "skill": player.skill_id, "skill_stage": player.skill_stage, "state": player.state, "action_time": player.action_time, "combo": player.combo, "position": [player.position.x, player.position.y, player.position.z]},
+		"enemy": {"instance_id": enemy.get_instance_id(), "character": enemy.character_id, "weapon": enemy.weapon_id, "hp": enemy.hp,
+			"jump": enemy.jump_status(), "cavalry": enemy.call("cavalry_status") if enemy.mounted and enemy.has_method("cavalry_status") else {}, "airborne": enemy.call("duel_is_airborne"), "weapon_thrown": enemy.call("duel_weapon_is_thrown"),
 			"mounted": enemy.mounted, "mount_speed": enemy.mount_speed, "mount_charge_cooldown": enemy.mount_charge_cooldown, "heading": enemy.rotation.y,
 			"contact_active": enemy.contact_active, "contact_latched": enemy.contact_latched, "contact_retraction": enemy.contact_retraction,
 			"horse_color": enemy.horse_color,
 			"stamina": enemy.stamina, "energy": enemy.energy, "cooldowns": enemy.cooldowns.duplicate(),
-			"skill": enemy.skill_id, "skill_stage": enemy.skill_stage, "state": enemy.state, "action_time": enemy.action_time, "position": [enemy.position.x, enemy.position.y, enemy.position.z]}}
+			"clip": enemy.current_clip, "skill_hit_index": enemy.skill_hit_index, "skill": enemy.skill_id, "skill_stage": enemy.skill_stage, "state": enemy.state, "action_time": enemy.action_time, "position": [enemy.position.x, enemy.position.y, enemy.position.z]}}
 
 func capture(path: String) -> void:
 	await RenderingServer.frame_post_draw

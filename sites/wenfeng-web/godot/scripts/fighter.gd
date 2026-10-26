@@ -6,11 +6,17 @@ const MountedCombat = preload("res://scripts/mounted_combat.gd")
 const HorseVisual = preload("res://scripts/horse_visual.gd")
 const RiderPose = preload("res://scripts/rider_pose.gd")
 const ThrustContact = preload("res://scripts/thrust_contact.gd")
+const CombatMotion = preload("res://scripts/combat_motion.gd")
+const AttackTempo = preload("res://scripts/attack_tempo.gd")
+const JumpMotion = preload("res://scripts/jump_motion.gd")
+const JumpPose = preload("res://scripts/jump_pose.gd")
 
 signal strike_requested(fighter, attack)
 signal impact_received(fighter, outcome, position)
 signal action_started(fighter, action)
 signal skill_triggered(fighter, skill, stage)
+signal jump_started(fighter)
+signal jump_landed(fighter, position)
 
 const ATTACKS = [
 	{"clip": "Attack1", "duration": 0.80, "active": Vector2(0.13, 0.30), "damage": 15.0, "cost": 13.0, "reach": 2.12, "lunge": 1.9, "heavy": false},
@@ -19,6 +25,7 @@ const ATTACKS = [
 ]
 const HEAVY = {"clip": "Heavy", "duration": 1.14, "active": Vector2(0.29, 0.53), "damage": 31.0, "cost": 29.0, "reach": 2.35, "lunge": 2.1, "heavy": true}
 const LOOP_CLIPS = ["Idle", "Walk", "WalkBack", "StrafeLeft", "StrafeRight", "Run", "TurnLeft", "TurnRight"]
+const GAIT_CLIPS = ["Walk", "WalkBack", "StrafeLeft", "StrafeRight", "Run", "TurnLeft", "TurnRight"]
 
 var character_id = "zhaoyun"
 var weapon_id = "sword"
@@ -33,6 +40,7 @@ var attack: Dictionary = {}
 var combo = 0
 var combo_buffered = false
 var hit_landed = false
+var swing_announced = false
 var enabled = false
 var regen_delay = 0.0
 var dodge_direction = Vector3.ZERO
@@ -46,6 +54,12 @@ var weapon_mesh: Node3D
 var previous_tip = Vector3.ZERO
 var animation_names: Dictionary = {}
 var current_clip = ""
+var locomotion_rate = 1.0
+var locomotion_phase = 0.0
+var combat_motion: SkeletonModifier3D
+var tempo_profile: Dictionary = {}
+var _attack_tempo_library: AnimationLibrary
+var attack_warmup_ms = 0.0
 var blocked_hits = 0
 var parries = 0
 var dodged_hits = 0
@@ -62,13 +76,16 @@ var skill_hit_index = -1
 var skill_strike_announced = false
 var skill_animation_index = -1
 var skill_animation_started = false
+var skill_counter_primed = false
 var grip_config: Dictionary = {}
+var clip_thrust_ready_seconds: Dictionary = {}
 var right_hand_index = -1
 var left_hand_index = -1
 var grip_roll_ready = false
 var mounted = false
 var horse_color = "white"
 var mount_speed = 0.0
+var _mount_action_velocity = Vector3.ZERO
 var mount_charge_time = 0.0
 var mount_charge_cooldown = 0.0
 var mount_turn_rate = 0.0
@@ -85,6 +102,9 @@ var _thrust_segment_data: Dictionary = {}
 var _contact_backstep_requested = false
 # Zero retains the duel's foot/mounted arena; other modes may set a world limit.
 var movement_radius = 0.0
+var jump_motion = JumpMotion.new()
+var jump_pose: SkeletonModifier3D
+var _jump_floor_snap = 0.2
 
 func _ready() -> void:
 	collision_layer = 2
@@ -98,12 +118,21 @@ func _ready() -> void:
 	add_child(shape)
 	floor_snap_length = 0.2
 	_load_visuals()
+	if is_player:
+		prewarm_attack_animations()
+	combat_motion = CombatMotion.new()
+	combat_motion.setup(self, skeleton)
+	if not mounted:
+		jump_pose = JumpPose.new()
+		jump_pose.setup(skeleton, Callable(self, "jump_status"))
 	if mounted:
 		horse = HorseVisual.new()
 		horse.setup(character_id, horse_color)
 		add_child(horse)
 		rider_pose = RiderPose.new()
 		rider_pose.setup(skeleton, model)
+		rider_pose.set_activity_provider(Callable(combat_motion, "activity_weight"))
+		rider_pose.set_jump_provider(Callable(self, "jump_status"))
 		rider_pose.set_mount_width(horse.belly_width)
 		rider_hip_height = rider_pose.rest_hip_height()
 		riding_height = horse.saddle_height() - rider_hip_height
@@ -111,6 +140,15 @@ func _ready() -> void:
 	if is_two_handed():
 		thrust_contact = ThrustContact.new()
 		thrust_contact.setup(self, skeleton)
+	if mounted:
+		# A browser can run several physics ticks before its next render frame.
+		# Align after either rig finishes, rather than leaving the rider at an
+		# earlier render frame's saddle height during those extra horse strides.
+		skeleton.skeleton_updated.connect(_post_animation_visual)
+		var horse_skeleton = _find_node(horse, "Skeleton3D") as Skeleton3D
+		if is_instance_valid(horse_skeleton):
+			horse_skeleton.skeleton_updated.connect(_post_animation_visual)
+		horse.bind_rider()
 	reset_fighter()
 
 func _load_visuals() -> void:
@@ -132,6 +170,9 @@ func _load_visuals() -> void:
 	# from its own T-pose correspondence, so both weapons share the same grip.
 	var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/characters/animation_manifest.json"))
 	var config: Dictionary = manifest[character_id]["grip"]
+	clip_thrust_ready_seconds.clear()
+	for alias in manifest[character_id].get("clips", {}):
+		clip_thrust_ready_seconds[alias] = float(manifest[character_id].clips[alias].get("grip_startup_blend_source_seconds", 0.25))
 	grip_config = config
 	weapon_id = resolve_equipped_weapon(weapon_id)
 	if config.get("mode", "one_hand") == "two_hand":
@@ -231,10 +272,23 @@ func _update_two_hand_grip(delta = 0.0, instant = false) -> void:
 func _process(delta: float) -> void:
 	if mounted and is_instance_valid(horse):
 		horse.update_motion(delta, mount_speed if enabled else 0.0, mount_turn_rate, hp <= 0.0)
-		rider_pose.update(delta, mount_speed / 8.2 if enabled else 0.0)
+		rider_pose.update(delta, mount_speed / 8.2 if enabled else 0.0,
+			mount_turn_rate if enabled else 0.0, horse.saddle_transform().basis,
+			combat_motion.activity_weight())
 		model.position = Vector3(0.0, horse.saddle_height() - rider_hip_height, horse.saddle_z())
 	if is_two_handed():
 		_update_two_hand_grip(delta)
+
+func _post_animation_visual() -> void:
+	if not is_inside_tree() or not mounted or not is_instance_valid(horse) or not is_instance_valid(model) or not horse.is_inside_tree():
+		return
+	var seat: Transform3D = horse.saddle_transform()
+	model.position = Vector3(0.0, seat.origin.y - rider_hip_height, seat.origin.z)
+	horse.sync_rider_contacts()
+	# The polearm is a world-space attachment, unlike the skinned body. Moving
+	# the model to the new seat must move the weapon with its final cached palms.
+	if is_two_handed():
+		_update_two_hand_grip()
 
 func is_thrust_weapon() -> bool:
 	return bool(Roster.WEAPONS[weapon_id].get("thrust_only", false))
@@ -244,7 +298,7 @@ func is_physical_thrust(data: Dictionary = {}) -> bool:
 		return false
 	var candidate = data
 	if candidate.is_empty():
-		candidate = _thrust_segment_data if state == "ultimate" and not _thrust_segment_data.is_empty() else attack
+		candidate = _thrust_segment_data if state in ["skill", "ultimate"] and not _thrust_segment_data.is_empty() else attack
 	return candidate.get("shape", "") == "line" and not candidate.get("radial", false)
 
 func thrust_body_low() -> Vector3:
@@ -323,6 +377,7 @@ func _find_node(node: Node, kind: String) -> Node:
 	return null
 
 func reset_fighter() -> void:
+	_reset_jump()
 	_cancel_skill()
 	hp = 120.0
 	stamina = 100.0
@@ -331,6 +386,7 @@ func reset_fighter() -> void:
 	combo = 0
 	combo_buffered = false
 	hit_landed = false
+	swing_announced = false
 	attack = {}
 	regen_delay = 0.0
 	wants_block = false
@@ -340,9 +396,18 @@ func reset_fighter() -> void:
 	turning_in_place = false
 	grip_roll_ready = false
 	mount_speed = 0.0
+	_mount_action_velocity = Vector3.ZERO
 	mount_charge_time = 0.0
 	mount_charge_cooldown = 0.0
 	mount_turn_rate = 0.0
+	locomotion_rate = 1.0
+	locomotion_phase = 0.0
+	if is_instance_valid(combat_motion):
+		combat_motion.reset_motion()
+	if is_instance_valid(thrust_contact):
+		thrust_contact.reset_motion()
+	if is_instance_valid(rider_pose):
+		rider_pose.reset_motion()
 	if mounted and is_instance_valid(horse):
 		horse.reset_motion()
 	energy = 35.0
@@ -350,7 +415,70 @@ func reset_fighter() -> void:
 	current_clip = ""
 	play_clip("Idle", 0.0)
 
+func resolve_animation_clip(clip: String) -> String:
+	return clip
+
+func _can_jump() -> bool:
+	return enabled and hp > 0.0 and not jump_motion.active and is_on_floor() and state not in ["hit", "stagger", "dead", "dodge"]
+
+func request_jump() -> bool:
+	if not _can_jump(): return false
+	_jump_floor_snap = floor_snap_length
+	jump_motion.begin(mounted, global_position.y)
+	jump_started.emit(self)
+	action_started.emit(self, "jump")
+	return true
+
+func is_jumping() -> bool:
+	return jump_motion.active
+
+func jump_status() -> Dictionary:
+	var result = jump_motion.status(global_position.y if is_inside_tree() else 0.0, _can_jump())
+	result.mounted = mounted
+	return result
+
+func _reset_jump() -> void:
+	if jump_motion.active:
+		floor_snap_length = _jump_floor_snap
+	jump_motion.reset()
+
+func _advance_jump(delta: float) -> void:
+	var launched = jump_motion.advance(delta, hp <= 0.0)
+	if launched:
+		floor_snap_length = 0.0
+	if jump_motion.airborne:
+		# Combat knockback remains planar. Receiving a hit or starting a skill
+		# must not erase a real jump's vertical momentum.
+		velocity.y = jump_motion.vertical_speed
+
+func _finish_jump() -> void:
+	if not jump_motion.airborne:
+		return
+	jump_motion.vertical_speed = velocity.y
+	if is_on_ceiling() and velocity.y > 0.0:
+		jump_motion.vertical_speed = 0.0
+	if jump_motion.flight_time > 0.035 and is_on_floor() and velocity.y <= 0.0:
+		jump_motion.land(global_position.y)
+		floor_snap_length = _jump_floor_snap
+		jump_landed.emit(self, global_position)
+		action_started.emit(self, "land")
+
+func prewarm_attack_animations() -> void:
+	# Do expensive immutable clip construction while the actor is loading,
+	# before the first input. Never play a clip or touch combat/stamina state.
+	var start = Time.get_ticks_usec()
+	var profiles = _light_attacks().duplicate(true)
+	profiles.append(_heavy_attack_profile())
+	for original in profiles:
+		var data = _weapon_adjusted_attack(original)
+		var clip = resolve_animation_clip(String(data.clip))
+		if animation_names.has(clip):
+			AttackTempo.variant(animation_player.get_animation(animation_names[clip]),
+				float(data.duration), data.active, bool(data.get("heavy", false)))
+	attack_warmup_ms = float(Time.get_ticks_usec() - start) / 1000.0
+
 func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
+	clip = resolve_animation_clip(clip)
 	if mounted and clip in ["Walk", "WalkBack", "StrafeLeft", "StrafeRight", "Run", "TurnLeft", "TurnRight", "Dodge"]:
 		clip = "Idle"
 	if mounted and clip == "Death":
@@ -358,12 +486,32 @@ func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
 	if not animation_names.has(clip):
 		push_error("Missing required animation: " + clip)
 		return
-	var key = animation_names[clip]
+	var key: String = animation_names[clip]
+	tempo_profile = {}
+	if state == "attack" and duration > 0.0 and attack.has("active"):
+		# Rephrase only the pose before/after contact. Gameplay, skill clips,
+		# action duration and the authored active interval keep their old timing.
+		var weighted = AttackTempo.variant(animation_player.get_animation(key), duration, attack.active, bool(attack.get("heavy", false)))
+		if not Dictionary(weighted.profile).is_empty():
+			if _attack_tempo_library == null:
+				_attack_tempo_library = AnimationLibrary.new()
+				animation_player.add_animation_library("AttackTempo", _attack_tempo_library)
+			if not _attack_tempo_library.has_animation(weighted.key):
+				_attack_tempo_library.add_animation(weighted.key, weighted.animation)
+			key = "AttackTempo/" + String(weighted.key)
+			tempo_profile = weighted.profile
+	# Directional clips use the same planted-foot phase. Restarting every new
+	# direction at frame zero caused a visible hitch when circling an opponent.
+	var preserve_phase = current_clip in GAIT_CLIPS and clip in GAIT_CLIPS and animation_player.current_animation_length > 0.0
+	var phase = fposmod(animation_player.current_animation_position / animation_player.current_animation_length, 1.0) if preserve_phase else 0.0
 	animation_player.speed_scale = 1.0
 	var speed = 1.0
 	if duration > 0.0:
 		speed = animation_player.get_animation(key).length / duration
 	animation_player.play(key, blend, speed)
+	if preserve_phase:
+		animation_player.seek(phase * animation_player.get_animation(key).length, true)
+		locomotion_phase = phase
 	current_clip = clip
 
 func request_light() -> bool:
@@ -376,7 +524,7 @@ func request_light() -> bool:
 		return false
 	return _begin_attack(0)
 
-func request_heavy() -> bool:
+func _heavy_attack_profile() -> Dictionary:
 	var profile = HEAVY.duplicate()
 	if is_two_handed():
 		profile.merge({"duration": 1.48, "active": Vector2(0.48, 0.83), "damage": 38.0, "cost": 34.0, "reach": basic_reach() + 0.12, "lunge": 1.8}, true)
@@ -384,6 +532,14 @@ func request_heavy() -> bool:
 		profile.merge({"duration": 1.40, "active": Vector2(0.72, 0.88), "damage": 36.0, "cost": 32.0, "reach": basic_reach() + 0.15, "lunge": 2.0}, true)
 	if is_thrust_weapon():
 		profile.merge({"duration": 1.40, "active": Vector2(0.29, 0.60), "shape": "line", "half_width": 0.62}, true)
+	if mounted and weapon_id == "guandao":
+		# A short horse step carries the descending blade into contact. Mounted
+		# locomotion owns velocity, so the foot attack's lunge cannot supply it.
+		profile["mount_advance"] = {"start": 0.22, "end": 0.68, "speed": 0.85}
+	return profile
+
+func request_heavy() -> bool:
+	var profile = _heavy_attack_profile()
 	if not enabled or state not in ["idle", "move", "block"] or hp <= 0.0 or stamina < float(profile.cost):
 		return false
 	combo = 0
@@ -396,8 +552,10 @@ func ultimate_name() -> String:
 	return skill_name("ultimate")
 
 func skill_profile(id: String) -> Dictionary:
-	if mounted:
+	if character_id not in ["zhaoyun", "machao", "guanyu", "zhangfei", "lubu", "xuchu"]:
 		return MountedCombat.profile(id, is_thrust_weapon(), basic_reach())
+	if mounted:
+		return MountedCombat.profile(id, is_thrust_weapon(), basic_reach(), character_id)
 	return RoleSkills.for_character(character_id).get(id, {})
 
 func skill_name(id: String) -> String:
@@ -443,19 +601,25 @@ func request_skill(id: String) -> bool:
 	skill_hit_index = -1
 	skill_strike_announced = false
 	skill_animation_started = false
+	skill_animation_index = -1
+	skill_counter_primed = false
 	action_time = 0.0
 	combo_buffered = false
 	hit_landed = false
 	turning_in_place = false
 	state = "skill"
+	_mount_action_velocity = Vector3(velocity.x, 0.0, velocity.z)
 	attack = profile.duplicate(true)
 	attack["skill"] = id
 	_reset_thrust_contact()
 	action_duration = profile.duration
 	if profile.kind == "evade":
-		dodge_direction = input_move.normalized() if input_move.length() > 0.1 else -forward()
+		dodge_direction = input_move.normalized() if input_move.length() > 0.1 else (global_basis.x * float(profile.get("dodge_side", 0.0)) if profile.has("dodge_side") else -forward())
 		dodge_direction.y = 0.0
-	play_clip(profile.clip, 0.08, 0.40 if profile.kind == "evade" else action_duration)
+	var initial_duration = float(profile.stages[0].duration) if profile.has("stages") else (0.40 if profile.kind == "evade" else action_duration)
+	play_clip(profile.clip, 0.08, initial_duration)
+	if profile.has("stages"):
+		skill_animation_index = 0
 	skill_triggered.emit(self, id, "start")
 	return true
 
@@ -470,6 +634,7 @@ func request_ultimate() -> bool:
 	skill_strike_announced = false
 	skill_animation_index = -1
 	state = "ultimate"
+	_mount_action_velocity = Vector3(velocity.x, 0.0, velocity.z)
 	action_time = 0.0
 	action_duration = float(skill_profile("ultimate").duration)
 	combo_buffered = false
@@ -483,16 +648,17 @@ func request_ultimate() -> bool:
 	skill_triggered.emit(self, "ultimate", "start")
 	return true
 
-func _cancel_skill() -> void:
+func _cancel_skill(completion = "cancel") -> void:
 	_reset_thrust_contact()
 	if skill_id != "":
-		skill_triggered.emit(self, skill_id, "cancel")
+		skill_triggered.emit(self, skill_id, completion)
 	skill_id = ""
 	skill_stage = ""
 	skill_hit_index = -1
 	skill_strike_announced = false
 	skill_animation_index = -1
 	skill_animation_started = false
+	skill_counter_primed = false
 
 func _begin_attack(index: int) -> bool:
 	var options = _light_attacks()
@@ -504,23 +670,28 @@ func _begin_attack(index: int) -> bool:
 	_enter_attack()
 	return true
 
-func _apply_weapon_stats() -> void:
+func _weapon_adjusted_attack(profile: Dictionary) -> Dictionary:
+	var data = profile.duplicate(true)
 	if is_two_handed():
-		return
+		return data
 	# The saber trades a little reach for damage; the straight sword recovers
 	# faster. The two use the same genuine single-hand animation set.
 	if weapon_id == "saber":
-		attack.damage *= 1.08
-		attack.duration *= 1.04
-		attack.active *= 1.04
-		attack.reach -= 0.10
+		data.damage *= 1.08
+		data.duration *= 1.04
+		data.active *= 1.04
+		data.reach -= 0.10
 	elif weapon_id == "xuchu_saber":
-		attack.damage *= 1.12
-		attack.duration *= 1.10
-		attack.active *= 1.10
+		data.damage *= 1.12
+		data.duration *= 1.10
+		data.active *= 1.10
 	else:
-		attack.duration *= 0.96
-		attack.active *= 0.96
+		data.duration *= 0.96
+		data.active *= 0.96
+	return data
+
+func _apply_weapon_stats() -> void:
+	attack = _weapon_adjusted_attack(attack)
 
 func _enter_attack() -> void:
 	_reset_thrust_contact()
@@ -531,6 +702,7 @@ func _enter_attack() -> void:
 	action_duration = attack.duration
 	combo_buffered = false
 	hit_landed = false
+	swing_announced = false
 	play_clip(attack.clip, 0.075, action_duration)
 	previous_tip = blade_tip()
 	action_started.emit(self, "heavy" if attack.heavy else "light")
@@ -589,8 +761,17 @@ func _has_skill_armor(data: Dictionary) -> bool:
 	if character_id not in ["machao", "xuchu"]:
 		return false
 	if state == "ultimate":
-		return action_time >= 0.55
-	return state == "skill" and (attack.get("kind", "") == "sweep" or attack.get("light_armor", false)) and action_time >= 0.18 and action_time <= 0.70 and not data.heavy
+		return action_time >= float(skill_profile("ultimate").get("armor_from", 0.55))
+	var window: Vector2 = attack.get("armor_window", Vector2(0.18, 0.70))
+	return state == "skill" and bool(attack.get("light_armor", false)) and action_time >= window.x and action_time <= window.y and not data.heavy
+
+func strike_source_position(attacker: DuelFighter, _data: Dictionary) -> Vector3:
+	# Existing combat keeps its caster-based guard. Duel projectiles may
+	# override this without changing the shared RPG's behavior.
+	return attacker.global_position
+
+func guard_facing() -> Vector3:
+	return forward()
 
 func receive_strike(attacker: DuelFighter, data: Dictionary) -> String:
 	if hp <= 0.0:
@@ -601,9 +782,27 @@ func receive_strike(attacker: DuelFighter, data: Dictionary) -> String:
 		gain_energy(9.0)
 		impact_received.emit(self, "evade", impact)
 		return "evade"
-	var toward_attacker = attacker.global_position - global_position
+	var toward_attacker = strike_source_position(attacker, data) - global_position
 	toward_attacker.y = 0.0
-	var front_guard = toward_attacker.normalized().dot(forward()) > 0.1
+	var front_guard = toward_attacker.normalized().dot(guard_facing()) > 0.1
+	var guard_window: Vector2 = attack.get("guard_window", Vector2(-1.0, -1.0))
+	var skill_guard = state == "skill" and action_time >= guard_window.x and action_time <= guard_window.y
+	if skill_guard and front_guard and not bool(data.get("unparryable", false)):
+		# Zhang Fei roots his spear; Xu Chu braces his blade. A successful
+		# interception strengthens their already scheduled physical retaliation.
+		stamina = maxf(0.0, stamina - float(data.get("guard_cost", 24.0)) * 0.55)
+		if stamina <= 0.0 or bool(data.get("force_guardbreak", false)):
+			stagger(float(data.get("break_stun", 0.8)))
+			impact_received.emit(self, "break", impact)
+			return "break"
+		skill_counter_primed = true
+		blocked_hits += 1
+		gain_energy(10.0)
+		regen_delay = 1.0
+		if not bool(data.heavy):
+			attacker.stagger(0.36)
+		impact_received.emit(self, "block", impact)
+		return "block"
 	if state == "block" and front_guard:
 		if action_time <= 0.18 and not data.heavy and not data.get("unparryable", false):
 			parries += 1
@@ -677,7 +876,18 @@ func stagger(duration: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not enabled:
+		if jump_motion.airborne:
+			# Ending a round stops attacks, not gravity. A disabled airborne rider
+			# still lands through the same capsule and move_and_slide collision.
+			_advance_jump(delta)
+			velocity.x = 0.0
+			velocity.z = 0.0
+			move_and_slide()
+			_finish_jump()
+		elif jump_motion.active:
+			_reset_jump()
 		return
+	_advance_jump(delta)
 	action_time += delta
 	if mounted:
 		mount_charge_time = maxf(0.0, mount_charge_time - delta)
@@ -695,6 +905,11 @@ func _physics_process(delta: float) -> void:
 			_update_ultimate()
 		"attack":
 			var window: Vector2 = attack.active
+			# Keep light/heavy as start notifications for input/recording. The
+			# audible air cut belongs to the physical release, after anticipation.
+			if not swing_announced and action_time >= maxf(0.0, window.x - 0.055) and action_time <= window.y:
+				swing_announced = true
+				action_started.emit(self, "swing_heavy" if bool(attack.get("heavy", false)) else "swing_light")
 			if action_time >= window.x and action_time <= window.y and not hit_landed:
 				strike_requested.emit(self, attack)
 			# A synchronous parry/counter can change our state during the signal.
@@ -726,11 +941,13 @@ func _physics_process(delta: float) -> void:
 	if mounted:
 		_update_mount_motion(delta)
 	_limit_thrust_motion()
-	velocity.y -= 20.0 * delta
+	if not jump_motion.airborne:
+		velocity.y -= 20.0 * delta
 	if is_on_floor() and velocity.y < 0:
 		velocity.y = -0.2
 	var before_move = position
 	move_and_slide()
+	_finish_jump()
 	var flat = Vector2(position.x, position.z)
 	var arena_radius = movement_radius if movement_radius > 0.0 else (11.4 if mounted else 7.6)
 	if flat.length() > arena_radius:
@@ -742,7 +959,7 @@ func _physics_process(delta: float) -> void:
 	if mounted and delta > 0.0:
 		# Colliding with a horse or the arena edge must also stop the gait,
 		# HUD speed and cavalry damage bonus, not just the physics body.
-		var travelled_speed = maxf(0.0, (position - before_move).dot(forward()) / delta)
+		var travelled_speed = Vector2(position.x - before_move.x, position.z - before_move.z).length() / delta if state in ["skill", "ultimate"] else maxf(0.0, (position - before_move).dot(forward()) / delta)
 		mount_speed = minf(mount_speed, travelled_speed)
 	previous_tip = blade_tip()
 
@@ -762,8 +979,8 @@ func _update_facing(delta: float) -> void:
 		_update_mount_facing(delta)
 		return
 	var agile_step = state == "skill" and attack.get("kind", "") == "evade"
-	var chasing = state == "ultimate" and skill_profile("ultimate").kind == "chase"
-	var committed = (state in ["attack", "skill"] and action_time >= (0.32 if agile_step else 0.10))
+	var chasing = state == "ultimate" and bool(skill_profile("ultimate").get("chase", skill_profile("ultimate").kind == "chase"))
+	var committed = (state in ["attack", "skill"] and action_time >= (float(attack.active.x) - 0.025 if agile_step else 0.10))
 	if state == "ultimate":
 		committed = action_time >= 0.45
 		if chasing:
@@ -795,9 +1012,9 @@ func _update_facing(delta: float) -> void:
 			return
 	else:
 		turning_in_place = false
-	var limit = 7.2 if chasing else (5.5 if agile_step else (3.6 if moving else 2.8))
-	var wanted = clampf(error * (14.0 if chasing else 7.0), -limit, limit)
-	turn_speed = move_toward(turn_speed, wanted, delta * (60.0 if chasing else 24.0 if agile_step else 14.0))
+	var limit = 7.2 if chasing or agile_step else (3.6 if moving else 2.8)
+	var wanted = clampf(error * (14.0 if chasing or agile_step else 7.0), -limit, limit)
+	turn_speed = move_toward(turn_speed, wanted, delta * (60.0 if chasing or agile_step else 14.0))
 	var step = clampf(turn_speed * delta, -absf(error), absf(error))
 	rotation.y += step
 
@@ -833,17 +1050,22 @@ func _update_locomotion(delta: float) -> void:
 	if movement.length() > 0.1:
 		state = "move"
 		var local = global_basis.inverse() * movement
-		if local.z > 0.65:
+		# Keep the controller's original forward/side/reverse speeds. Hysteresis
+		# below selects visuals only; it must not alter navigation or spacing.
+		speed = 2.85 if local.z > 0.65 else 1.65
+		# Small hysteresis keeps the same authored gait around diagonal input,
+		# instead of restarting the run/strafe crossfade every other frame.
+		var forward_threshold = 0.53 if current_clip == "Run" else 0.68
+		var backward_threshold = -0.53 if current_clip == "WalkBack" else -0.68
+		if local.z > forward_threshold:
 			clip = "Run"
-			gait_rate = 1.38
-		elif local.z < -0.65:
+			gait_rate = 1.38 * speed / 2.85
+		elif local.z < backward_threshold:
 			clip = "WalkBack"
-			speed = 1.65
 			gait_rate = 1.65
 		else:
 			clip = "StrafeLeft" if local.x > 0 else "StrafeRight"
-			speed = 1.65
-			gait_rate = 1.65
+			gait_rate = 1.65 * speed / 1.65
 		footstep_clock += delta * movement.length()
 		if footstep_clock > (0.34 if clip == "Run" else 0.40):
 			footstep_clock = 0.0
@@ -860,14 +1082,20 @@ func _update_locomotion(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, movement.x * speed, delta * 18.0)
 	velocity.z = move_toward(velocity.z, movement.z * speed, delta * 18.0)
 	if current_clip != clip:
-		play_clip(clip, 0.16)
-	animation_player.speed_scale = gait_rate if turning_in_place else (gait_rate * movement.length() if clip != "Idle" else 1.0)
+		play_clip(clip, 0.20)
+	var target_rate = gait_rate if turning_in_place else (gait_rate * movement.length() if clip != "Idle" else 1.0)
+	locomotion_rate = lerpf(locomotion_rate, target_rate, 1.0 - exp(-delta * 11.0))
+	animation_player.speed_scale = locomotion_rate
+	if clip in GAIT_CLIPS and animation_player.current_animation_length > 0.0:
+		locomotion_phase = fposmod(animation_player.current_animation_position / animation_player.current_animation_length, 1.0)
 
 func _update_mount_facing(delta: float) -> void:
 	mount_turn_rate = 0.0
 	if hp <= 0.0 or state in ["hit", "stagger"]:
 		return
 	var direction = input_move
+	if state in ["skill", "ultimate"]:
+		direction = opponent.global_position - global_position if is_instance_valid(opponent) else forward()
 	if direction.length_squared() < 0.01:
 		if mount_speed > 0.5 or not is_instance_valid(opponent):
 			return
@@ -877,7 +1105,7 @@ func _update_mount_facing(delta: float) -> void:
 		return
 	# Commit the weapon through its contact frame, with a much wider turning
 	# circle at a gallop. The horse never strafes or reverses instantly.
-	if state == "attack" and action_time >= float(attack.active.x) - 0.08 and action_time <= float(attack.active.y):
+	if action_facing_committed():
 		return
 	var error = angle_difference(rotation.y, atan2(direction.x, direction.z))
 	var limit = 1.1 if mount_charge_time > 0.0 else lerpf(2.5, 1.65, clampf(mount_speed / 5.0, 0.0, 1.0))
@@ -887,24 +1115,44 @@ func _update_mount_facing(delta: float) -> void:
 
 func _update_mount_motion(delta: float) -> void:
 	var desired = 0.0
+	var action_motion = Vector3.ZERO
+	var phased_action = state in ["skill", "ultimate"]
 	if input_move.length() > 0.1:
 		var alignment = maxf(0.0, forward().dot(input_move.normalized()))
 		desired = 4.8 * input_move.limit_length().length() * lerpf(0.12, 1.0, alignment)
 	if mount_charge_time > 0.0:
 		desired = 8.2
-	if state == "skill" and skill_id == "rush":
-		desired = maxf(desired, 3.1)
-	elif state == "ultimate" and skill_stage != "windup":
-		desired = maxf(desired, 2.5)
+	if state == "attack" and attack.has("mount_advance"):
+		var advance: Dictionary = attack.mount_advance
+		if action_time >= float(advance.start) and action_time <= float(advance.end):
+			desired = maxf(desired, float(advance.speed))
+	if phased_action:
+		var profile = attack if state == "skill" else skill_profile("ultimate")
+		# Skill movement owns the route. Held orbit/reverse keys cannot turn a
+		# rooted guard into a gallop or steer a committed lance hit sideways.
+		action_motion = skill_motion_velocity(profile)
+		desired = action_motion.length()
+		if bool(profile.get("rooted", false)):
+			desired = 0.0
 	if state == "block":
 		desired = minf(desired, 1.2)
 	elif state in ["hit", "stagger", "dead"]:
 		desired = 0.0
 		mount_charge_time = 0.0
 	var acceleration = 11.0 if mount_charge_time > 0.0 else (4.6 if desired > mount_speed else 8.5)
-	mount_speed = move_toward(mount_speed, desired, delta * acceleration)
-	velocity.x = forward().x * mount_speed
-	velocity.z = forward().z * mount_speed
+	if phased_action:
+		# A measured backward/sideways horse step preserves the evade's route.
+		# Vector acceleration also prevents a lateral escape snapping instantly
+		# into the returning forward thrust.
+		_mount_action_velocity = _mount_action_velocity.move_toward(action_motion, delta * 8.5)
+		velocity.x = _mount_action_velocity.x
+		velocity.z = _mount_action_velocity.z
+		mount_speed = _mount_action_velocity.length()
+	else:
+		mount_speed = move_toward(mount_speed, desired, delta * acceleration)
+		velocity.x = forward().x * mount_speed
+		velocity.z = forward().z * mount_speed
+		_mount_action_velocity = Vector3(velocity.x, 0.0, velocity.z)
 	footstep_clock += delta * mount_speed
 	if mount_speed > 0.4 and footstep_clock > 1.25:
 		footstep_clock = 0.0
@@ -943,83 +1191,143 @@ func _idle() -> void:
 	combo = 0
 	play_clip("Idle", 0.13)
 
-func _update_skill(delta: float) -> void:
-	var window: Vector2 = attack.active
-	var kind: String = attack.kind
-	if kind == "evade" and action_time >= float(attack.strike_start) and not skill_animation_started:
-		skill_animation_started = true
-		play_clip(attack.strike_clip, 0.07, 0.45)
-	if action_time >= window.x and not skill_strike_announced:
-		skill_strike_announced = true
-		skill_stage = "active"
-		skill_triggered.emit(self, skill_id, "release")
-	if action_time >= window.x and action_time <= window.y and not hit_landed:
-		strike_requested.emit(self, attack)
-		if state != "skill":
-			return
+func action_facing_committed() -> bool:
+	if state == "attack":
+		return action_time >= float(attack.active.x) - 0.08 and action_time <= float(attack.active.y)
+	if state not in ["skill", "ultimate"]:
+		return false
+	var profile = attack if state == "skill" else skill_profile("ultimate")
+	for data in profile.get("hits", [profile]):
+		var window: Vector2 = data.get("active", Vector2.ZERO)
+		if action_time >= window.x - 0.08 and action_time <= window.y:
+			return true
+	return false
+
+func skill_motion_velocity(profile: Dictionary) -> Vector3:
+	if bool(profile.get("rooted", false)):
+		return Vector3.ZERO
+	if profile.has("motion"):
+		for segment in profile.motion:
+			if action_time > float(segment.start) and action_time < float(segment.end):
+				var direction = forward()
+				if not mounted:
+					if segment.get("direction", "") == "side": direction = global_basis.x
+					elif segment.get("direction", "") == "back": direction = -forward()
+				return direction * float(segment.speed)
+		return Vector3.ZERO
+	var kind: String = profile.kind
 	var speed = 0.0
 	var direction = forward()
-	if kind == "thrust" and action_time > float(attack.dash_from) and action_time < float(attack.dash_to):
-		speed = float(attack.lunge)
-	elif kind == "sweep" and action_time > 0.16 and action_time < window.y:
-		speed = float(attack.lunge)
-	elif kind == "evade" and is_physical_thrust() and action_time >= float(attack.strike_start) and action_time < window.y:
-		# The return thrust must regain the distance spent evading; broad reach
-		# alone no longer deals damage while the blade is still out of range.
-		speed = float(attack.get("return_lunge", 0.0))
-	elif kind == "evade" and action_time > 0.04 and action_time < 0.27:
-		speed = 6.0
-		direction = dodge_direction
+	if state == "ultimate" and bool(profile.get("chase", kind == "chase")):
+		for data in profile.hits:
+			var ready_time = float(data.start)
+			if is_thrust_weapon() and data.has("clip") and animation_names.has(data.clip):
+				var source_length = animation_player.get_animation(animation_names[data.clip]).length
+				ready_time += float(clip_thrust_ready_seconds.get(data.clip, 0.25)) * float(data.clip_duration) / maxf(source_length, 0.001)
+			if action_time >= maxf(float(data.active.x) - 0.10, ready_time) and action_time <= data.active.x + 0.025:
+				speed = float(profile.get("chase_speed", 6.0))
+	elif kind == "thrust" and action_time > float(profile.get("dash_from", 0.0)) and action_time < float(profile.get("dash_to", 0.0)):
+		speed = float(profile.lunge)
+	elif kind == "sweep" and action_time > 0.16 and action_time < float(profile.active.y):
+		speed = float(profile.lunge)
+	elif kind == "evade":
+		if action_time >= float(profile.strike_start) and action_time < float(profile.active.y):
+			speed = float(profile.get("return_lunge", 0.0))
+		elif action_time > 0.04 and action_time < 0.27:
+			speed = 2.0 if mounted else 6.0
+			direction = dodge_direction
+	return direction * speed
+
+func _update_skill(delta: float) -> void:
+	var kind: String = attack.kind
+	for index in attack.get("stages", []).size():
+		var stage: Dictionary = attack.stages[index]
+		if action_time >= float(stage.start) and skill_animation_index < index:
+			skill_animation_index = index
+			_reset_thrust_contact()
+			play_clip(stage.clip, 0.065, float(stage.duration))
+	if kind == "evade" and action_time >= float(attack.strike_start) and not skill_animation_started:
+		skill_animation_started = true
+		_reset_thrust_contact()
+		play_clip(attack.strike_clip, 0.07, 0.50)
+	var hits: Array = attack.get("hits", [attack])
+	for index in hits.size():
+		var data: Dictionary = hits[index]
+		var window: Vector2 = data.active
+		if action_time < window.x or action_time > window.y:
+			continue
+		if skill_hit_index != index:
+			skill_hit_index = index
+			hit_landed = false
+			skill_stage = "active"
+			if not skill_strike_announced:
+				skill_strike_announced = true
+				skill_triggered.emit(self, skill_id, "release")
+			elif hits.size() > 1:
+				skill_triggered.emit(self, skill_id, "finish" if index == hits.size() - 1 else "strike")
+		var payload = attack.duplicate(true)
+		payload.merge(data, true)
+		payload.erase("hits")
+		payload.erase("stages")
+		if skill_counter_primed:
+			payload.damage = float(payload.damage) * float(attack.get("counter_bonus", 1.0))
+			payload["guard_cost"] = float(payload.get("guard_cost", 36.0)) * 1.25
+			payload["counter_confirmed"] = true
+		_thrust_segment_data = payload
+		if not hit_landed:
+			strike_requested.emit(self, payload)
+			if state != "skill": return
+	var motion = skill_motion_velocity(attack)
 	if kind != "evade" and is_instance_valid(opponent) and global_position.distance_to(opponent.global_position) < 1.12:
-		speed = 0.0
-	velocity.x = move_toward(velocity.x, direction.x * speed, delta * 75.0)
-	velocity.z = move_toward(velocity.z, direction.z * speed, delta * 75.0)
-	if action_time > window.y:
+		motion = Vector3.ZERO
+	velocity.x = move_toward(velocity.x, motion.x, delta * 75.0)
+	velocity.z = move_toward(velocity.z, motion.z, delta * 75.0)
+	if action_time > float(hits[-1].active.y):
 		skill_stage = "recovery"
 	if action_time >= action_duration:
+		_cancel_skill("complete")
 		_idle()
 
 func _update_ultimate() -> void:
 	var profile = skill_profile("ultimate")
 	var hits: Array = profile.hits
-	var chase = profile.kind == "chase"
 	if action_time >= float(profile.windup) and skill_stage == "windup":
 		skill_stage = "active"
-		if not chase:
-			play_clip(profile.release_clip, 0.055, float(profile.release_duration))
 		skill_triggered.emit(self, "ultimate", "release")
-	var lunging = false
 	for index in hits.size():
 		var data: Dictionary = hits[index]
 		var window: Vector2 = data.active
-		if chase and action_time >= float(data.start) and skill_animation_index < index:
+		if action_time >= float(data.start) and skill_animation_index < index:
 			skill_animation_index = index
 			_reset_thrust_contact()
 			_thrust_segment_data = data.duplicate(true)
-			if not _thrust_segment_data.has("shape"):
-				_thrust_segment_data["shape"] = "line"
-			play_clip(data.clip, 0.045, float(data.clip_duration))
-		if chase and action_time >= window.x - 0.10 and action_time <= window.x + 0.025:
-			lunging = true
+			play_clip(String(data.get("clip", profile.get("release_clip", "Idle"))), 0.055,
+				float(data.get("clip_duration", profile.get("release_duration", 0.75))))
 		if action_time >= window.x and action_time <= window.y:
 			if skill_hit_index != index:
 				skill_hit_index = index
 				hit_landed = false
-				attack = data.duplicate()
+				attack = data.duplicate(true)
 				attack.merge({"heavy": true, "unparryable": true, "skill": "ultimate", "wave": true})
-				if chase:
-					attack.merge({"shape": "line", "half_width": float(profile.get("half_width", 0.55)), "reach": float(profile.get("reach", 3.1)), "guard_cost": float(profile.get("guard_cost", 16.0)), "knockback": 0.35, "hit_stun": 0.20})
+				# Per-hit geometry wins: a planted spear's opening roar cannot
+				# turn its following real thrust into a circular damage volume.
+				for field in ["half_width", "reach", "guard_cost"]:
+					if not attack.has(field): attack[field] = profile.get(field, 0.55 if field == "half_width" else 3.8 if field == "reach" else 32.0)
+				if not attack.has("shape"): attack["shape"] = "line"
+				if not attack.has("knockback"): attack["knockback"] = 0.35
+				if not attack.has("hit_stun"): attack["hit_stun"] = 0.20
+				_thrust_segment_data = attack.duplicate(true)
 				skill_triggered.emit(self, "ultimate", "finish" if index == hits.size() - 1 else "strike")
 			if not hit_landed:
 				strike_requested.emit(self, attack)
-				if state != "ultimate":
-					return
-	var speed = 6.0 if lunging else 0.0
+				if state != "ultimate": return
+	var motion = skill_motion_velocity(profile)
 	if is_instance_valid(opponent) and global_position.distance_to(opponent.global_position) < 1.18:
-		speed = 0.0
-	velocity.x = forward().x * speed
-	velocity.z = forward().z * speed
+		motion = Vector3.ZERO
+	velocity.x = motion.x
+	velocity.z = motion.z
 	if action_time > hits[-1].active.y:
 		skill_stage = "recovery"
 	if action_time >= action_duration:
+		_cancel_skill("complete")
 		_idle()

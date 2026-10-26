@@ -12,7 +12,7 @@
 - 法律文本：https://creativecommons.org/publicdomain/zero/1.0/
 - 作者随包的完整许可保存在 `assets/licenses/Quaternius-UAL1-CC0.txt` 和 `assets/licenses/Quaternius-UAL2-CC0.txt`，也随网页部署在 `dist/licenses/`。
 
-当前素材准备使用 UAL1 的手指握持姿势，原动作保存在 `source-assets/animations/ual1/`。UAL2 的未使用动作 GLB 已清理，历史来源与许可记录保存在 `source-assets/animations/ual2/`。没有采用付费 Source 版本。
+当前素材准备使用 UAL1 的手指握持姿势，并在2026-10-24补入 UAL2 免费 Standard 的 Sword_Dash / Sword_Block 作为许褚专属冲刀、架刀动作来源。对应原件、许可和SHA256保存在 `source-assets/animations/ual1/` 与 `source-assets/animations/ual2/`。腰肩与兵器路径的独立编排由项目离线烘焙工具生成。没有采用付费 Source 版本。
 
 ## KayKit 双手动作
 
@@ -31,6 +31,16 @@
 ## 本项目生成内容
 
 庭院、山景、旗帜、刀光和命中反馈由 Godot 代码生成；声音为程序合成音效。
+
+2026-10-26 的单挑特殊招式沿用上述免费动作，重新编排武将的动作阶段、步法与出手时序，并以程序实现当前装备的长矛齐射、刀阵、低位矛阵、六戟包夹、三刃回旋和推进压力前沿；没有新增动捕或从商业参考游戏提取资源。六骑阵列用本项目原有马匹、马超与兵器运行副本生成低精度网格，随队小旗为程序网格、蹄尘沿用Kenney CC0纹理，奔跑姿态来自已保留的 Quaternius CC0 Gallop；角色与马匹几何仍属于用户提供素材。生成器、输入/输出 SHA256 和三角形预算记录在 `assets/vfx/duel/SOURCE.json`，详细机制与来源说明在 `source-assets/vfx/duel/README.md`，六将兵器阵列输入哈希见同目录 `ARMY_SOURCE.json`。
+
+## Kenney 特效纹理
+
+- 作者：Kenney Vleugels / Kenney.nl，**Particle Pack 1.1**。
+- 作者官网与授权说明：https://kenney.nl/assets/particle-pack （CC0 1.0 Universal）。
+- 获取日期：2026-10-24。原包许可完整保存在 `assets/licenses/Kenney-Particle-Pack-CC0.txt`。
+- 仅选用透明版 `smoke_07`、`trace_06`、`star_05`、`trace_02`、`slash_02` 五张纹理，用于柔边烟尘、飞散火花、聚能微光和刀枪光痕；网页运行副本缩小为 256 × 256。
+- 选中的未修改原始 PNG、原许可、直接下载地址、源包与逐文件 SHA256 保存在 `sites/wenfeng-web/source-assets/vfx/kenney/`。没有把用户提供的角色模型声明为 CC0。
 
 ## 中文字体
 

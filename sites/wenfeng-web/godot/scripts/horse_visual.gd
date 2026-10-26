@@ -20,6 +20,7 @@ const WALK_FULL_SPEED = 1.8
 const GALLOP_FULL_SPEED = 3.6
 const GALLOP_BLEND_POSITION = 7.2
 const CHARGE_SPEED = 8.2
+const JumpPose = preload("res://scripts/jump_pose.gd")
 
 var character_id = "guanyu"
 var horse_color = "brown"
@@ -46,9 +47,13 @@ var _metal_material: StandardMaterial3D
 var _stirrup_frames: Array[Node3D] = []
 var _stirrup_straps: Array[MeshInstance3D] = []
 var _rider_skeleton: Skeleton3D
+var _rider_model: Node3D
 var _rider_feet: Array[Dictionary] = []
+var _rider_contact_frames: Array[Transform3D] = []
+var _rider_contacts_ready = false
 var _motion_speed = 0.0
 var _clips: Dictionary = {}
+var _jump_pose: SkeletonModifier3D
 
 func _ready() -> void:
 	_ensure_visual()
@@ -137,6 +142,7 @@ func _clear_visual() -> void:
 	_skeleton = null
 	_animation_player = null
 	_animation_tree = null
+	_jump_pose = null
 	_saddle_frame = null
 	_saddle_model = null
 	_saddle_fit.clear()
@@ -149,7 +155,10 @@ func _clear_visual() -> void:
 	_stirrup_frames.clear()
 	_stirrup_straps.clear()
 	_rider_feet.clear()
+	_rider_contact_frames.clear()
+	_rider_contacts_ready = false
 	_rider_skeleton = null
+	_rider_model = null
 	_clips.clear()
 	_motion_speed = 0.0
 	_leather_material = null
@@ -196,6 +205,10 @@ func _ensure_visual() -> void:
 	_metal_material = _material(Color("aa8954"), 0.55)
 	_build_tack()
 	_build_gait_tree()
+	var fighter = get_parent()
+	if fighter != null and fighter.has_method("jump_status"):
+		_jump_pose = JumpPose.new()
+		_jump_pose.setup(_skeleton, Callable(fighter, "jump_status"), true)
 	reset_motion()
 
 func _find(node: Node, kind: String) -> Node:
@@ -383,6 +396,10 @@ func _batch_tack(frame: Node3D) -> void:
 	instance.mesh = combined
 	frame.add_child(instance)
 
+func bind_rider() -> void:
+	# Bind during fighter setup, before the first physics pose is sampled.
+	_cache_rider_feet()
+
 func _cache_rider_feet() -> void:
 	if not is_inside_tree():
 		return
@@ -397,7 +414,10 @@ func _cache_rider_feet() -> void:
 			break
 	if not is_instance_valid(_rider_skeleton):
 		return
+	_rider_model = fighter.get("model") as Node3D
 	_rider_feet.clear()
+	_rider_contact_frames.clear()
+	_rider_contacts_ready = false
 	for side in ["Left", "Right"]:
 		var foot = -1
 		var toe = -1
@@ -408,6 +428,7 @@ func _cache_rider_feet() -> void:
 			elif label.ends_with(side + "ToeBase"):
 				toe = index
 		_rider_feet.append({"foot": foot, "toe": toe})
+		_rider_contact_frames.append(Transform3D.IDENTITY)
 	if not _rider_skeleton.skeleton_updated.is_connected(_on_rider_skeleton_updated):
 		_rider_skeleton.skeleton_updated.connect(_on_rider_skeleton_updated)
 
@@ -416,8 +437,10 @@ func _on_rider_skeleton_updated() -> void:
 	# signal's final output; an idle _process read sees the standing/walking legs.
 	if not is_inside_tree() or not is_instance_valid(_rider_skeleton) or not _rider_skeleton.is_inside_tree():
 		return
-	if _stirrup_frames.size() != 2 or not is_instance_valid(_saddle_frame) or not _saddle_frame.is_inside_tree():
+	if _stirrup_frames.size() != 2 or not is_instance_valid(_saddle_frame) or not _saddle_frame.is_inside_tree() or not is_instance_valid(_rider_model):
 		return
+	var valid_contacts = 0
+	var model_from_world = _rider_model.global_transform.affine_inverse()
 	for index in 2:
 		var frame = _stirrup_frames[index]
 		if not is_instance_valid(frame) or not frame.is_inside_tree():
@@ -427,10 +450,27 @@ func _on_rider_skeleton_updated() -> void:
 			if int(pair.foot) >= 0 and int(pair.toe) >= 0:
 				var foot: Vector3 = _rider_skeleton.to_global(_rider_skeleton.get_bone_global_pose(int(pair.foot)).origin)
 				var toe: Vector3 = _rider_skeleton.to_global(_rider_skeleton.get_bone_global_pose(int(pair.toe)).origin)
-				frame.global_position = foot.lerp(toe, 0.62) + Vector3.UP * 0.045
+				var contact = Transform3D(frame.global_basis, foot.lerp(toe, 0.62) + Vector3.UP * 0.045)
 				var forward = (toe - foot).slide(Vector3.UP).normalized()
 				if forward.length_squared() > 0.5:
-					frame.global_basis = Basis(Vector3.UP.cross(forward).normalized(), Vector3.UP, forward)
+					contact.basis = Basis(Vector3.UP.cross(forward).normalized(), Vector3.UP, forward)
+				# Cache the FINAL modified boots in model space. A later horse
+				# callback may move the rider onto a newer saddle pose; input bone
+				# poses have already been restored then and cannot be re-sampled.
+				_rider_contact_frames[index] = model_from_world * contact
+				valid_contacts += 1
+	_rider_contacts_ready = valid_contacts == 2
+	sync_rider_contacts()
+
+func sync_rider_contacts() -> void:
+	if not is_inside_tree() or not _rider_contacts_ready or not is_instance_valid(_rider_model) or not _rider_model.is_inside_tree():
+		return
+	if _stirrup_frames.size() != 2 or _rider_contact_frames.size() != 2:
+		return
+	for index in 2:
+		var frame = _stirrup_frames[index]
+		if is_instance_valid(frame) and frame.is_inside_tree():
+			frame.global_transform = _rider_model.global_transform * _rider_contact_frames[index]
 	_update_stirrup_straps()
 
 func _update_stirrup_straps() -> void:

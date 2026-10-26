@@ -6,6 +6,8 @@ const World = preload("res://scripts/rpg_world.gd")
 const HUD = preload("res://scripts/rpg_hud.gd")
 const Effects = preload("res://scripts/combat_fx.gd")
 const SkillEffects = preload("res://scripts/rpg_skill_fx.gd")
+const ImpactFeedback = preload("res://scripts/impact_feedback.gd")
+const CombatCamera = preload("res://scripts/combat_camera.gd")
 const SAVE_KEY = "changban-rpg-save-v1"
 const SAVE_FILE = "user://changban-rpg-v1.json"
 const INTRO = [
@@ -62,10 +64,51 @@ var camera_base_position = Vector3.ZERO
 var camera_shake = 0.0
 var impact_zoom = 0.0
 var hit_stop_until = 0
+var hit_feedback = ImpactFeedback.new()
+var camera_motion = CombatCamera.new()
+var lock_view_yaw = 0.0
+var lock_view_ready = false
 var testing = false
+const COMBAT_INPUTS = ["light", "heavy", "dodge", "skill_rush", "skill_counter", "ultimate", "jump"]
+const INPUT_BUFFER_MSEC = 240
+var pending_combat_input = ""
+var pending_combat_until = 0
+var captured_combat_inputs: Dictionary = {}
+
+func _queue_combat_input(action: String) -> void:
+	if paused or phase != "explore" or dead:
+		return
+	if action == "jump":
+		captured_combat_inputs[action] = true
+		player.request_jump()
+		return
+	pending_combat_input = action
+	pending_combat_until = Time.get_ticks_msec() + INPUT_BUFFER_MSEC
+	captured_combat_inputs[action] = true
+
+func _consume_combat_input() -> void:
+	if pending_combat_input == "":
+		return
+	if Time.get_ticks_msec() > pending_combat_until:
+		pending_combat_input = ""
+		return
+	var accepted = false
+	match pending_combat_input:
+		"light": accepted = player.request_light()
+		"heavy": accepted = player.request_heavy()
+		"dodge": accepted = player.request_dodge(player.input_move)
+		"skill_rush": accepted = player.request_skill("rush")
+		"skill_counter": accepted = player.request_skill("counter")
+		"ultimate": accepted = player.request_ultimate()
+	if accepted:
+		pending_combat_input = ""
 var _web_callback: JavaScriptObject
 
 func _ready() -> void:
+	if OS.has_feature("web"):
+		# Keep the HUD at display resolution while reducing 3D pixel cost on
+		# Retina screens. Full-DPR 3D was four times the logical pixel count.
+		get_viewport().scaling_3d_scale = 0.72
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	testing = "--rpg-test" in OS.get_cmdline_user_args()
 	_configure_inputs()
@@ -108,7 +151,7 @@ func _ready() -> void:
 		JavaScriptBridge.eval("window.wenfengReady && window.wenfengReady()")
 
 func _configure_inputs() -> void:
-	var keys = {"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT], "move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN], "light": [KEY_J], "heavy": [KEY_K], "guard": [KEY_L, KEY_SHIFT], "dodge": [KEY_SPACE], "skill_rush": [KEY_Q], "skill_counter": [KEY_E], "ultimate": [KEY_U]}
+	var keys = {"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT], "move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN], "light": [KEY_J], "heavy": [KEY_K], "guard": [KEY_L, KEY_SHIFT], "dodge": [KEY_SPACE], "skill_rush": [KEY_Q], "skill_counter": [KEY_E], "ultimate": [KEY_U], "jump": [KEY_V]}
 	for action in keys:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
@@ -131,6 +174,12 @@ func _spawn_player(at: Vector3, heal: bool) -> void:
 		if fx.trails.has(previous_id):
 			fx.trails[previous_id].node.queue_free()
 			fx.trails.erase(previous_id)
+		# queue_free is deferred: retire the old collision body before the
+		# replacement spawns, including when a horse is changed mid-jump.
+		player.enabled = false
+		player.set_physics_process(false)
+		player.collision_layer = 0
+		player.collision_mask = 0
 		player.queue_free()
 	player = Actor.new()
 	player.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -140,7 +189,9 @@ func _spawn_player(at: Vector3, heal: bool) -> void:
 	player.horse_color = progress.horse_color
 	player.weapon_id = progress.stats().weapon_id
 	add_child(player)
-	player.position = at
+	# Replacing a horse must not inherit a discarded actor's midair position
+	# without its jump motion. Match the existing grounded save/load spawn.
+	player.position = Vector3(at.x, 0.05, at.z)
 	player.rotation.y = PI
 	var stats = progress.stats()
 	player.apply_stats(stats.hp, stats.damage_scale, stats.armor, heal)
@@ -173,15 +224,14 @@ func _build_spawns() -> void:
 		minion_spawns.append({"id": "raider_%02d" % i, "position": groups[i][0], "level": groups[i][1]})
 
 func _process(delta: float) -> void:
-	if hit_stop_until > 0 and Time.get_ticks_msec() >= hit_stop_until:
-		Engine.time_scale = 1.0
-		hit_stop_until = 0
+	var real_delta = delta / maxf(Engine.time_scale, 0.01)
+	hit_stop_until = hit_feedback.tick()
 	if not is_instance_valid(player):
 		return
 	if not paused:
-		var real_delta = delta / maxf(Engine.time_scale, 0.01)
 		camera_shake = move_toward(camera_shake, 0.0, real_delta * 0.95)
 		impact_zoom = move_toward(impact_zoom, 0.0, real_delta * 9.0)
+		camera_motion.update(real_delta)
 		elapsed += delta
 		toast_clock = maxf(0.0, toast_clock - delta)
 		if toast_clock <= 0.0:
@@ -211,18 +261,14 @@ func _physics_process(delta: float) -> void:
 	else:
 		player.input_move = direction.rotated(Vector3.UP, camera_yaw).limit_length()
 	player.wants_block = Input.is_action_pressed("guard")
-	if Input.is_action_just_pressed("light"):
-		player.request_light()
-	if Input.is_action_just_pressed("heavy"):
-		player.request_heavy()
-	if Input.is_action_just_pressed("dodge"):
-		player.request_dodge(player.input_move)
-	if Input.is_action_just_pressed("skill_rush"):
-		player.request_skill("rush")
-	if Input.is_action_just_pressed("skill_counter"):
-		player.request_skill("counter")
-	if Input.is_action_just_pressed("ultimate"):
-		player.request_ultimate()
+	# Capture short key-down/up pairs as events, including during hit-stop.
+	# The poll also supports Input.action_press and the touch bridge without
+	# dispatching the same event twice. One intent expires by real wall clock.
+	for action in COMBAT_INPUTS:
+		if Input.is_action_just_pressed(action) and not captured_combat_inputs.has(action):
+			_queue_combat_input(action)
+	captured_combat_inputs.clear()
+	_consume_combat_input()
 	_update_target()
 	_update_enemies(delta)
 	spawn_clock += delta
@@ -457,10 +503,21 @@ func _update_enemies(delta: float) -> void:
 		enemy.wants_block = boss and distance < 4.1 and player.state == "attack" and int(elapsed * 3.0) % 5 == 0
 		if float(ai_clocks[id]) > 0.0 or enemy.state not in ["idle", "move", "block"]:
 			continue
+		var q_kind = String(enemy.skill_profile("rush").get("kind", ""))
+		var e_kind = String(enemy.skill_profile("counter").get("kind", ""))
+		var incoming = player.state in ["attack", "skill", "ultimate"] and distance < 3.8
+		if boss and incoming and facing > 0.6:
+			var defense = "rush" if q_kind == "brace" else "counter"
+			if (q_kind == "brace" or e_kind in ["brace", "evade"]) and enemy.request_skill(defense):
+				ai_clocks[id] = 1.2
+				continue
+		if boss and facing > 0.65 and distance < 3.3 and e_kind not in ["brace", "evade"] and int(elapsed * 2) % 7 == 0 and enemy.request_skill("counter"):
+			ai_clocks[id] = 1.5
+			continue
 		if distance < (2.65 if enemy.is_thrust_weapon() else 3.0) and facing > 0.72:
 			if boss and enemy.energy >= 100.0:
 				enemy.request_ultimate()
-			elif boss and int(elapsed * 2) % 6 == 0 and enemy.skill_ready("rush"):
+			elif boss and q_kind != "brace" and int(elapsed * 2) % 6 == 0 and enemy.skill_ready("rush"):
 				enemy.request_skill("rush")
 			elif boss and int(elapsed * 2) % 3 == 0:
 				enemy.request_heavy()
@@ -498,9 +555,17 @@ func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 		return
 	if not physical and data.get("shape", "") != "line" and not data.get("wave", false) and contact > 0.85 and offset.length() > 1.6:
 		return
+	var nearest = blade if blade[0].distance_to(blade[1]) <= sweep[0].distance_to(sweep[1]) else sweep
+	if not bool(data.get("radial", false)) and not bool(data.get("wave", false)):
+		# A short attack step cannot let a long blade hit through a solid wall.
+		# Layer 1 is actual world collision; camera-only roofs and actors are
+		# excluded. A low fence below both fighters' hands stays passable above.
+		var origin = attacker.global_position + Vector3.UP * (2.35 if attacker.mounted else 1.05)
+		var cover = PhysicsRayQueryParameters3D.create(origin, nearest[1], 1)
+		if not get_world_3d().direct_space_state.intersect_ray(cover).is_empty():
+			return
 	attacker.hit_landed = true
 	var resolved = data.duplicate(true)
-	var nearest = blade if blade[0].distance_to(blade[1]) <= sweep[0].distance_to(sweep[1]) else sweep
 	resolved["contact_point"] = nearest[1]
 	if attacker.mounted and attacker.mount_speed > 4.8 and data.get("kind", "") != "roar":
 		resolved["damage"] = float(resolved.damage) * (1.0 + minf(attacker.mount_speed / 28.0, 0.30))
@@ -522,23 +587,30 @@ func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 		return
 	camera_shake = maxf(camera_shake, 0.13 if heavy else 0.055)
 	impact_zoom = maxf(impact_zoom, 1.6 if heavy else 0.55)
+	camera_motion.kick(-fighter.forward(), heavy)
 	# Stop only a real contact, and restore by wall clock even while paused.
 	if not testing and not paused and phase == "explore":
-		Engine.time_scale = 0.14
-		hit_stop_until = Time.get_ticks_msec() + (68 if heavy else 42)
+		hit_stop_until = hit_feedback.request(68 if heavy else 42, 0.14)
 
 func _on_action(actor: DuelFighter, action: String) -> void:
+	skill_fx.action(actor, action)
 	match action:
-		"light", "heavy": fx.sound("thrust" if actor.is_thrust_weapon() else "swing", -16.0)
+		"swing_light", "swing_heavy": fx.sound("thrust" if actor.is_thrust_weapon() else ("heavy" if action == "swing_heavy" else "swing"), -16.0)
 		"hoof":
 			if actor == player: fx.sound("step", -25.0, 0.75)
 		"charge": fx.sound("dodge", -18.0, 0.8)
 
 func _on_skill(actor: DuelFighter, id: String, stage: String) -> void:
 	skill_fx.play_skill(actor, id, stage)
-	if stage == "start": fx.sound("charge", -18.0)
-	elif stage in ["release", "finish"]:
-		fx.sound("ultimate" if id == "ultimate" else ("thrust" if actor.is_thrust_weapon() else "heavy"), -16.0)
+	var profile: Dictionary = actor.skill_profile(id)
+	if stage == "start":
+		fx.sound("dodge" if profile.get("kind", "") == "evade" else "charge", -18.0)
+	elif stage in ["release", "strike", "finish"]:
+		if stage == "release" and id == "ultimate" and profile.has("hits"):
+			return
+		var data: Dictionary = skill_fx.presentation_profile(actor, id)
+		var voice = "serpent" in String(data.get("fx_style", "")) and data.get("shape", "") == "radial"
+		fx.sound("roar" if voice else ("thrust" if data.get("shape", "") == "line" else "heavy"), -16.0)
 		if actor == player:
 			camera_shake = maxf(camera_shake, 0.09 if stage == "finish" else 0.035)
 			impact_zoom = maxf(impact_zoom, 1.4 if id == "ultimate" else 0.5)
@@ -644,6 +716,8 @@ func _continue_dialogue() -> void:
 	_save_game()
 
 func _set_enabled(value: bool) -> void:
+	if not value:
+		_release_inputs()
 	if is_instance_valid(player):
 		player.enabled = value
 		player.input_move = Vector3.ZERO
@@ -770,6 +844,11 @@ func command(action: String, payload: Variant = null) -> void:
 			_show_dialogue(INTRO, "intro")
 
 func _unhandled_input(event: InputEvent) -> void:
+	for action in COMBAT_INPUTS:
+		if event.is_action_pressed(action, false):
+			_queue_combat_input(action)
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
 			KEY_F: interact()
@@ -815,21 +894,30 @@ func _update_camera(delta: float, instant: bool = false) -> void:
 		target = player.position.lerp(locked.position, 0.4) + Vector3.UP * 1.8
 		view_distance = maxf(camera_distance, minf(22.0, separation.length() * 0.8 + 8.0))
 		if separation.length_squared() > 0.01:
-			view_yaw = atan2(-separation.x, -separation.z) + 0.18
+			var wanted_yaw = atan2(-separation.x, -separation.z) + 0.18
+			if instant:
+				lock_view_yaw = wanted_yaw
+			elif not lock_view_ready:
+				var previous_offset = camera_base_position - target
+				lock_view_yaw = atan2(previous_offset.x, previous_offset.z)
+			lock_view_yaw = wanted_yaw if instant else rotate_toward(lock_view_yaw, wanted_yaw, delta * 2.8)
+			lock_view_ready = true
+			view_yaw = lock_view_yaw
 		lock_marker.position = locked.position + Vector3.UP * 2.9
 		lock_marker.visible = true
 		lock_marker.scale = Vector3.ONE * clampf(camera.position.distance_to(lock_marker.position) / 12.0, 0.7, 1.7)
 	else:
 		lock_marker.visible = false
+		lock_view_ready = false
 	var offset = Vector3(0, view_distance * view_height, view_distance).rotated(Vector3.UP, view_yaw)
 	var desired = _clear_camera_position(target, target + offset)
 	var smooth = desired if instant else camera_base_position.lerp(desired, 1.0 - exp(-delta * 7.0))
 	# Recheck the interpolated position so a quick turn cannot cross a roof.
 	camera_base_position = _clear_camera_position(target, smooth)
 	var tremor = Vector3(sin(Time.get_ticks_msec() * 0.091), cos(Time.get_ticks_msec() * 0.079) * 0.65, 0.0) * camera_shake
-	camera.position = _clear_camera_position(target, camera_base_position + camera.basis * tremor)
+	camera.position = _clear_camera_position(target, camera_base_position + camera_motion.recoil + camera.basis * tremor)
 	camera.look_at(target)
-	var fov = 55.0 if player.state == "ultimate" and player.action_time < 0.5 else 58.0
+	var fov = 58.0 - CombatCamera.anticipation(player)
 	camera.fov = lerpf(camera.fov, fov + impact_zoom, 1.0 - exp(-delta * 9.0))
 	for label in labels.values():
 		if is_instance_valid(label):
@@ -848,13 +936,16 @@ func _clear_camera_position(target: Vector3, desired: Vector3) -> Vector3:
 	return target + direction.normalized() * maxf(0.15, distance - 0.5)
 
 func _reset_hit_feedback() -> void:
+	hit_feedback.reset()
+	camera_motion.reset()
 	Engine.time_scale = 1.0
 	hit_stop_until = 0
 	camera_shake = 0.0
 	impact_zoom = 0.0
 
 func _exit_tree() -> void:
-	Engine.time_scale = 1.0
+	hit_feedback.reset()
+	camera_motion.reset()
 
 func _notify(text: String, duration: float = 4.5) -> void:
 	toast = text
@@ -908,7 +999,7 @@ func snapshot() -> Dictionary:
 	var quest = _quest()
 	quest.target_position = _point(quest.target_position)
 	for entry in bosses: entry.position = _point(entry.position)
-	return {"ready": true, "game_mode": "rpg", "lock_on": lock_state, "phase": phase, "paused": paused, "dead": dead, "inventory_open": inventory_open, "map_open": map_open, "horse_color": progress.horse_color, "region": world.zone_at(player.position), "player": {"name": "赵云", "character": "zhaoyun", "level": progress.level, "hp": player.hp, "max_hp": player.max_hp, "stamina": player.stamina, "max_stamina": 100.0, "xp": progress.xp, "xp_to_next": progress.xp_to_next(), "attack": stats.attack, "armor": stats.armor, "energy": player.energy, "position": _point(player.position), "facing": player.rotation.y, "state": player.state, "weapon": player.weapon_id, "mount_speed": player.mount_speed, "contact_active": player.contact_active, "contact_latched": player.contact_latched}, "quest": quest, "target": target, "interaction": _interaction().get("text", ""), "dialogue": current_dialogue, "toast": toast, "bosses": bosses, "pois": pois, "inventory": progress.inventory.duplicate(), "equipped": progress.equipped.duplicate(), "save_label": save_label, "defeated": progress.defeated.duplicate(), "kills": progress.kills, "enemies": visible_enemies, "active_boss": active_boss, "seconds": elapsed, "muted": fx.muted, "effects": skill_fx.call("debug_state"), "fps": Engine.get_frames_per_second(), "coordinates": "metres; Y up; X east; Z south. Continuous circular world radius 155m."}
+	return {"ready": true, "game_mode": "rpg", "lock_on": lock_state, "phase": phase, "paused": paused, "dead": dead, "inventory_open": inventory_open, "map_open": map_open, "horse_color": progress.horse_color, "region": world.zone_at(player.position), "player": {"jump": player.jump_status(), "name": "赵云", "character": "zhaoyun", "level": progress.level, "hp": player.hp, "max_hp": player.max_hp, "stamina": player.stamina, "max_stamina": 100.0, "xp": progress.xp, "xp_to_next": progress.xp_to_next(), "attack": stats.attack, "armor": stats.armor, "energy": player.energy, "position": _point(player.position), "facing": player.rotation.y, "state": player.state, "weapon": player.weapon_id, "mount_speed": player.mount_speed, "clip": player.current_clip, "action_time": player.action_time, "skill": player.skill_id, "skill_stage": player.skill_stage, "cooldowns": player.cooldowns.duplicate(), "contact_active": player.contact_active, "contact_latched": player.contact_latched}, "quest": quest, "target": target, "interaction": _interaction().get("text", ""), "dialogue": current_dialogue, "toast": toast, "bosses": bosses, "pois": pois, "inventory": progress.inventory.duplicate(), "equipped": progress.equipped.duplicate(), "save_label": save_label, "defeated": progress.defeated.duplicate(), "kills": progress.kills, "enemies": visible_enemies, "active_boss": active_boss, "seconds": elapsed, "muted": fx.muted, "effects": skill_fx.call("debug_state"), "fps": Engine.get_frames_per_second(), "coordinates": "metres; Y up; X east; Z south. Continuous circular world radius 155m."}
 
 func _point(value: Vector3) -> Array:
 	return [value.x, value.y, value.z]
@@ -949,7 +1040,9 @@ func _web_command(args: Array) -> void:
 	if action == "input" and args.size() >= 3:
 		var id = str(args[1])
 		if InputMap.has_action(id):
-			if bool(args[2]): Input.action_press(id)
+			if bool(args[2]):
+				if id in COMBAT_INPUTS and not Input.is_action_pressed(id): _queue_combat_input(id)
+				Input.action_press(id)
 			else: Input.action_release(id)
 	elif action == "blur":
 		_release_inputs()
@@ -960,9 +1053,12 @@ func _web_command(args: Array) -> void:
 	_publish()
 
 func _release_inputs() -> void:
+	pending_combat_input = ""
+	pending_combat_until = 0
+	captured_combat_inputs.clear()
 	camera_drag = false
 	camera_drag_distance = 0.0
-	for id in ["move_left", "move_right", "move_up", "move_down", "light", "heavy", "guard", "dodge", "skill_rush", "skill_counter", "ultimate"]:
+	for id in ["move_left", "move_right", "move_up", "move_down", "light", "heavy", "guard", "dodge", "skill_rush", "skill_counter", "ultimate", "jump"]:
 		Input.action_release(id)
 	if is_instance_valid(player):
 		player.input_move = Vector3.ZERO

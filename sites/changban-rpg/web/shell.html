@@ -22,7 +22,7 @@
 
   <main>
     <section id="stage" aria-label="长坂行·赵云传游戏">
-      <canvas id="canvas" width="1280" height="800" tabindex="0" aria-label="3D骑马探索。WASD策马，Tab或中键点击锁定，R切换目标；锁定后W/S进退、A/D绕敌，目标过远或死亡自动解除。空格冲刺，J轻击，K重击，L格挡，Q E技能，U绝技；F交互，I行囊，M地图，N静音，Enter继续对话。"></canvas>
+      <canvas id="canvas" width="1280" height="800" tabindex="0" aria-label="3D骑马探索。WASD策马，Tab或中键点击锁定，R切换目标；锁定后W/S进退、A/D绕敌，目标过远或死亡自动解除。空格冲刺，V跳跃且空中可出招，J轻击，K重击，L格挡，Q E技能，U绝技；F交互，I行囊，M地图，N静音，Enter继续对话。"></canvas>
       <div id="cover">
         <div class="cover-art" aria-hidden="true"></div>
         <div class="cover-copy">
@@ -61,6 +61,7 @@
           <button data-action="move_right" aria-label="向右转向">→</button>
         </div>
         <div class="action-pad">
+          <button id="touch-jump" data-action="jump" class="jump-action" aria-label="跳跃，快捷键 V；空中可继续出招" aria-keyshortcuts="V">跳跃 V</button>
           <button data-action="skill_rush">Q 进攻</button>
           <button data-action="skill_counter">E 战术</button>
           <button data-action="ultimate" class="ultimate">U 绝技</button>
@@ -73,7 +74,7 @@
     </section>
   </main>
 
-  <footer><span>Tab / 中键 锁定 <i>·</i> 锁定后 W/S 进退、A/D 绕敌 <i>·</i> R 切换目标 <i>·</i> 目标过远/死亡自动解锁 <i>·</i> J/K/Q/E/U 战斗 <i>·</i> F 交互 <i>·</i> I 行囊 <i>·</i> M 地图</span><a href="credits.txt" target="_blank" rel="noopener">制作与许可 ↗</a></footer>
+  <footer><span>Tab / 中键 锁定 <i>·</i> 锁定后 W/S 进退、A/D 绕敌 <i>·</i> R 切换目标 <i>·</i> 目标过远/死亡自动解锁 <i>·</i> J/K/Q/E/U 战斗 <i>·</i> V 跳跃 <i>·</i> F 交互 <i>·</i> I 行囊 <i>·</i> M 地图</span><a href="credits.txt" target="_blank" rel="noopener">制作与许可 ↗</a></footer>
 
   <dialog id="help-dialog" aria-labelledby="help-title">
     <form method="dialog"><button class="close-dialog" aria-label="关闭操作说明">×</button></form>
@@ -84,7 +85,8 @@
       <div><dt><kbd>Tab</kbd> / 中键点击</dt><dd>锁定或解除附近敌人；目标过远或死亡时自动解除。触屏可点“锁定”</dd></div>
       <div><dt><kbd>R</kbd></dt><dd>锁定时切换附近目标</dd></div>
       <div><dt><kbd>Space</kbd></dt><dd>短时冲刺，留意体力与冷却</dd></div>
-      <div><dt><kbd>J</kbd> / 鼠标左键</dt><dd>轻击，连续按下衔接连招</dd></div>
+      <div><dt><kbd>V</kbd></dt><dd>骑马跳跃；空中仍可轻重击、格挡与施放 Q / E / U，Space 冲刺与 F 交互保留</dd></div>
+      <div><dt><kbd>J</kbd> / 鼠标左键</dt><dd>轻击，连续点按衔接连招；锁敌近身出招时短步调整距离，远处仍需策马接近</dd></div>
       <div><dt><kbd>K</kbd> / 鼠标右键</dt><dd>重击，消耗更多体力</dd></div>
       <div><dt><kbd>L</kbd> / <kbd>Shift</kbd></dt><dd>按住格挡</dd></div>
       <div><dt><kbd>Q</kbd> / <kbd>E</kbd> / <kbd>U</kbd></dt><dd>进攻技 / 战术技 / 战意绝技</dd></div>

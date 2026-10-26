@@ -74,6 +74,12 @@
     $('sound-btn').setAttribute('aria-pressed', String(!!data.muted));
     $('touch-controls').hidden = !coarsePointer.matches || !exploring;
     $('touch-shortcuts').hidden = !coarsePointer.matches || !playing || data.phase === 'dialogue';
+    const jump = data.player?.jump || {};
+    const airborne = !!(jump.airborne ?? jump.active ?? data.player?.airborne ?? data.player?.jumping);
+    $('touch-jump').classList.toggle('airborne', airborne);
+    $('touch-jump').setAttribute('aria-label', airborne
+      ? '跳跃：当前空中，可继续轻重击和施放技能'
+      : '跳跃，快捷键 V；空中可继续出招');
     const lockOn = data.lock_on || {};
     $('touch-lock').disabled = !exploring;
     $('touch-lock').setAttribute('aria-pressed', String(!!lockOn.active));
@@ -116,7 +122,9 @@
         async pull(controller) {
           while (index < chunks.length) {
             if (!reader) {
-              const part = await nativeFetch(new URL(chunks[index].file, url), init);
+              const chunkUrl = new URL(chunks[index].file, url);
+              if (asset.sha256) chunkUrl.searchParams.set('v', asset.sha256);
+              const part = await nativeFetch(chunkUrl, init);
               if (!part.ok || !part.body) throw new Error('行装下载失败，请检查网络后重试。');
               reader = part.body.getReader();
             }

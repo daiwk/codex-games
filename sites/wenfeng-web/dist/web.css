@@ -12,4 +12,11 @@ footer{height:34px;flex-shrink:0;display:flex;justify-content:space-between;alig
 @media(pointer:coarse) and (orientation:portrait){#rotate-hint{display:block}body[data-playing="true"] #stage{margin-bottom:110px}#touch-controls{bottom:-105px;left:4%;right:4%}}
 @media(pointer:coarse) and (orientation:landscape){.topbar{height:38px}footer{height:22px}#stage{width:min(100vw,calc((100dvh - 60px)*1.6))}.cover-copy{padding:18px 6%;width:65%}.eyebrow{margin-bottom:8px}h1{font-size:58px;margin:0 0 10px}h1 span{margin-top:8px;font-size:8px}.tagline{font-size:17px;line-height:1.5;margin:10px 0}.intro{display:none}#start-btn{padding:10px 16px;font-size:13px}.cover-note{font-size:8px;margin:8px 0 0}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}dialog::backdrop{backdrop-filter:none}}
+@media(max-width:380px){.topbar{padding:0 10px}.wordmark{font-size:20px;letter-spacing:3px}nav button{padding:8px 6px;font-size:10px}}
 dialog{max-height:calc(100dvh - 32px);overflow-y:auto}
+
+.mounted-only { display: none; }
+body[data-combat-mode="mounted"] .mounted-only { display: block; }
+
+/* Jump fills the former empty skill-pad cell; it adds no control row. */
+.action-pad #touch-jump{grid-column:1;border-color:var(--jade);font-weight:600}.action-pad #touch-jump.airborne{background:#82b8ad66;color:#fff}

@@ -1,0 +1,25 @@
+{
+	"atlas_width": 256,
+	"originals_modified": false,
+	"poses": 4,
+	"rows_per_pose": 58,
+	"sources": [
+		{
+			"name": "/root/@CharacterBody3D@2/@Node3D@6/AnimatedHorse/HorseRig/Skeleton3D/Horse_white",
+			"selected_triangles": 1242,
+			"source_triangles": 19878
+		},
+		{
+			"name": "/root/@CharacterBody3D@2/CharacterVisual/Armature/Skeleton3D/tripo_node_18c18a43-c9cd-4384-a553-fb2bdaff0d29",
+			"selected_triangles": 1488,
+			"source_triangles": 37606
+		},
+		{
+			"name": "/root/@CharacterBody3D@2/TwoHandGrip/TwoHandPolearm/RootNode/b0e4c944_1f32_48b2_9a06_38696e1aa6e5",
+			"selected_triangles": 2164,
+			"source_triangles": 9617
+		}
+	],
+	"triangles_per_rider": 4894,
+	"vertices_per_pose": 14682
+}

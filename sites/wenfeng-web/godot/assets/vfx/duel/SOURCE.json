@@ -1,0 +1,36 @@
+{
+  "purpose": "Duel-only six-rider spectral cavalry; no additional animated skeletons at runtime.",
+  "source_geometry": "Original user-supplied models, using retained prepared runtime derivatives; originals are unmodified.",
+  "animation": "Existing retained CC0 Quaternius Farm Animals Gallop plus this project RiderPose. No resources extracted from commercial reference games.",
+  "generator": "res://tools/prepare_duel_cavalry.gd",
+  "poses": 4,
+  "triangles_per_rider": 4894,
+  "max_riders": 6,
+  "renderer": "One MultiMesh + four-pose float-position atlas, interpolated by a pausable shader clock.",
+  "sources": [
+    {
+      "file": "assets/mounts/horse_white.glb",
+      "sha256": "0a75d4f0e617d00d1dd7ac2500be0001d1a120df697af6f3f9ddd49cccc37f62"
+    },
+    {
+      "file": "assets/characters/machao.glb",
+      "sha256": "16503811dd4c77fdf4b2e168e1b23d9c66d8f02cd036c23ed36f173730a3b639"
+    },
+    {
+      "file": "assets/weapons/serpent_spear.glb",
+      "sha256": "a8db830edc4eb0634cc168fa33c9181f42e8c769c7f92e4a83bed3333f5a8280"
+    }
+  ],
+  "output": [
+    {
+      "file": "cavalry_poses.res",
+      "bytes": 288226,
+      "sha256": "3fbc6b1fcb5fea7fa761074487c351955c9b34c4b8375a13efc398d770a442c0"
+    },
+    {
+      "file": "cavalry_mesh.res",
+      "bytes": 108373,
+      "sha256": "669ee5fdfbb16b850f1ffc56c04d5a8c6864c8ff9b9fe941217ffe86d626d703"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "author": "Kenney Vleugels (Kenney.nl)",
+  "pack": "Particle Pack 1.1",
+  "license": "CC0 1.0 Universal",
+  "source_url": "https://kenney.nl/assets/particle-pack",
+  "download_url": "https://kenney.nl/media/pages/assets/particle-pack/f8fe0f8cb8-1677578741/kenney_particle-pack.zip",
+  "acquired": "2026-10-24",
+  "archive_sha256": "b631d4b07f7002549fdcf155f01141ad482f79f3440e4e301eed49ce5f1d8958",
+  "modification": "Selected transparent original PNGs retained here; runtime copies resized to 256 × 256 with Lanczos; no other alterations.",
+  "files": [
+    {
+      "file": "smoke_07.png",
+      "archive_member": "PNG (Transparent)/smoke_07.png",
+      "source_sha256": "f7419fa4f11e346d0fb36a17ecbf616083c6962633c7847d92119c994ed9b4e4",
+      "runtime_sha256": "3f8f9418b8ae24ae82b6d11d3f6e6ad7fa2a64b185915827712315b194a6cf89",
+      "runtime_size": [
+        256,
+        256
+      ],
+      "runtime_bytes": 39098
+    },
+    {
+      "file": "trace_06.png",
+      "archive_member": "PNG (Transparent)/trace_06.png",
+      "source_sha256": "22c61c0e280db28b6cb6033c015dde4360a124b3488302ea708566b7f36fd900",
+      "runtime_sha256": "f3c821261d62ce7c8c8fa42df90a0589b689490f3a3c3dbcbb7501ad9a5f0a3c",
+      "runtime_size": [
+        256,
+        256
+      ],
+      "runtime_bytes": 15532
+    },
+    {
+      "file": "star_05.png",
+      "archive_member": "PNG (Transparent)/star_05.png",
+      "source_sha256": "1e8ab968178e507824ab28353c0ffffa918ae3adbcf89513d3db50a17b7bc8a2",
+      "runtime_sha256": "589667cb239caa5fa2128efd1137e599b362cab7f359749b0c8398dac214cf84",
+      "runtime_size": [
+        256,
+        256
+      ],
+      "runtime_bytes": 25844
+    },
+    {
+      "file": "trace_02.png",
+      "archive_member": "PNG (Transparent)/trace_02.png",
+      "source_sha256": "8c224d6d4544d8437bce5ee51452957b31f5479e337c5f432dc1b55b1e2f9685",
+      "runtime_sha256": "a179dc2558bd3a01147fcd626ca54e67b7a729e94a1ee6db0f43150371d34460",
+      "runtime_size": [
+        256,
+        256
+      ],
+      "runtime_bytes": 13100
+    },
+    {
+      "file": "slash_02.png",
+      "archive_member": "PNG (Transparent)/slash_02.png",
+      "source_sha256": "a79a9e297790e6126b78d41015a3045cda3f1863b421c88321d2442ed6f9032e",
+      "runtime_sha256": "9984d0fb25cd013ce3dd7eacf90f6becc60bcee592aeea464caad2fa5359b282",
+      "runtime_size": [
+        256,
+        256
+      ],
+      "runtime_bytes": 19995
+    }
+  ],
+  "runtime_total_bytes": 113569
+}

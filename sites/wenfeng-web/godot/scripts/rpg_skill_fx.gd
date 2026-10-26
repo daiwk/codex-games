@@ -44,73 +44,38 @@ void fragment() {
 """
 
 
+func action(fighter: DuelFighter, name: String) -> void:
+	if not is_instance_valid(fighter) or not fighter.is_inside_tree(): return
+	if name not in ["jump", "land"]: return
+	_event_counts[name] = int(_event_counts.get(name, 0)) + 1
+	_jump_feedback(fighter, name)
+
+func _jump_feedback(fighter: DuelFighter, name: String) -> void:
+	var landing = name == "land"
+	var palette: Array = PALETTES.get(fighter.character_id, PALETTES.zhaoyun)
+	_spawn(fighter, "tex_step_dust", palette, 0.48 if landing else 0.28, 0.0,
+		Vector3.ONE * (0.62 if fighter.mounted else 0.38), Vector3.ONE * (1.10 if landing and fighter.mounted else 0.70))
+	if landing and fighter.mounted:
+		_spawn(fighter, "charge_pebbles", palette, 0.34, 0.0, Vector3.ONE * 0.32, Vector3.ONE * 0.42)
+	# Reuse the scene's existing sound pool and mute preference. Standalone FX
+	# fixtures have no audio host, so presentation tests remain self-contained.
+	var host = get_parent()
+	if not is_instance_valid(host): return
+	for property in host.get_property_list():
+		if property.name != "fx": continue
+		var audio = host.get("fx")
+		if is_instance_valid(audio) and audio.has_method("sound"):
+			audio.call("sound", "step" if landing else "dodge", -22.0 if landing else -27.0, 0.72 if fighter.mounted else 1.05)
+		break
+
 func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 	if not is_instance_valid(fighter) or not fighter.is_inside_tree() or not is_inside_tree():
 		return
-	var owner_id = fighter.get_instance_id()
-	if stage == "cancel":
-		# Interruptions also remove already launched skill layers, not just charge
-		# followers. Independent contact sparks may finish their short lifetime.
-		for id in active_effects.keys():
-			if active_effects[id].owner == owner_id:
-				_finish_effect(id)
-		_ultimate_strikes.erase(owner_id)
-		return
-	if skill not in ["rush", "counter", "ultimate"]:
-		super.play_skill(fighter, skill, stage)
-		return
-	if stage not in ["start", "release", "strike", "finish"]:
-		return
-	_event_counts[skill + ":" + stage] = int(_event_counts.get(skill + ":" + stage, 0)) + 1
-	var palette: Array = PALETTES.get(fighter.character_id, PALETTES.zhaoyun)
-	var blade = not fighter.is_thrust_weapon()
-	if stage == "start":
-		_remove_followers(owner_id)
-	elif stage in ["release", "finish"]:
-		_remove_followers(owner_id)
-	match skill:
-		"rush":
-			if stage == "start":
-				var windup = clampf(float(fighter.skill_profile(skill).active.x) + 0.035, 0.16, 0.7)
-				_emit(fighter, "rpg_focus", palette, windup, windup * 0.60, Vector3.ONE * 0.85, Vector3.ONE, true)
-				_emit(fighter, "rpg_gather", palette, windup, windup * 0.65, Vector3.ONE * 0.7, Vector3.ONE, true)
-			elif stage in ["release", "strike"]:
-				_weapon_release(fighter, palette, blade, false)
-				_emit(fighter, "rpg_wake_dust", palette, 0.44, 0.035, Vector3(0.7, 0.6, 0.6), Vector3(1.05, 0.8, 1.0), false, true)
-		"counter":
-			if stage == "start":
-				_emit(fighter, "rpg_wind", palette, 0.46, 0.08, Vector3.ONE * 0.74, Vector3.ONE * 1.08, true)
-				_emit(fighter, "rpg_echo", palette, 0.40, 0.035, Vector3.ONE, Vector3.ONE)
-			elif stage in ["release", "strike"]:
-				_emit(fighter, "rpg_wind", palette, 0.34, 0.02, Vector3.ONE * 0.85, Vector3.ONE * 1.28)
-				var radial = fighter.skill_profile(skill).get("kind", "") == "roar"
-				if radial:
-					_emit(fighter, "rpg_parry_ring", palette, 0.34, 0.025, Vector3.ONE * 0.45, Vector3.ONE, false, true)
-					_emit(fighter, "rpg_embers", palette, 0.38, 0.02, Vector3.ONE, Vector3.ONE)
-				else:
-					_weapon_release(fighter, palette, blade, false)
-		"ultimate":
-			if stage == "start":
-				_ultimate_strikes[owner_id] = 0
-				var windup = clampf(fighter.ultimate_windup() + 0.10, 0.28, 2.0)
-				_emit(fighter, "rpg_charge", palette, windup, windup * 0.72, Vector3.ONE * 0.76, Vector3.ONE, true)
-				_emit(fighter, "rpg_gather", palette, windup, windup * 0.75, Vector3.ONE, Vector3.ONE, true)
-				_emit(fighter, "rpg_charge_seal", palette, windup, windup * 0.75, Vector3.ONE, Vector3.ONE * 0.86, true, true)
-			elif stage == "release":
-				# The release beat precedes the first actual strike, so it is a
-				# small expanding gold collar rather than a premature hit flash.
-				_emit(fighter, "rpg_release", palette, 0.22, 0.015, Vector3.ONE * 0.65, Vector3.ONE * 1.05)
-			elif stage in ["strike", "finish"]:
-				var index = int(_ultimate_strikes.get(owner_id, 0))
-				_ultimate_strikes[owner_id] = index + 1
-				_weapon_release(fighter, palette, blade, stage == "finish", index)
-				if stage == "finish":
-					# A low, decorative pressure ring at the last forward strike;
-					# this never implies a new radial damage/knockback mechanic.
-					_emit(fighter, "rpg_final_ring", palette, 0.52, 0.025, Vector3.ONE * 0.30, Vector3.ONE, false, true, 2.0)
-					_emit(fighter, "rpg_dust", palette, 0.65, 0.055, Vector3.ONE * 0.58, Vector3.ONE, false, true, 1.7)
-					_emit(fighter, "rpg_debris", palette, 0.57, 0.035, Vector3.ONE, Vector3.ONE, false, true, 1.7)
-					_ultimate_strikes.erase(owner_id)
+	if skill in ["rush", "counter", "ultimate"]:
+		_event_counts[skill + ":" + stage] = int(_event_counts.get(skill + ":" + stage, 0)) + 1
+	# The RPG uses exactly the same profile/hit-driven role choreography as
+	# the duel. Mode-specific generic lance/circle layers must not cover it up.
+	super.play_skill(fighter, skill, stage)
 
 
 func _weapon_release(fighter: DuelFighter, palette: Array, blade: bool, finish: bool, index = 0) -> void:
@@ -135,52 +100,19 @@ func _emit(fighter: DuelFighter, shape: String, palette: Array, lifetime: float,
 	effect["ground"] = ground
 	effect["forward_offset"] = forward_offset
 	if ground:
-		effect.node.global_position = Vector3(fighter.global_position.x, 0.055, fighter.global_position.z) + fighter.forward() * forward_offset
+		effect.node.global_position = fighter.global_position + Vector3.UP * 0.055 + fighter.forward() * forward_offset
 	return id
 
 
-# Root calls this only for actual impact_received events. A missed visual
-# release cannot generate a contact flash. At most three batched meshes/event.
+# Both modes resolve contact presentation through the same layered emitter.
+# Main calls this only after a real impact_received event.
 func impact(at: Vector3, outcome: String, direction = Vector3.FORWARD, strength = 1.0) -> void:
-	if not is_inside_tree() or outcome in ["evade", "dead"]:
-		return
-	var guard = outcome in ["block", "parry", "counter", "break"]
-	var color = Color("b6f7ed") if outcome in ["parry", "counter"] else GOLD
-	var palette: Array = [color, GOLD_WHITE, Color("80562d")]
-	var size = clampf(float(strength), 0.55, 1.6)
-	_world_effect(at, direction, "rpg_impact_flash", palette, 0.15, Vector3.ONE * size)
-	_world_effect(at, direction, "rpg_impact_sparks", palette, 0.38 if guard else 0.31, Vector3.ONE * size)
-	if outcome in ["heavy_hit", "break", "counter"]:
-		_world_effect(Vector3(at.x, 0.055, at.z), direction, "rpg_dust", palette, 0.44, Vector3.ONE * size * 0.6)
-
-
-func _world_effect(at: Vector3, direction: Vector3, shape: String, palette: Array, lifetime: float, size: Vector3) -> void:
-	while active_effects.size() >= MAX_EFFECTS:
-		_finish_effect(active_effects.keys()[0])
-	var node = Node3D.new()
-	node.name = "RPGContact_" + shape
-	add_child(node)
-	node.global_position = at
-	var flat = Vector2(direction.x, direction.z)
-	node.global_rotation.y = atan2(flat.x, flat.y) if flat.length_squared() > 0.001 else 0.0
-	node.scale = size
-	var mesh = MeshInstance3D.new()
-	mesh.mesh = _get_mesh(shape, "impact", palette)
-	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mesh.extra_cull_margin = 2.0
-	var material = _take_material(shape)
-	mesh.material_override = material
-	node.add_child(mesh)
-	var tween = node.create_tween().set_parallel(true)
-	var id = node.get_instance_id()
-	active_effects[id] = {"node": node, "mesh": mesh, "material": material, "tween": tween,
-		"owner": 0, "follow": null, "shape": shape, "age": 0.0, "lifetime": lifetime}
-	tween.tween_property(node, "scale", size * 1.25, lifetime).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_method(_set_alpha.bind(id), 1.0, 0.0, lifetime).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.chain().tween_callback(_finish_effect.bind(id))
+	super.impact(at, outcome, direction, strength)
 
 
 func _take_material(shape: String) -> ShaderMaterial:
+	if TextureLayers.supports(shape) or shape in ["contact_chips", "execution_fissure", "stance_scuff"]:
+		return super._take_material(shape)
 	var dust = shape in RPG_DUST
 	var pool: Array[ShaderMaterial] = _dust_material_pool if dust else _material_pool
 	var material = pool.pop_back() if not pool.is_empty() else ShaderMaterial.new()
@@ -199,6 +131,9 @@ func _process(delta: float) -> void:
 	for id in active_effects.keys():
 		var effect: Dictionary = active_effects[id]
 		var shape: String = effect.shape
+		if TextureLayers.ground_smoke(shape) and effect.follow != null:
+			var owner = effect.follow.get_ref()
+			if is_instance_valid(owner): effect.node.global_position.y = owner.global_position.y + 0.04
 		if not shape.begins_with("rpg_"):
 			continue
 		var progress = clampf(float(effect.age) / float(effect.lifetime), 0.0, 1.0)
@@ -206,7 +141,7 @@ func _process(delta: float) -> void:
 		if effect.get("ground", false) and effect.follow != null:
 			var fighter = effect.follow.get_ref()
 			if is_instance_valid(fighter):
-				effect.node.global_position = Vector3(fighter.global_position.x, 0.055, fighter.global_position.z) + fighter.forward() * float(effect.get("forward_offset", 0.0))
+				effect.node.global_position = fighter.global_position + Vector3.UP * 0.055 + fighter.forward() * float(effect.get("forward_offset", 0.0))
 		if shape in ["rpg_charge", "rpg_focus", "rpg_wind"]:
 			effect.mesh.rotation.y = float(effect.age) * (-2.4 if shape == "rpg_wind" else 1.8)
 		elif shape == "rpg_charge_seal":
@@ -225,7 +160,9 @@ func clear() -> void:
 func debug_state() -> Dictionary:
 	var groups: Array = []
 	for effect in active_effects.values():
-		groups.append({"shape": effect.shape, "age": effect.age, "lifetime": effect.lifetime})
+		groups.append({"shape": effect.shape, "age": effect.age, "lifetime": effect.lifetime,
+			"fx_style": effect.get("fx_style", ""), "stage": effect.get("emitted_stage", ""),
+			"contact_shape": effect.get("contact_shape", ""), "weapon_clip": effect.get("weapon_clip", "")})
 	return {"active": active_effect_count(), "groups": groups, "events": _event_counts.duplicate()}
 
 
@@ -234,6 +171,8 @@ func _exit_tree() -> void:
 
 
 func _get_mesh(shape: String, character_id: String, palette: Array) -> ArrayMesh:
+	if TextureLayers.supports(shape):
+		return super._get_mesh(shape, character_id, palette)
 	if not shape.begins_with("rpg_"):
 		return super._get_mesh(shape, character_id, palette)
 	# Impact colour is part of the cache key: a gold hit must not recolour a
@@ -249,19 +188,20 @@ func _get_mesh(shape: String, character_id: String, palette: Array) -> ArrayMesh
 			_lance(b, 3.05, 0.095, 1.08, color, bright)
 			_helix(b, 0.35, 2.95, 1.08, 0.0, color, 0.026)
 			_helix(b, 0.50, 2.98, 1.08, PI, color, 0.020)
-			_ribbon(b, Vector3(-0.12, 1.08, 0.45), Vector3(0, 1.08, 3.08), 0.010, _alpha(GOLD_WHITE, 0.95))
+			_ribbon(b, Vector3(-0.12, 1.08, 0.45), Vector3(0, 1.08, 3.08), 0.010, _alpha(bright, 0.95))
 			for side in [-1.0, 1.0]:
-				_ribbon(b, Vector3(side * 0.25, 0.96, 0.15), Vector3(side * 0.09, 1.03, 2.65), 0.008, _alpha(GOLD, 0.75))
+				_ribbon(b, Vector3(side * 0.25, 0.96, 0.15), Vector3(side * 0.09, 1.03, 2.65), 0.008, _alpha(color, 0.75))
 		"rpg_cleave":
-			_slash(b, 2.60, 0.20, -14.0, Vector3(0, 1.05, 0), color, bright)
-			_band(b, 2.73, 0.026, -1.30, 1.30, _pose(Vector3(0, 1.05, 0), 8, -14), _alpha(GOLD_WHITE, 0.95), 42)
-			_band(b, 2.35, 0.040, -1.18, 1.10, _pose(Vector3(0, 1.05, 0), 8, -14), _alpha(GOLD, 0.60), 40)
+			# The coloured eroding surface is tex_blade; these are only faint,
+			# broken edge echoes, never a second full-bright white crescent.
+			_band(b, 2.58, 0.018, -1.20, 0.40, _pose(Vector3(0, 1.05, 0), 8, -14), _alpha(color, 0.26), 32)
+			_band(b, 2.40, 0.012, -0.82, 0.76, _pose(Vector3(0, 1.05, 0), 8, -14), _alpha(bright, 0.20), 30)
 		"rpg_focus", "rpg_charge":
 			var charge = shape == "rpg_charge"
 			for i in (5 if charge else 3):
-				_wisp(b, float(i) * TAU / (5.0 if charge else 3.0), 0.70 if charge else 0.50, 1.50 if charge else 1.10, _alpha(GOLD, 0.62), GOLD_WHITE, 0.016)
+				_wisp(b, float(i) * TAU / (5.0 if charge else 3.0), 0.70 if charge else 0.50, 1.50 if charge else 1.10, _alpha(color, 0.48), bright, 0.012)
 			for side in [-1.0, 1.0]:
-				_band(b, 0.54 if charge else 0.32, 0.018, -1.2, 1.2, _pose(Vector3(side * 0.30, 1.10, 0.30), 80, side * 30), _alpha(GOLD_WHITE, 0.75), 30)
+				_band(b, 0.54 if charge else 0.32, 0.014, -1.2, 1.2, _pose(Vector3(side * 0.30, 1.10, 0.30), 80, side * 30), _alpha(bright, 0.58), 30)
 		"rpg_gather":
 			_sparks(b, PARTICLES_PER_BATCH, true, GOLD, GOLD_WHITE)
 		"rpg_embers", "rpg_impact_sparks":
@@ -282,20 +222,24 @@ func _get_mesh(shape: String, character_id: String, palette: Array) -> ArrayMesh
 		"rpg_charge_seal":
 			for i in 8:
 				var a = float(i) * TAU / 8.0
-				_band(b, 1.02, 0.025, a, a + 0.50, _pose(Vector3(0, 0.01, 0)), _alpha(GOLD, 0.6), 10)
+				_band(b, 1.02, 0.018, a, a + 0.50, _pose(Vector3(0, 0.01, 0)), _alpha(color, 0.38), 10)
 				var a0 = Vector3(sin(a) * 1.20, 0.01, cos(a) * 1.20)
 				var a1 = Vector3(sin(a + 0.16) * 0.76, 0.01, cos(a + 0.16) * 0.76)
-				_ground_line(b, a0, a1, 0.009, _alpha(GOLD_WHITE, 0.65))
+				_ground_line(b, a0, a1, 0.006, _alpha(bright, 0.48))
 		"rpg_release":
-			_band(b, 0.57, 0.055, 0, TAU, _pose(Vector3(0, 1.10, 0.65), 90), _alpha(GOLD_WHITE, 0.8), 40)
+			for i in 3:
+				var a = float(i) * TAU / 3.0
+				_band(b, 0.57, 0.026, a, a + 1.1, _pose(Vector3(0, 1.10, 0.65), 90), _alpha(bright, 0.55), 16)
 		"rpg_parry_ring", "rpg_final_ring":
 			var radius = 2.25 if shape == "rpg_parry_ring" else 1.85
-			_band(b, radius, 0.10, 0, TAU, _pose(Vector3(0, 0.025, 0)), _alpha(color if shape == "rpg_parry_ring" else GOLD, 0.65), 56)
-			_band(b, radius + 0.08, 0.020, 0, TAU, _pose(Vector3(0, 0.035, 0)), _alpha(GOLD_WHITE, 0.80), 56)
+			for i in 12:
+				var a = float(i) * TAU / 12.0
+				_band(b, radius, 0.045, a, a + 0.37, _pose(Vector3(0, 0.025, 0)), _alpha(color, 0.42), 8)
+				_band(b, radius + 0.025, 0.012, a + 0.02, a + 0.32, _pose(Vector3(0, 0.035, 0)), _alpha(bright, 0.62), 8)
 			for i in 14:
 				var a = float(i) * TAU / 14.0
 				var start = Vector3(sin(a) * (radius - 0.22), 0.02, cos(a) * (radius - 0.22))
-				_ribbon(b, start, start * Vector3(0.7, 1, 0.7), 0.012, _alpha(GOLD, 0.5))
+				_ribbon(b, start, start * Vector3(0.7, 1, 0.7), 0.008, _alpha(color, 0.32))
 		"rpg_dust", "rpg_wake_dust":
 			for i in 5:
 				var a = float(i) * 2.39996

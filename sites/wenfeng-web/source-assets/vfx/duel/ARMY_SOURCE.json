@@ -1,0 +1,123 @@
+{
+  "date": "2026-10-26",
+  "scope": "Duel only; current six ultimates use current equipped geometry and physically traveling entities.",
+  "new_downloaded_assets": 0,
+  "formations": [
+    {
+      "role": "zhaoyun",
+      "name": "七曜龙矛",
+      "formation": "spear_volley",
+      "count": 7,
+      "weapon_length_m": 3.5,
+      "equipment": [
+        {
+          "weapon_id": "serpent_spear",
+          "runtime_path": "assets/weapons/serpent_spear.glb",
+          "sha256": "a8db830edc4eb0634cc168fa33c9181f42e8c769c7f92e4a83bed3333f5a8280"
+        }
+      ]
+    },
+    {
+      "role": "machao",
+      "name": "西凉铁骑",
+      "formation": "cavalry",
+      "count": 6,
+      "weapon_length_m": null,
+      "equipment": [
+        {
+          "weapon_id": "serpent_spear",
+          "runtime_path": "assets/weapons/serpent_spear.glb",
+          "sha256": "a8db830edc4eb0634cc168fa33c9181f42e8c769c7f92e4a83bed3333f5a8280"
+        }
+      ]
+    },
+    {
+      "role": "guanyu",
+      "name": "青龙刀阵",
+      "formation": "diagonal_cleave",
+      "count": 3,
+      "weapon_length_m": 3.3,
+      "equipment": [
+        {
+          "weapon_id": "guandao",
+          "runtime_path": "assets/weapons/guandao.glb",
+          "sha256": "c12d1b27d7fe2155978acc8ebe9bc000930abd534e4c8facb258a83f7720f71b"
+        }
+      ]
+    },
+    {
+      "role": "zhangfei",
+      "name": "蛇矛破军",
+      "formation": "ground_pincer",
+      "count": 5,
+      "weapon_length_m": 3.5,
+      "equipment": [
+        {
+          "weapon_id": "serpent_spear",
+          "runtime_path": "assets/weapons/serpent_spear.glb",
+          "sha256": "a8db830edc4eb0634cc168fa33c9181f42e8c769c7f92e4a83bed3333f5a8280"
+        }
+      ]
+    },
+    {
+      "role": "lubu",
+      "name": "无双方天阵",
+      "formation": "halberd_encircle",
+      "count": 6,
+      "weapon_length_m": 3.5,
+      "equipment": [
+        {
+          "weapon_id": "halberd",
+          "runtime_path": "assets/weapons/halberd.glb",
+          "sha256": "32d9b89c228c63723e8ed8057f7f480fb4c6d9fe451a87a30c381d4fef0c0f1a"
+        }
+      ]
+    },
+    {
+      "role": "xuchu",
+      "name": "虎啸回刃",
+      "formation": "returning_fan",
+      "count": 3,
+      "weapon_length_m": 1.7,
+      "equipment": [
+        {
+          "weapon_id": "xuchu_saber",
+          "runtime_path": "assets/weapons/xuchu_saber.glb",
+          "sha256": "6af365cd91d73f7b18b93586abb4a7d59e00ce1191633283d5834511c7901ebf"
+        },
+        {
+          "weapon_id": "saber",
+          "runtime_path": "onehand_saber.glb",
+          "sha256": "b2cd4925bbf39a21b925a73d62ccd8960137230453df9f3a10bf0903e231e29a"
+        },
+        {
+          "weapon_id": "sword",
+          "runtime_path": "onehand_sword.glb",
+          "sha256": "d9fd107518d5386261c3149e3e315956702526c966c57db156fccbf8dfbb8f06"
+        }
+      ]
+    }
+  ],
+  "weapon_mesh_preparation": "Immutable unit-length mesh cached at scene startup; per-instance scale preserves 3.5m spear/halberd and 3.3m guandao length. No original GLB rewriting.",
+  "source_motion": "Retained free CC0 KayKit / Quaternius UAL1 and UAL2 Standard, re-sequenced; existing Quaternius Farm Animals Gallop for cavalry. No new motion capture.",
+  "license_boundary": "CC0 applies only to identified third-party animation/reference/textures, not the user-provided character/horse/weapon geometry.",
+  "licenses": [
+    "godot/assets/licenses/KayKit-CC0.txt",
+    "godot/assets/licenses/Quaternius-UAL1-CC0.txt",
+    "godot/assets/licenses/Quaternius-UAL2-CC0.txt",
+    "godot/assets/licenses/Horse-CC0.txt",
+    "godot/assets/licenses/Kenney-Particle-Pack-CC0.txt"
+  ],
+  "existing_cavalry_metadata": "godot/assets/vfx/duel/SOURCE.json",
+  "existing_texture_metadata": "source-assets/vfx/kenney/SOURCE.json",
+  "procedural_additions": [
+    "formation trajectories",
+    "pennants",
+    "dust batching",
+    "local contact feedback"
+  ],
+  "runtime_source_sha256": {
+    "duel_specials.gd": "b025008c0e39b993f64f9b34ff6842e6860b9f9b6d94d964ea3dc9267ac91c9d",
+    "duel_skill_fx.gd": "b32481cf2bfa5de5882c19fb18253fb083f5ecd3c57d046aca22554e5366033c"
+  }
+}

@@ -12,7 +12,7 @@
 - 法律文本：https://creativecommons.org/publicdomain/zero/1.0/
 - 作者随包的完整许可保存在 `assets/licenses/Quaternius-UAL1-CC0.txt` 和 `assets/licenses/Quaternius-UAL2-CC0.txt`，也随网页部署在 `dist/licenses/`。
 
-当前素材准备使用 UAL1 的手指握持姿势，原动作保存在 `source-assets/animations/ual1/`。UAL2 的未使用动作 GLB 已清理，历史来源与许可记录保存在 `source-assets/animations/ual2/`。没有采用付费 Source 版本。
+当前素材准备使用 UAL1 手指握持姿势与 UAL2 免费 Standard 的 Sword_Dash / Sword_Block。UAL2在2026-10-24从官方匿名免费入口重新获取，原件、随包许可、SHA256和版本记录保存在 `source-assets/animations/ual2/`。没有采用付费 Source 版本。
 
 ## KayKit 双手动作
 

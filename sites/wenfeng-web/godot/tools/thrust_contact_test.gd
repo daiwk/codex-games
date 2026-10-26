@@ -38,6 +38,7 @@ func setup(id: String, mode: String, distance_m: float) -> void:
 	await frames(3)
 	metrics = {"depth": 0.0, "grip": 0.0, "latched": false, "hits": 0, "hp": 120.0}
 	game.player.skeleton.skeleton_updated.connect(sample)
+	game.enemy.impact_received.connect(observe_impact)
 
 func sample() -> void:
 	if not is_instance_valid(game):
@@ -63,9 +64,13 @@ func sample() -> void:
 		var palm: Vector3 = fighter.palm_position(left)
 		metrics.grip = maxf(metrics.grip, palm.distance_to(Geometry3D.get_closest_point_to_segment(palm, tail, end)))
 	metrics.latched = metrics.latched or fighter.contact_latched
-	if game.enemy.hp < metrics.hp:
+
+func observe_impact(_fighter: Node, outcome: String, _point: Vector3) -> void:
+	# Mixed U now has a real radial first beat followed by a physical thrust.
+	# Count at contact, not on a later physical frame that merely sees lower HP.
+	if outcome in ["hit", "heavy_hit"] and game.player.is_physical_thrust():
 		metrics.hits += 1
-		metrics.hp = game.enemy.hp
+	metrics.hp = game.enemy.hp
 
 func exercise(id: String, mode: String, distance_m: float, action: String) -> void:
 	await setup(id, mode, distance_m)
@@ -88,8 +93,12 @@ func exercise(id: String, mode: String, distance_m: float, action: String) -> vo
 	check(title + " recovers", game.player.state == "idle" and not game.player.contact_latched)
 	if distance_m >= 1.5 and distance_m <= 2.3:
 		check(title + " real contact and damage", metrics.latched and game.enemy.hp < 120.0)
-	if action == "ultimate":
-		check(title + " separate contacts for all thrusts", metrics.hits == game.player.skill_profile("ultimate").hits.size())
+	if action == "ultimate" or (action == "rush" and game.player.skill_profile("rush").has("hits")):
+		var expected_thrusts = 0
+		for hit in game.player.skill_profile(action).hits:
+			if hit.get("shape", "line") == "line":
+				expected_thrusts += 1
+		check(title + " separate physical contacts for every line strike", metrics.hits == expected_thrusts)
 
 func run() -> void:
 	game = load("res://main.tscn").instantiate()

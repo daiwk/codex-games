@@ -14,3 +14,6 @@ footer{height:34px;flex-shrink:0;display:flex;justify-content:space-between;alig
 @media(prefers-reduced-motion:reduce){*{transition:none!important}dialog::backdrop{backdrop-filter:none}}
 @media(max-width:420px){.wordmark span{display:none}}
 @media(max-width:380px){.direction-pad{grid-template-columns:39px 39px 39px;grid-template-rows:39px 39px}.action-pad{grid-template-columns:repeat(3,44px)}.action-pad button:first-child{grid-column:1}#touch-controls button{min-width:39px;min-height:39px}}
+
+/* Jump fills the former empty skill-pad cell; it adds no control row. */
+.action-pad #touch-jump{grid-column:1;border-color:var(--jade);font-weight:600}.action-pad #touch-jump.airborne{background:#82b8ad66;color:#fff}

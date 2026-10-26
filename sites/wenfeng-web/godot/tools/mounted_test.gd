@@ -180,7 +180,17 @@ func _check_roster_and_attacks(color: String) -> void:
 			await wait_action()
 			check(label + " K really hits", game.enemy.hp < 120.0)
 			for skill in ["rush", "counter", "ultimate"]:
-				reset_pair(2.0)
+				var close_cleave: bool = id == "xuchu" and skill == "rush"
+				if close_cleave:
+					# This role's shoulder-in knife strike is deliberately a close
+					# action. Preserve its actual boundary as well as proving the
+					# intended contact distance; do not enlarge a hurtbox to fit
+					# the former all-roles 2m fixture.
+					reset_pair(2.0)
+					check(label + " close Q starts at outside boundary", fighter.request_skill(skill))
+					await wait_action()
+					check(label + " close Q at 2.0m really whiffs", is_equal_approx(game.enemy.hp, 120.0))
+				reset_pair(1.8 if close_cleave else 2.0)
 				fighter.energy = 100.0
 				var started: bool = fighter.request_ultimate() if skill == "ultimate" else fighter.request_skill(skill)
 				check(label + " " + skill + " starts", started)
@@ -276,6 +286,10 @@ func _check_charge_damage_and_vulnerability() -> void:
 	check("bonus hit occurs during genuine forward travel", not contact_motion.is_empty() and contact_motion.max() > 5.0)
 	check("galloping strike gains actual damage", 120.0 - game.enemy.hp > standing_damage * 1.15)
 	reset_pair(1.25)
+	check("same-distance uncharged close strike starts", fighter.request_light())
+	await wait_action()
+	var close_standing_damage = 120.0 - game.enemy.hp
+	reset_pair(1.25)
 	var blocked_start: Vector3 = fighter.position
 	fighter.input_move = Vector3(0, 0, 1)
 	check("blocked horse accepts charge input", fighter.request_dodge())
@@ -283,7 +297,11 @@ func _check_charge_damage_and_vulnerability() -> void:
 	check("stationary opposing horse blocks real charge movement", fighter.position.distance_to(blocked_start) < 0.08 and fighter.mount_speed < 1.0 and fighter.get_real_velocity().length() < 1.0)
 	check("blocked horse can still use ordinary strike", fighter.request_light())
 	await wait_action()
-	check("blocked charge grants no fake speed damage", is_equal_approx(120.0 - game.enemy.hp, standing_damage))
+	var blocked_damage = 120.0 - game.enemy.hp
+	check("blocked charge grants no fake speed damage", is_equal_approx(blocked_damage, close_standing_damage))
+	print("MOUNTED_BLOCKED_CONTACT=", JSON.stringify({"distance": 1.25, "stationary_damage": close_standing_damage,
+		"blocked_damage": blocked_damage, "far_stationary_damage": standing_damage,
+		"real_forward_speed": fighter.get_real_velocity().dot(fighter.forward()), "mount_speed": fighter.mount_speed}))
 	reset_pair()
 	game.enemy.enabled = true
 	game.enemy.set_physics_process(true)
@@ -448,7 +466,7 @@ func _check_ai_and_foot_regression() -> void:
 	check("foot light attack still deals damage", game.enemy.hp < 120.0)
 	game.return_to_menu()
 	game.select_character("guanyu")
-	check("foot keeps original character skill clips", game.player.skill_profile("rush").clip == "CrescentSweep")
+	check("foot keeps character-specific low sweep skill clip", game.player.skill_profile("rush").clip == "CrescentLow")
 	game.select_combat_mode("mounted")
 	await frames(2)
 	var old_horse = weakref(game.player.horse)

@@ -1,6 +1,9 @@
 extends Node3D
 class_name DuelFX
 
+const TRAIL_MASK = preload("res://assets/vfx/kenney/trace_06.png")
+const TRAIL_LIFETIME = 0.11
+
 var muted = false:
 	set(value):
 		muted = value
@@ -11,9 +14,25 @@ var sounds: Dictionary = {}
 var audio_pool: Array[AudioStreamPlayer] = []
 var trails: Dictionary = {}
 var rng = RandomNumberGenerator.new()
+var trail_shader: Shader
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_PAUSABLE
+	trail_shader = Shader.new()
+	trail_shader.code = """shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, blend_mix, fog_disabled;
+uniform sampler2D trail_mask : source_color, filter_linear_mipmap, repeat_disable;
+void fragment() {
+	// A narrow, soft cross-section replaces the opaque full blade-width quad.
+	// The middle slice is continuous across motion samples, so no seams flash.
+	float edge = texture(trail_mask, vec2(UV.x, 0.5)).a;
+	// Ink-coloured shoulders retain contrast on pale sand. Normal alpha
+	// blending prevents overlapping samples bleaching to a solid white patch.
+	ALBEDO = mix(COLOR.rgb * 0.16, COLOR.rgb * 0.88, smoothstep(0.04, 0.65, edge));
+	ALBEDO = mix(ALBEDO, vec3(0.91, 0.96, 0.95), pow(edge, 8.0) * 0.16);
+	ALPHA = COLOR.a * edge;
+}
+"""
 	rng.seed = 714
 	for sound in ["swing", "heavy", "hit", "clang", "parry", "step", "gong", "dodge", "charge", "ultimate", "thrust", "roar"]:
 		sounds[sound] = load("res://assets/audio/%s.wav" % sound)
@@ -37,17 +56,13 @@ func register_fighter(fighter: DuelFighter) -> void:
 	var node = MeshInstance3D.new()
 	node.mesh = ImmediateMesh.new()
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var mat = StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.vertex_color_use_as_albedo = true
-	mat.albedo_color = Color(1, 1, 1, 0.70)
+	var mat = ShaderMaterial.new()
+	mat.shader = trail_shader
+	mat.set_shader_parameter("trail_mask", TRAIL_MASK)
 	node.material_override = mat
 	add_child(node)
-	trails[fighter.get_instance_id()] = {"fighter": weakref(fighter), "node": node, "points": [],
-		"color": Color("a4e8f5") if fighter.character_id == "zhaoyun" else Color("ffc089")}
+	var palette: Array = DuelSkillFX.PALETTES.get(fighter.character_id, DuelSkillFX.PALETTES.zhaoyun)
+	trails[fighter.get_instance_id()] = {"fighter": weakref(fighter), "node": node, "points": [], "color": palette[0]}
 
 func clear_fighters() -> void:
 	for trail in trails.values():
@@ -62,7 +77,7 @@ func _process(delta: float) -> void:
 		var points: Array = trail.points
 		for point in points:
 			point.age += delta
-		while not points.is_empty() and points[0].age > 0.14:
+		while not points.is_empty() and points[0].age > TRAIL_LIFETIME:
 			points.pop_front()
 		if fighter.state in ["attack", "skill", "ultimate"] and fighter.enabled and fighter.attack.has("active"):
 			var window: Vector2 = fighter.attack.active
@@ -77,10 +92,14 @@ func _process(delta: float) -> void:
 			var p = points[i - 1]
 			var q = points[i]
 			var color: Color = trail.color
-			color.a = maxf(0.0, 1.0 - float(p.age) / 0.14) * (0.62 if fighter.state == "ultimate" else 0.34)
-			for vertex in [p.a, p.b, q.b, p.a, q.b, q.a]:
+			var fade = maxf(0.0, 1.0 - float(p.age) / TRAIL_LIFETIME)
+			color.a = fade * fade * (0.26 if fighter.state == "ultimate" else 0.18)
+			var vertices = [p.a, p.b, q.b, p.a, q.b, q.a]
+			var uvs = [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 0), Vector2(1, 1), Vector2(0, 1)]
+			for corner in vertices.size():
 				mesh.surface_set_color(color)
-				mesh.surface_add_vertex(vertex)
+				mesh.surface_set_uv(uvs[corner])
+				mesh.surface_add_vertex(vertices[corner])
 		mesh.surface_end()
 
 func burst(at: Vector3, outcome: String, damage = 0) -> void:

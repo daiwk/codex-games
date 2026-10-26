@@ -11,7 +11,7 @@
 https://kaylousberg.itch.io/kaykit-character-animations
 See licenses/KayKit-CC0.txt
 
-握持手指姿势及归档单手动作：Quaternius Universal Animation Library 1 & 2, CC0 1.0.
+握持手指姿势与单手冲步/架刀（冲刀叠加 KayKit 横切）：Quaternius Universal Animation Library 1 & 2, CC0 1.0.
 https://quaternius.com/
 See licenses/Quaternius-UAL1-CC0.txt and Quaternius-UAL2-CC0.txt
 
@@ -27,3 +27,7 @@ See licenses/NotoSans-LICENSE.txt and NotoSerif-LICENSE.txt
 
 Additional asset provenance: licenses/Game-THIRD-PARTY.txt
 RPG-only bandit geometry and rig reconstruction: licenses/RPG-THIRD-PARTY.txt
+
+Particle textures: Kenney Particle Pack, CC0 1.0.
+https://kenney.nl/assets/particle-pack
+See licenses/Kenney-Particle-Pack-CC0.txt

@@ -9,163 +9,1366 @@
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.7075472925031877e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Walk": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "WalkBack": {
         "source": "Walking_Backwards",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.4787793334710982e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeLeft": {
         "source": "Running_Strafe_Left",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeRight": {
         "source": "Running_Strafe_Right",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.7075472925031877e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Run": {
         "source": "Running_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.7075472925031877e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnLeft": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnRight": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Attack1": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.33777778281105886,
+            0.693333343664805
+          ]
+        ]
       },
       "Attack2": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.33600000500679017,
+            0.6880000102519989
+          ]
+        ]
       },
       "Attack3": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.3368421102824964,
+            0.6877193084934302
+          ]
+        ]
       },
       "Heavy": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.331428576367242,
+            0.6857142959322248
+          ]
+        ]
       },
       "Block": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Dodge": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Hit": {
         "source": "Hit_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "GuardBreak": {
         "source": "Hit_B",
         "library": "KayKit Free 1.1",
         "seconds": 0.8666666746139526,
-        "samples": 27
+        "samples": 27,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Death": {
         "source": "Death_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Victory": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "DragonThrust": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "DragonCross": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "DragonBackCut": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "CloudStep": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "DragonCharge": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "RPGSlash": {
         "source": "Melee_2H_Attack_Slice",
         "library": "KayKit Free 1.1",
         "seconds": 1.100000023841858,
-        "samples": 34
+        "samples": 34,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 407.9425748901402,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 407.9425748901402,
+          "maximum_gameplay_rate": 2.1326531074485002,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.35918368125448424,
+            0.6061224621169422
+          ]
+        ]
       },
       "RPGChop": {
         "source": "Melee_2H_Attack_Chop",
         "library": "KayKit Free 1.1",
         "seconds": 1.6333333253860474,
-        "samples": 50
+        "samples": 50,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 249.32696604163115,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 249.32696604163115,
+          "maximum_gameplay_rate": 3.4893939224156463,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5196969671682877,
+            0.9057575713504443
+          ],
+          [
+            0.5297297271522315,
+            0.915990986534067
+          ]
+        ]
       },
       "RPGSpin": {
-        "source": "Melee_2H_Attack_Spin",
+        "source": "Melee_2H_Attack_Spinning",
         "library": "KayKit Free 1.1",
-        "seconds": 2.4000000953674316,
-        "samples": 73
+        "seconds": 0.6666666865348816,
+        "samples": 21,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 848.249974720181,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 848.249974720181,
+          "maximum_gameplay_rate": 1.02564105620751,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.20895523010794792,
+            0.39800996211037704
+          ]
+        ]
       },
       "RPGFinish": {
         "source": "Melee_2H_Attack_Spinning",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 848.249974720181,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 848.249974720181,
+          "maximum_gameplay_rate": 1.02564105620751,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "DragonNeedle": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              -4,
+              -13,
+              7,
+              0,
+              0.12,
+              -0.055
+            ],
+            [
+              0.22,
+              0,
+              -4,
+              2,
+              0,
+              0.04,
+              -0.025
+            ],
+            [
+              0.42,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              1,
+              -3,
+              10,
+              -3,
+              0,
+              0.05,
+              0.035
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 195.74999708309775,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 195.74999708309775,
+          "maximum_gameplay_rate": 4.444444510671827,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.4210526378531205,
+            0.6736842205649929
+          ],
+          [
+            0.4000000059604646,
+            0.6666666766007739
+          ],
+          [
+            0.4000000059604638,
+            0.6666666766007737
+          ]
+        ]
+      },
+      "DragonLow": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              13,
+              15,
+              -5,
+              -4,
+              0.42,
+              0.06
+            ],
+            [
+              0.24,
+              5,
+              4,
+              -2,
+              -2,
+              0.18,
+              0.025
+            ],
+            [
+              0.43,
+              0,
+              0,
+              0,
+              0,
+              0.06,
+              0
+            ],
+            [
+              1,
+              4,
+              -12,
+              4,
+              0,
+              0.13,
+              -0.035
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 195.74999708309775,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 195.74999708309775,
+          "maximum_gameplay_rate": 4.444444510671827,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.4000000059604644,
+            0.6545454642989417
+          ],
+          [
+            0.4000000059604643,
+            0.6666666766007737
+          ],
+          [
+            0.4000000059604648,
+            0.6857142959322253
+          ]
+        ]
+      },
+      "DragonHigh": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              -4,
+              -13,
+              7,
+              0,
+              0.12,
+              -0.055
+            ],
+            [
+              0.24,
+              -3,
+              -5,
+              1,
+              2,
+              0.04,
+              -0.02
+            ],
+            [
+              0.43,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              1,
+              -5,
+              12,
+              -4,
+              4,
+              0.05,
+              0.035
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 195.74999708309775,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 195.74999708309775,
+          "maximum_gameplay_rate": 4.444444510671827,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.4160000061988829,
+            0.7040000104904174
+          ],
+          [
+            0.4000000059604648,
+            0.6666666766007747
+          ]
+        ]
+      },
+      "DragonSlip": {
+        "source": "Dodge_Left",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.4000000059604645,
+        "samples": 13,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0.05,
+              0
+            ],
+            [
+              0.5,
+              7,
+              -20,
+              12,
+              -9,
+              0.3,
+              -0.06
+            ],
+            [
+              1,
+              2,
+              -8,
+              3,
+              0,
+              0.1,
+              0
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 869.99998703599,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 869.99998703599,
+          "maximum_gameplay_rate": 1.0000000149011612,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "DragonGather": {
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0.03,
+              0
+            ],
+            [
+              0.55,
+              8,
+              -20,
+              8,
+              -12,
+              0.35,
+              -0.055
+            ],
+            [
+              1,
+              2,
+              -8,
+              3,
+              -3,
+              0.16,
+              -0.025
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 342.5624821339743,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 342.5624821339743,
+          "maximum_gameplay_rate": 2.539682672137306,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "CrescentLow": {
+        "source": "Melee_2H_Attack_Slice",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.100000023841858,
+        "samples": 34,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              15,
+              -18,
+              -9,
+              -22,
+              0.45,
+              -0.04
+            ],
+            [
+              0.45,
+              4,
+              0,
+              0,
+              -8,
+              0.18,
+              0
+            ],
+            [
+              1,
+              5,
+              12,
+              4,
+              -10,
+              0.1,
+              0.04
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 933.2727070445861,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 933.2727070445861,
+          "maximum_gameplay_rate": 0.9322034100354728,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.37288136401418914,
+            0.6898305234262498
+          ]
+        ]
+      },
+      "CrescentDrag": {
+        "source": "Walking_Backwards",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0.04,
+              0
+            ],
+            [
+              0.5,
+              14,
+              -27,
+              -12,
+              -27,
+              0.22,
+              -0.04
+            ],
+            [
+              1,
+              10,
+              -20,
+              -8,
+              -20,
+              0.18,
+              -0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 326.24998298473747,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 326.24998298473747,
+          "maximum_gameplay_rate": 2.666666805744171,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "CrescentReturn": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.6333333253860474,
+        "samples": 50,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              8,
+              -20,
+              -7,
+              -8,
+              0.28,
+              -0.03
+            ],
+            [
+              0.4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              1,
+              10,
+              18,
+              6,
+              -10,
+              0.22,
+              0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 266.326531908106,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 266.326531908106,
+          "maximum_gameplay_rate": 3.2666666507720947,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.7839999961853029,
+            1.5679999923706056
+          ]
+        ]
+      },
+      "HalberdRise": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.6333333253860474,
+        "samples": 50,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              14,
+              -20,
+              -8,
+              -18,
+              0.42,
+              -0.04
+            ],
+            [
+              0.5,
+              -4,
+              0,
+              0,
+              8,
+              0.05,
+              0
+            ],
+            [
+              1,
+              -8,
+              16,
+              6,
+              12,
+              0.02,
+              0.04
+            ]
+          ],
+          "reverse": true,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 399.489797862159,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 399.489797862159,
+          "maximum_gameplay_rate": 2.1777777671813965,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.511304345338241,
+            0.8521739088970682
+          ],
+          [
+            0.6315555524826049,
+            0.9582222175598146
+          ]
+        ]
+      },
+      "HalberdWheel": {
+        "source": "Melee_2H_Attack_Spinning",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.6666666865348816,
+        "samples": 21,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              -6,
+              18,
+              12,
+              12,
+              0.12,
+              0.03
+            ],
+            [
+              0.5,
+              0,
+              0,
+              0,
+              0,
+              0.06,
+              0
+            ],
+            [
+              1,
+              8,
+              -15,
+              -6,
+              -10,
+              0.28,
+              -0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 1435.4999572187676,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 1435.4999572187676,
+          "maximum_gameplay_rate": 0.6060606241226196,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.22716050059707077,
+            0.41975309892936985
+          ],
+          [
+            0.1696969747543335,
+            0.3333333432674408
+          ]
+        ]
+      },
+      "HalberdDrop": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.6333333253860474,
+        "samples": 50,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              -12,
+              18,
+              8,
+              15,
+              0.08,
+              0.03
+            ],
+            [
+              0.38,
+              0,
+              0,
+              0,
+              0,
+              0.05,
+              0
+            ],
+            [
+              1,
+              18,
+              -12,
+              -5,
+              -16,
+              0.42,
+              -0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 559.2857170070225,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 559.2857170070225,
+          "maximum_gameplay_rate": 1.5555555479867118,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5444444417953492,
+            0.8555555513926912
+          ]
+        ]
+      },
+      "CrescentGather": {
+        "source": "Melee_2H_Attack_Slice",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.25,
+        "samples": 9,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              12,
+              -22,
+              -8,
+              -25,
+              0.35,
+              -0.04
+            ],
+            [
+              1,
+              15,
+              -27,
+              -12,
+              -30,
+              0.5,
+              -0.05
+            ]
+          ],
+          "reverse": false,
+          "crop": [
+            0.0,
+            0.25
+          ],
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 2436.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 2436.0,
+          "maximum_gameplay_rate": 0.35714285714285715,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "CrescentSplit": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.6333333253860474,
+        "samples": 50,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              -5,
+              -22,
+              -10,
+              8,
+              0.2,
+              -0.03
+            ],
+            [
+              0.4,
+              0,
+              0,
+              0,
+              0,
+              0.05,
+              0
+            ],
+            [
+              1,
+              14,
+              24,
+              10,
+              -18,
+              0.35,
+              0.04
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 479.38775743459075,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 479.38775743459075,
+          "maximum_gameplay_rate": 1.814814805984497,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5081481456756592,
+            0.8711111068725585
+          ]
+        ]
+      },
+      "CrescentOrbit": {
+        "source": "Melee_2H_Attack_Spinning",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.6666666865348816,
+        "samples": 21,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              10,
+              -25,
+              -9,
+              -15,
+              0.35,
+              -0.04
+            ],
+            [
+              0.4,
+              0,
+              0,
+              0,
+              0,
+              0.1,
+              0
+            ],
+            [
+              1,
+              12,
+              18,
+              6,
+              -10,
+              0.3,
+              0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 1565.9999533295645,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 1565.9999533295645,
+          "maximum_gameplay_rate": 0.5555555721124014,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.1944444502393404,
+            0.416666679084301
+          ]
+        ]
+      },
+      "HalberdGather": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.35,
+        "samples": 11,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              3,
+              0,
+              0,
+              0,
+              0.1,
+              0
+            ],
+            [
+              1,
+              -16,
+              24,
+              12,
+              24,
+              0.28,
+              0.04
+            ]
+          ],
+          "reverse": false,
+          "crop": [
+            0.0,
+            0.35
+          ],
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 1640.5714285714287,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 1640.5714285714287,
+          "maximum_gameplay_rate": 0.5303030303030303,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       }
     },
     "grip": {
@@ -183,8 +1386,9 @@
       "weapon_length": 3.05,
       "grip_fraction": 0.35,
       "axis_sign": -1.0,
-      "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"
-    }
+      "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
+    },
+    "runtime_sha256": "973f788239334fba82a11bcc2e5a6d8ef313f2289dd468a252468b2d0d01f83d"
   },
   "machao": {
     "source": {
@@ -196,145 +1400,698 @@
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.4787793334710982e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Walk": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.2074182697257333e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "WalkBack": {
         "source": "Walking_Backwards",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.2074182697257333e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeLeft": {
         "source": "Running_Strafe_Left",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.2074182697257333e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeRight": {
         "source": "Running_Strafe_Right",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.2074182697257333e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Run": {
         "source": "Running_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.2074182697257333e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnLeft": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.2074182697257333e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnRight": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.2074182697257333e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Attack1": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.33777778281105886,
+            0.693333343664805
+          ]
+        ]
       },
       "Attack2": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.33600000500679017,
+            0.6880000102519989
+          ]
+        ]
       },
       "Attack3": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.3368421102824964,
+            0.6877193084934302
+          ]
+        ]
       },
       "Heavy": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.331428576367242,
+            0.6857142959322248
+          ]
+        ]
       },
       "Block": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Dodge": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Hit": {
         "source": "Hit_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "GuardBreak": {
         "source": "Hit_B",
         "library": "KayKit Free 1.1",
         "seconds": 0.8666666746139526,
-        "samples": 27
+        "samples": 27,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Death": {
         "source": "Death_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Victory": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "TigerThrust": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "TigerFinish": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "TigerSweep": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "TigerSlam": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "TigerRoar": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "TigerCharge": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "TigerCouch": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              18,
+              17,
+              -7,
+              -15,
+              0.32,
+              0.035
+            ],
+            [
+              0.24,
+              7,
+              7,
+              -3,
+              -4,
+              0.18,
+              0.015
+            ],
+            [
+              0.45,
+              0,
+              0,
+              0,
+              0,
+              0.06,
+              0
+            ],
+            [
+              1,
+              12,
+              10,
+              -5,
+              -8,
+              0.25,
+              0.025
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 570.9374914923684,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 570.9374914923684,
+          "maximum_gameplay_rate": 1.523809546516055,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.35047619569869265,
+            0.6857142959322248
+          ]
+        ]
+      },
+      "TigerSet": {
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              3,
+              4,
+              0,
+              -4,
+              0.08,
+              0
+            ],
+            [
+              0.6,
+              18,
+              22,
+              -10,
+              -20,
+              0.5,
+              0.055
+            ],
+            [
+              1,
+              18,
+              22,
+              -10,
+              -20,
+              0.5,
+              0.055
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 587.2499693725274,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 587.2499693725274,
+          "maximum_gameplay_rate": 1.4814815587467618,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "TigerDrive": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              20,
+              24,
+              -10,
+              -19,
+              0.5,
+              0.05
+            ],
+            [
+              0.22,
+              9,
+              10,
+              -4,
+              -7,
+              0.25,
+              0.025
+            ],
+            [
+              0.42,
+              0,
+              0,
+              0,
+              0,
+              0.05,
+              0
+            ],
+            [
+              1,
+              13,
+              12,
+              -7,
+              -12,
+              0.3,
+              0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 462.1874931128696,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 462.1874931128696,
+          "maximum_gameplay_rate": 1.8823529692257153,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.3764705938451432,
+            0.6776470689212577
+          ]
+        ]
+      },
+      "TigerCommit": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              24,
+              27,
+              -11,
+              -23,
+              0.58,
+              0.06
+            ],
+            [
+              0.22,
+              9,
+              9,
+              -4,
+              -7,
+              0.24,
+              0.025
+            ],
+            [
+              0.43,
+              0,
+              0,
+              0,
+              0,
+              0.02,
+              0
+            ],
+            [
+              0.7,
+              13,
+              -10,
+              4,
+              -6,
+              0.3,
+              -0.025
+            ],
+            [
+              1,
+              7,
+              -5,
+              2,
+              -4,
+              0.15,
+              0
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 625.3124906821178,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 625.3124906821178,
+          "maximum_gameplay_rate": 1.3913043685581374,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.417391310567441,
+            0.6956521842790687
+          ]
+        ]
       }
     },
     "grip": {
@@ -352,8 +2109,9 @@
       "weapon_length": 3.05,
       "grip_fraction": 0.35,
       "axis_sign": -1.0,
-      "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"
-    }
+      "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
+    },
+    "runtime_sha256": "16503811dd4c77fdf4b2e168e1b23d9c66d8f02cd036c23ed36f173730a3b639"
   },
   "guanyu": {
     "source": {
@@ -365,139 +2123,747 @@
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.4787793334710982e-06,
+          "Left": 8.537736462515939e-07
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Walk": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "WalkBack": {
         "source": "Walking_Backwards",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 8.537736462515939e-07
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeLeft": {
         "source": "Running_Strafe_Left",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeRight": {
         "source": "Running_Strafe_Right",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Run": {
         "source": "Running_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 8.537736462515939e-07,
+          "Left": 8.537736462515939e-07
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnLeft": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnRight": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Attack1": {
         "source": "Melee_2H_Attack_Slice",
         "library": "KayKit Free 1.1",
         "seconds": 1.100000023841858,
-        "samples": 34
+        "samples": 34,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 407.9425748901402,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 407.9425748901402,
+          "maximum_gameplay_rate": 2.1326531074485002,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.35918368125448424,
+            0.6061224621169422
+          ]
+        ]
       },
       "Attack2": {
         "source": "Melee_2H_Attack_Chop",
         "library": "KayKit Free 1.1",
         "seconds": 1.6333333253860474,
-        "samples": 50
+        "samples": 50,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 308.378089577807,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 308.378089577807,
+          "maximum_gameplay_rate": 2.8212121074849903,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5196969671682877,
+            0.9057575713504443
+          ]
+        ]
       },
       "Attack3": {
-        "source": "Melee_2H_Attack_Spin",
+        "source": "Melee_2H_Attack_Spinning",
         "library": "KayKit Free 1.1",
-        "seconds": 2.4000000953674316,
-        "samples": 73
+        "seconds": 0.6666666865348816,
+        "samples": 21,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.20895523010794792,
+            0.39800996211037704
+          ]
+        ]
       },
       "Heavy": {
         "source": "Melee_2H_Attack_Chop",
         "library": "KayKit Free 1.1",
         "seconds": 1.6333333253860474,
-        "samples": 50
+        "samples": 50,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 308.378089577807,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 308.378089577807,
+          "maximum_gameplay_rate": 2.8212121074849903,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5297297271522315,
+            0.915990986534067
+          ]
+        ]
       },
       "Block": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Dodge": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Hit": {
         "source": "Hit_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "GuardBreak": {
         "source": "Hit_B",
         "library": "KayKit Free 1.1",
         "seconds": 0.8666666746139526,
-        "samples": 27
+        "samples": 27,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Death": {
         "source": "Death_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Victory": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "CrescentSweep": {
-        "source": "Melee_2H_Attack_Spin",
+        "source": "Melee_2H_Attack_Spinning",
         "library": "KayKit Free 1.1",
-        "seconds": 2.4000000953674316,
-        "samples": 73
+        "seconds": 0.6666666865348816,
+        "samples": 21,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "CrescentStep": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "CrescentCounter": {
         "source": "Melee_2H_Attack_Chop",
         "library": "KayKit Free 1.1",
         "seconds": 1.6333333253860474,
-        "samples": 50
+        "samples": 50,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 308.378089577807,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 308.378089577807,
+          "maximum_gameplay_rate": 2.8212121074849903,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "CrescentCharge": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "CrescentFinish": {
         "source": "Melee_2H_Attack_Spinning",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "CrescentLow": {
+        "source": "Melee_2H_Attack_Slice",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.100000023841858,
+        "samples": 34,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              15,
+              -18,
+              -9,
+              -22,
+              0.45,
+              -0.04
+            ],
+            [
+              0.45,
+              4,
+              0,
+              0,
+              -8,
+              0.18,
+              0
+            ],
+            [
+              1,
+              5,
+              12,
+              4,
+              -10,
+              0.1,
+              0.04
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 933.2727070445861,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 933.2727070445861,
+          "maximum_gameplay_rate": 0.9322034100354728,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.37288136401418914,
+            0.6898305234262498
+          ]
+        ]
+      },
+      "CrescentDrag": {
+        "source": "Walking_Backwards",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0.04,
+              0
+            ],
+            [
+              0.5,
+              14,
+              -27,
+              -12,
+              -27,
+              0.22,
+              -0.04
+            ],
+            [
+              1,
+              10,
+              -20,
+              -8,
+              -20,
+              0.18,
+              -0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 326.24998298473747,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 326.24998298473747,
+          "maximum_gameplay_rate": 2.666666805744171,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "CrescentReturn": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.6333333253860474,
+        "samples": 50,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              8,
+              -20,
+              -7,
+              -8,
+              0.28,
+              -0.03
+            ],
+            [
+              0.4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              1,
+              10,
+              18,
+              6,
+              -10,
+              0.22,
+              0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 266.326531908106,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 266.326531908106,
+          "maximum_gameplay_rate": 3.2666666507720947,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.7839999961853029,
+            1.5679999923706056
+          ]
+        ]
+      },
+      "CrescentGather": {
+        "source": "Melee_2H_Attack_Slice",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.25,
+        "samples": 9,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              12,
+              -22,
+              -8,
+              -25,
+              0.35,
+              -0.04
+            ],
+            [
+              1,
+              15,
+              -27,
+              -12,
+              -30,
+              0.5,
+              -0.05
+            ]
+          ],
+          "reverse": false,
+          "crop": [
+            0.0,
+            0.25
+          ],
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 2436.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 2436.0,
+          "maximum_gameplay_rate": 0.35714285714285715,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "CrescentSplit": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.6333333253860474,
+        "samples": 50,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              -5,
+              -22,
+              -10,
+              8,
+              0.2,
+              -0.03
+            ],
+            [
+              0.4,
+              0,
+              0,
+              0,
+              0,
+              0.05,
+              0
+            ],
+            [
+              1,
+              14,
+              24,
+              10,
+              -18,
+              0.35,
+              0.04
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 479.38775743459075,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 479.38775743459075,
+          "maximum_gameplay_rate": 1.814814805984497,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5081481456756592,
+            0.8711111068725585
+          ]
+        ]
+      },
+      "CrescentOrbit": {
+        "source": "Melee_2H_Attack_Spinning",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.6666666865348816,
+        "samples": 21,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              10,
+              -25,
+              -9,
+              -15,
+              0.35,
+              -0.04
+            ],
+            [
+              0.4,
+              0,
+              0,
+              0,
+              0,
+              0.1,
+              0
+            ],
+            [
+              1,
+              12,
+              18,
+              6,
+              -10,
+              0.3,
+              0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 1565.9999533295645,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 1565.9999533295645,
+          "maximum_gameplay_rate": 0.5555555721124014,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.1944444502393404,
+            0.416666679084301
+          ]
+        ]
       }
     },
     "grip": {
@@ -515,8 +2881,9 @@
       "weapon_length": 2.85,
       "grip_fraction": 0.35,
       "axis_sign": -1.0,
-      "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"
-    }
+      "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
+    },
+    "runtime_sha256": "9417490cfa392db0671d8b6e7f62e4d6b9e56296dd678728469fb6404ff8818f"
   },
   "zhangfei": {
     "source": {
@@ -528,133 +2895,660 @@
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 8.537736462515939e-07,
+          "Left": 1.7075472925031877e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Walk": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.4787793334710982e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "WalkBack": {
         "source": "Walking_Backwards",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 1.4787793334710982e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeLeft": {
         "source": "Running_Strafe_Left",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 8.537736462515939e-07,
+          "Left": 1.7075472925031877e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeRight": {
         "source": "Running_Strafe_Right",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 8.537736462515939e-07,
+          "Left": 1.7075472925031877e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Run": {
         "source": "Running_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 8.537736462515939e-07,
+          "Left": 1.7075472925031877e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnLeft": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.4787793334710982e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnRight": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.4787793334710982e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Attack1": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.33777778281105886,
+            0.693333343664805
+          ]
+        ]
       },
       "Attack2": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.33600000500679017,
+            0.6880000102519989
+          ]
+        ]
       },
       "Attack3": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.3368421102824964,
+            0.6877193084934302
+          ]
+        ]
       },
       "Heavy": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.331428576367242,
+            0.6857142959322248
+          ]
+        ]
       },
       "Block": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Dodge": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Hit": {
         "source": "Hit_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "GuardBreak": {
         "source": "Hit_B",
         "library": "KayKit Free 1.1",
         "seconds": 0.8666666746139526,
-        "samples": 27
+        "samples": 27,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Death": {
         "source": "Death_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Victory": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "SerpentThrust": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "SerpentCross": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 257.56578563565495,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 257.56578563565495,
+          "maximum_gameplay_rate": 3.3777778281105886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "SerpentBrace": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "SerpentCharge": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "SerpentWard": {
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0.05,
+              0
+            ],
+            [
+              0.25,
+              11,
+              -16,
+              -6,
+              -18,
+              0.62,
+              -0.045
+            ],
+            [
+              1,
+              11,
+              -16,
+              -6,
+              -18,
+              0.62,
+              -0.045
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 424.12497788015867,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 424.12497788015867,
+          "maximum_gameplay_rate": 2.051282158264747,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "SerpentRoot": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              13,
+              -20,
+              -7,
+              -18,
+              0.62,
+              -0.045
+            ],
+            [
+              0.24,
+              5,
+              -7,
+              -2,
+              -5,
+              0.35,
+              -0.02
+            ],
+            [
+              0.42,
+              0,
+              0,
+              0,
+              0,
+              0.18,
+              0
+            ],
+            [
+              1,
+              10,
+              -13,
+              -5,
+              -12,
+              0.48,
+              -0.025
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 489.3749927077444,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 489.3749927077444,
+          "maximum_gameplay_rate": 1.7777778042687309,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.4088888949818081,
+            0.693333343664805
+          ]
+        ]
+      },
+      "SerpentVoice": {
+        "source": "Melee_2H_Idle",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              10,
+              -15,
+              -5,
+              -14,
+              0.4,
+              -0.03
+            ],
+            [
+              0.3,
+              -13,
+              -10,
+              4,
+              22,
+              0.62,
+              -0.02
+            ],
+            [
+              0.58,
+              -19,
+              6,
+              -3,
+              28,
+              0.53,
+              0.015
+            ],
+            [
+              1,
+              6,
+              0,
+              0,
+              0,
+              0.25,
+              0
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 734.0624617156593,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 734.0624617156593,
+          "maximum_gameplay_rate": 1.1851852469974093,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.36190478077956606,
+            0.5238095511283193
+          ],
+          [
+            0.4148148364490932,
+            0.628148180908627
+          ]
+        ]
+      },
+      "SerpentLong": {
+        "source": "Melee_2H_Attack_Stab",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.600000023841858,
+        "samples": 49,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              18,
+              -26,
+              -8,
+              -20,
+              0.65,
+              -0.05
+            ],
+            [
+              0.22,
+              8,
+              -10,
+              -3,
+              -6,
+              0.35,
+              -0.025
+            ],
+            [
+              0.43,
+              0,
+              0,
+              0,
+              0,
+              0.16,
+              0
+            ],
+            [
+              1,
+              16,
+              -16,
+              -5,
+              -16,
+              0.55,
+              -0.04
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 543.7499918974937,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 543.7499918974937,
+          "maximum_gameplay_rate": 1.600000023841858,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.4000000059604645,
+            0.6720000100135802
+          ]
+        ]
       }
     },
     "grip": {
@@ -672,8 +3566,9 @@
       "weapon_length": 3.05,
       "grip_fraction": 0.35,
       "axis_sign": -1.0,
-      "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"
-    }
+      "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
+    },
+    "runtime_sha256": "16cf6bf1a6483f6471a754c088d2992c29e8a74578ac89471883f17e2acf7d1f"
   },
   "lubu": {
     "source": {
@@ -685,133 +3580,634 @@
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 1.4787793334710982e-06
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Walk": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 8.537736462515939e-07
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "WalkBack": {
         "source": "Walking_Backwards",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeLeft": {
         "source": "Running_Strafe_Left",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 8.537736462515939e-07
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeRight": {
         "source": "Running_Strafe_Right",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 8.537736462515939e-07
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Run": {
         "source": "Running_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnLeft": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 8.537736462515939e-07
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnRight": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 0.0,
+          "Left": 8.537736462515939e-07
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Attack1": {
         "source": "Melee_2H_Attack_Slice",
         "library": "KayKit Free 1.1",
         "seconds": 1.100000023841858,
-        "samples": 34
+        "samples": 34,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 407.9425748901402,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 407.9425748901402,
+          "maximum_gameplay_rate": 2.1326531074485002,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.35918368125448424,
+            0.6061224621169422
+          ]
+        ]
       },
       "Attack2": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 314.80262688802276,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 314.80262688802276,
+          "maximum_gameplay_rate": 2.763636404817754,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5090909166769547,
+            0.8872727404941211
+          ]
+        ]
       },
       "Attack3": {
-        "source": "Melee_2H_Attack_Spin",
+        "source": "Melee_2H_Attack_Spinning",
         "library": "KayKit Free 1.1",
-        "seconds": 2.4000000953674316,
-        "samples": 73
+        "seconds": 0.6666666865348816,
+        "samples": 21,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.20895523010794792,
+            0.39800996211037704
+          ]
+        ]
       },
       "Heavy": {
         "source": "Melee_2H_Attack_Chop",
         "library": "KayKit Free 1.1",
         "seconds": 1.6333333253860474,
-        "samples": 50
+        "samples": 50,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 335.4580997651037,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 335.4580997651037,
+          "maximum_gameplay_rate": 2.593468455849467,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5297297271522315,
+            0.915990986534067
+          ]
+        ]
       },
       "Block": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Dodge": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Hit": {
         "source": "Hit_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "GuardBreak": {
         "source": "Hit_B",
         "library": "KayKit Free 1.1",
         "seconds": 0.8666666746139526,
-        "samples": 27
+        "samples": 27,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Death": {
         "source": "Death_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Victory": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "HalberdSweep": {
-        "source": "Melee_2H_Attack_Spin",
+        "source": "Melee_2H_Attack_Spinning",
         "library": "KayKit Free 1.1",
-        "seconds": 2.4000000953674316,
-        "samples": 73
+        "seconds": 0.6666666865348816,
+        "samples": 21,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "HalberdThrust": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 314.80262688802276,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 314.80262688802276,
+          "maximum_gameplay_rate": 2.763636404817754,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "HalberdCharge": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "HalberdFinish": {
         "source": "Melee_2H_Attack_Spinning",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "HalberdRise": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.6333333253860474,
+        "samples": 50,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              14,
+              -20,
+              -8,
+              -18,
+              0.42,
+              -0.04
+            ],
+            [
+              0.5,
+              -4,
+              0,
+              0,
+              8,
+              0.05,
+              0
+            ],
+            [
+              1,
+              -8,
+              16,
+              6,
+              12,
+              0.02,
+              0.04
+            ]
+          ],
+          "reverse": true,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 399.489797862159,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 399.489797862159,
+          "maximum_gameplay_rate": 2.1777777671813965,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.511304345338241,
+            0.8521739088970682
+          ],
+          [
+            0.6315555524826049,
+            0.9582222175598146
+          ]
+        ]
+      },
+      "HalberdWheel": {
+        "source": "Melee_2H_Attack_Spinning",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.6666666865348816,
+        "samples": 21,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              -6,
+              18,
+              12,
+              12,
+              0.12,
+              0.03
+            ],
+            [
+              0.5,
+              0,
+              0,
+              0,
+              0,
+              0.06,
+              0
+            ],
+            [
+              1,
+              8,
+              -15,
+              -6,
+              -10,
+              0.28,
+              -0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 1435.4999572187676,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 1435.4999572187676,
+          "maximum_gameplay_rate": 0.6060606241226196,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.22716050059707077,
+            0.41975309892936985
+          ],
+          [
+            0.1696969747543335,
+            0.3333333432674408
+          ]
+        ]
+      },
+      "HalberdDrop": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.6333333253860474,
+        "samples": 50,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              -12,
+              18,
+              8,
+              15,
+              0.08,
+              0.03
+            ],
+            [
+              0.38,
+              0,
+              0,
+              0,
+              0,
+              0.05,
+              0
+            ],
+            [
+              1,
+              18,
+              -12,
+              -5,
+              -16,
+              0.42,
+              -0.03
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 559.2857170070225,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 559.2857170070225,
+          "maximum_gameplay_rate": 1.5555555479867118,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5444444417953492,
+            0.8555555513926912
+          ]
+        ]
+      },
+      "HalberdGather": {
+        "source": "Melee_2H_Attack_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 0.35,
+        "samples": 11,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              3,
+              0,
+              0,
+              0,
+              0.1,
+              0
+            ],
+            [
+              1,
+              -16,
+              24,
+              12,
+              24,
+              0.28,
+              0.04
+            ]
+          ],
+          "reverse": false,
+          "crop": [
+            0.0,
+            0.35
+          ],
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 1640.5714285714287,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 1640.5714285714287,
+          "maximum_gameplay_rate": 0.5303030303030303,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       }
     },
     "grip": {
@@ -829,8 +4225,9 @@
       "weapon_length": 3.15,
       "grip_fraction": 0.35,
       "axis_sign": -1.0,
-      "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"
-    }
+      "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
+    },
+    "runtime_sha256": "6ece7ad12c3646f93f6640064a4b0b37ae1b9e44c5c86e5cc09c792c91a292be"
   },
   "xuchu": {
     "source": {
@@ -842,133 +4239,671 @@
         "source": "Melee_Blocking",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {},
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Walk": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {},
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "WalkBack": {
         "source": "Walking_Backwards",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {},
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeLeft": {
         "source": "Running_Strafe_Left",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {},
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeRight": {
         "source": "Running_Strafe_Right",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {},
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Run": {
         "source": "Running_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {},
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnLeft": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {},
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnRight": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {},
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Attack1": {
         "source": "Melee_1H_Attack_Slice_Horizontal",
         "library": "KayKit Free 1.1",
         "seconds": 1.3666666746139526,
-        "samples": 42
+        "samples": 42,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 314.9422318014461,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 314.9422318014461,
+          "maximum_gameplay_rate": 2.7624113635813936,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.21808510765116268,
+            0.407092200948837
+          ]
+        ]
       },
       "Attack2": {
         "source": "Melee_1H_Attack_Slice_Diagonal",
         "library": "KayKit Free 1.1",
         "seconds": 1.0,
-        "samples": 31
+        "samples": 31,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 476.21052631578954,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 476.21052631578954,
+          "maximum_gameplay_rate": 1.8269230769230766,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.3557692307692307,
+            0.4807692307692307
+          ]
+        ]
       },
       "Attack3": {
         "source": "Melee_1H_Attack_Chop",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 532.3026038172032,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 532.3026038172032,
+          "maximum_gameplay_rate": 1.6344086873915886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5161290591762911,
+            0.6881720789017216
+          ]
+        ]
       },
       "Heavy": {
         "source": "Melee_1H_Attack_Jump_Chop",
         "library": "KayKit Free 1.1",
         "seconds": 1.3333333730697632,
-        "samples": 41
+        "samples": 41,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 388.72339267045925,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 388.72339267045925,
+          "maximum_gameplay_rate": 2.238095304795674,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.6857143061501639,
+            0.8380952630724227
+          ]
+        ]
       },
       "Block": {
         "source": "Melee_Blocking",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Dodge": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Hit": {
         "source": "Hit_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "GuardBreak": {
         "source": "Hit_B",
         "library": "KayKit Free 1.1",
         "seconds": 0.8666666746139526,
-        "samples": 27
+        "samples": 27,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Death": {
         "source": "Death_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Victory": {
         "source": "Melee_Blocking",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "TigerCleave": {
         "source": "Melee_1H_Attack_Slice_Horizontal",
         "library": "KayKit Free 1.1",
         "seconds": 1.3666666746139526,
-        "samples": 42
+        "samples": 42,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 314.9422318014461,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 314.9422318014461,
+          "maximum_gameplay_rate": 2.7624113635813936,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "BruteRoar": {
         "source": "Melee_Blocking",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "BruteCharge": {
         "source": "Melee_Blocking",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "BruteFinish": {
         "source": "Melee_1H_Attack_Chop",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 532.3026038172032,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 532.3026038172032,
+          "maximum_gameplay_rate": 1.6344086873915886,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "BruteShoulder": {
+        "source": "Sword_Dash",
+        "library": "Quaternius UAL2 Standard CC0",
+        "seconds": 1.5666667222976685,
+        "samples": 48,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              14,
+              24,
+              -13,
+              -6,
+              0,
+              0.045
+            ],
+            [
+              0.35,
+              8,
+              15,
+              -8,
+              0,
+              0,
+              0.025
+            ],
+            [
+              1,
+              10,
+              -15,
+              5,
+              -6,
+              0,
+              -0.02
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards",
+          "upper_source": [
+            "melee",
+            "Melee_1H_Attack_Slice_Horizontal"
+          ]
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 666.3829550607118,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 666.3829550607118,
+          "maximum_gameplay_rate": 1.3055556019147239,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5222222407658895,
+            0.8877778093020123
+          ]
+        ]
+      },
+      "BruteGuard": {
+        "source": "Sword_Block",
+        "library": "Quaternius UAL2 Standard CC0",
+        "seconds": 1.2333333492279053,
+        "samples": 38,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              4,
+              10,
+              -4,
+              0,
+              0,
+              0.025
+            ],
+            [
+              0.35,
+              10,
+              18,
+              -9,
+              -10,
+              0,
+              0.04
+            ],
+            [
+              1,
+              6,
+              13,
+              -6,
+              -5,
+              0,
+              0.025
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "continuous_grip_hold_source_times": [
+          0.10000000128874909
+        ],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 395.02702193612,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 395.02702193612,
+          "maximum_gameplay_rate": 2.2023809807641164,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "BruteRebuke": {
+        "source": "Melee_1H_Attack_Slice_Diagonal",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0,
+        "samples": 31,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              14,
+              23,
+              -12,
+              -8,
+              0.35,
+              0.04
+            ],
+            [
+              0.4,
+              0,
+              0,
+              0,
+              0,
+              0.1,
+              0
+            ],
+            [
+              1,
+              16,
+              -20,
+              8,
+              -18,
+              0.4,
+              -0.04
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 783.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 783.0,
+          "maximum_gameplay_rate": 1.1111111111111112,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.3888888888888889,
+            0.6333333333333332
+          ]
+        ]
+      },
+      "BruteGather": {
+        "source": "Melee_Blocking",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.0666667222976685,
+        "samples": 33,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              2,
+              0,
+              0,
+              0,
+              0.1,
+              0
+            ],
+            [
+              0.5,
+              18,
+              25,
+              -11,
+              30,
+              0.7,
+              0.045
+            ],
+            [
+              1,
+              20,
+              28,
+              -12,
+              38,
+              0.75,
+              0.05
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 774.8437095887514,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 774.8437095887514,
+          "maximum_gameplay_rate": 1.122807076102809,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
+      },
+      "BruteExecution": {
+        "source": "Melee_1H_Attack_Jump_Chop",
+        "library": "KayKit Free 1.1",
+        "seconds": 1.3333333730697632,
+        "samples": 41,
+        "signature": {
+          "author": "Wenfeng project",
+          "pose_keys": [
+            [
+              0,
+              20,
+              28,
+              -12,
+              28,
+              0.5,
+              0.05
+            ],
+            [
+              0.25,
+              -8,
+              12,
+              -4,
+              18,
+              0.08,
+              0.02
+            ],
+            [
+              0.5,
+              4,
+              0,
+              0,
+              0,
+              0.1,
+              0
+            ],
+            [
+              1,
+              25,
+              -22,
+              8,
+              -20,
+              0.7,
+              -0.04
+            ]
+          ],
+          "reverse": false,
+          "crop": null,
+          "method": "Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards"
+        },
+        "weapon_socket_smoothing_gameplay_seconds": 0.08,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 848.249974720181,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 848.249974720181,
+          "maximum_gameplay_rate": 1.02564105620751,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.4820512964175297,
+            0.6871795076590319
+          ]
+        ]
       }
     },
     "grip": {
@@ -991,8 +4926,9 @@
       ],
       "mesh_scale": 0.0058,
       "mesh_grip_y": -0.075,
-      "adaptation": "Authored single-hand weapon socket, closed right-hand grip; no arm IK"
-    }
+      "adaptation": "Authored blade axis; bounded anatomical wrist, exact upper-arm sphere grasp and continuous forearm frame; exact bone lengths"
+    },
+    "runtime_sha256": "89f369ccbfce8b5ecd4735ed5f4a18467d23ca4dfc9ec684f51b9c7c30dad43c"
   },
   "bandit": {
     "source": {
@@ -1005,139 +4941,428 @@
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Walk": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.7075472925031877e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "WalkBack": {
         "source": "Walking_Backwards",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.4787793334710982e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeLeft": {
         "source": "Running_Strafe_Left",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.2074182697257333e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "StrafeRight": {
         "source": "Running_Strafe_Right",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.7075472925031877e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Run": {
         "source": "Running_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 49,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.7075472925031877e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnLeft": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.7075472925031877e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "TurnRight": {
         "source": "Walking_A",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 65,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "authored_upper_body_weight": 0.16,
+        "physical_active_source_windows": [],
+        "grip_axis_alignment_max_degrees": {
+          "Right": 1.7075472925031877e-06,
+          "Left": 0.0
+        },
+        "motion_refinement_version": 1,
+        "periodic_arm_wrist_closure_source_seconds": 0.2
       },
       "Attack1": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 280.46052213660204,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 280.46052213660204,
+          "maximum_gameplay_rate": 3.1020408625505405,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5224489873769332,
+            0.8816326661985748
+          ]
+        ]
       },
       "Attack2": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 280.46052213660204,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 280.46052213660204,
+          "maximum_gameplay_rate": 3.1020408625505405,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5090909166769547,
+            0.8872727404941211
+          ]
+        ]
       },
       "Attack3": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 280.46052213660204,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 280.46052213660204,
+          "maximum_gameplay_rate": 3.1020408625505405,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5014925447862539,
+            0.9552238948309599
+          ]
+        ]
       },
       "Heavy": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 280.46052213660204,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 280.46052213660204,
+          "maximum_gameplay_rate": 3.1020408625505405,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": [
+          [
+            0.5189189266514134,
+            0.897297310668069
+          ]
+        ]
       },
       "Block": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Dodge": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Hit": {
         "source": "Hit_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.6666666865348816,
-        "samples": 21
+        "samples": 21,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "GuardBreak": {
         "source": "Hit_B",
         "library": "KayKit Free 1.1",
         "seconds": 0.8666666746139526,
-        "samples": 27
+        "samples": 27,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Death": {
         "source": "Death_A",
         "library": "KayKit Free 1.1",
         "seconds": 0.800000011920929,
-        "samples": 25
+        "samples": 25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "Victory": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "DragonThrust": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 280.46052213660204,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 280.46052213660204,
+          "maximum_gameplay_rate": 3.1020408625505405,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "DragonCross": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 280.46052213660204,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 280.46052213660204,
+          "maximum_gameplay_rate": 3.1020408625505405,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "DragonBackCut": {
         "source": "Melee_2H_Attack_Stab",
         "library": "KayKit Free 1.1",
         "seconds": 1.600000023841858,
-        "samples": 49
+        "samples": 49,
+        "grip_startup_blend_source_seconds": 0.25,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 280.46052213660204,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 280.46052213660204,
+          "maximum_gameplay_rate": 3.1020408625505405,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "CloudStep": {
         "source": "Dodge_Backward",
         "library": "KayKit Free 1.1",
         "seconds": 0.4000000059604645,
-        "samples": 13
+        "samples": 13,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       },
       "DragonCharge": {
         "source": "Melee_2H_Idle",
         "library": "KayKit Free 1.1",
         "seconds": 1.0666667222976685,
-        "samples": 33
+        "samples": 33,
+        "continuous_grip_hold_source_times": [],
+        "continuous_grip_limits_degrees_per_second": {
+          "wrist_source": 580.0,
+          "arm_source": 1200.0,
+          "forearm_incremental_roll_source": 580.0,
+          "maximum_gameplay_rate": 1.5,
+          "forearm_incremental_roll_gameplay": 870.0
+        },
+        "physical_active_source_windows": []
       }
     },
     "grip": {
@@ -1155,7 +5380,7 @@
       "weapon_length": 3.05,
       "grip_fraction": 0.35,
       "axis_sign": -1.0,
-      "adaptation": "Authored weapon axis, offline two-bone arm IK, mirrored closed grip"
+      "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
     },
     "model_scale": 1.8,
     "binding_reconstruction": {
@@ -1177,6 +5402,6 @@
       "maximum_rest_bind_error": 3.7720871981505866e-08
     },
     "provenance": "User Tripo geometry/materials: not CC0. KayKit Free 1.1 animation and Quaternius UAL1 finger pose: CC0-1.0.",
-    "runtime_sha256": "265575e6ec3c964078fa286e96b59251c9539c6cb37415b94c9946e791d7bd78"
+    "runtime_sha256": "f54f416a068b34ee3fed9cf9c366934f30ca203776700831f4ce79024b6f26f1"
   }
 }

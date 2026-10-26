@@ -8,3 +8,8 @@ Official non-root-motion Godot GLB.
 2026-10-20 repository cleanup: UAL2_Standard.glb was removed because the
 current website asset preparation uses KayKit plus UAL1 finger poses only.
 This historical source record and the original license are retained.
+
+2026-10-24: Re-acquired official free Standard through anonymous $0 download.
+UAL2_Standard.glb is restored as read-only source for distinct Sword_Dash / Sword_Block
+skill motions. Original archive/file SHA256 and exact edition recorded in
+metadata-2026-10-24.json; original accompanying license also retained separately.

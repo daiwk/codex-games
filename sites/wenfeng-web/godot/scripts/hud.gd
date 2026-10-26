@@ -139,8 +139,8 @@ func _build_menu() -> void:
 	menu_enemy = _label(menu, "", Vector2(52, 579), 12, MUTED)
 	_button(menu, "入场拔刃    →", Rect2(52, 605, 364, 57), func(): game.start_match(), true)
 	menu_move_hint = _label(menu, "WASD 移动    J 轻击    K 重击    Space 闪避", Vector2(52, 683), 12, PAPER)
-	_label(menu, "Q / E 武将技能    U 战意满时施展绝技", Vector2(52, 710), 12, GOLD)
-	_label(menu, "L / Shift 格挡  ·  及时格挡可招架  ·  Enter 开始", Vector2(52, 744), 11, MUTED)
+	_label(menu, "Q / E 武将技能    U 战意绝技 · 空中可出招", Vector2(52, 710), 12, GOLD)
+	_label(menu, "L / Shift 格挡  ·  V 跳跃  ·  Enter 开始", Vector2(52, 744), 11, MUTED)
 	_label(menu, "青石为界  ·  点到为止", Vector2(956, 742), 14, PAPER, 280, true)
 	var role_panel = Panel.new()
 	role_panel.position = Vector2(568, 40)
@@ -214,7 +214,7 @@ func _build_pause() -> void:
 	_button(pause_panel, "重新对决", Rect2(480, 415, 320, 48), func(): game.start_match())
 	_button(pause_panel, "返回选将", Rect2(480, 481, 320, 48), func(): game.return_to_menu())
 	_button(pause_panel, "收刃休息", Rect2(480, 547, 320, 48), func(): game.get_node("WebBridge").close_game())
-	_label(pause_panel, "Esc 继续    ·    F 全屏    ·    M 静音", Vector2(484, 642), 13, MUTED)
+	_label(pause_panel, "Esc 继续    ·    Tab / 中键 锁定    ·    F 全屏", Vector2(484, 642), 13, MUTED)
 	pause_skills = _label(pause_panel, "", Vector2(400, 680), 12, GOLD, 560)
 	pause_skills.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -244,8 +244,8 @@ func _process(delta: float) -> void:
 		buttons.enemy_horse_brown.set_pressed_no_signal(game.enemy_horse_color == "brown")
 		buttons.enemy_horse_white.set_pressed_no_signal(game.enemy_horse_color == "white")
 		menu_mode_hint.position.y = 365 if mounted else 307
-		menu_mode_hint.text = "WASD 控马转向 · 松开保留惯性 · Space 冲刺" if mounted else "移动周旋 · 自动面向对手 · Space 闪避"
-		menu_move_hint.text = "WASD 控马    J / K 马上攻击    Space 冲刺" if mounted else "WASD 移动    J 轻击    K 重击    Space 闪避"
+		menu_mode_hint.text = "W/S 调速 · A/D 转马 · Space 催马 · V 跳跃" if mounted else "移动周旋 · 自动面向对手 · Space 闪避"
+		menu_move_hint.text = "W/S 调速  A/D 转马  X 刹车  Z/C 左右出招" if mounted else "WASD 移动  J / K 出招  Space 闪避  Tab 锁定"
 		for id in Roster.IDS:
 			buttons[id].set_pressed_no_signal(game.character_id == id)
 			buttons["enemy_" + id].set_pressed_no_signal(game.enemy.character_id == id)
@@ -376,7 +376,15 @@ func _ultimate_warning() -> void:
 	var title: String = fighter.ultimate_name()
 	var width = display_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 27).x
 	_text(Vector2((1280 - width) * 0.5, 250), title, 27, accent, true)
-	var tactic = "连续追击 · 可打断" if fighter.skill_profile("ultimate").kind == "chase" else ("重击蓄势 · 转向脱离 / 冲刺" if game.combat_mode == "mounted" else "重击蓄势 · 后撤脱离 / 闪避")
+	var tactic = "连续追击 · 可打断" if bool(fighter.skill_profile("ultimate").get("chase", fighter.skill_profile("ultimate").kind == "chase")) else ("重击蓄势 · 转向脱离 / 冲刺" if game.combat_mode == "mounted" else "重击蓄势 · 后撤脱离 / 闪避")
+	var special: Dictionary = fighter.skill_profile("ultimate").get("special", {})
+	match String(special.get("formation", special.get("type",""))):
+		"spear_volley": tactic = "三轮长矛 · 横移离开矛路"
+		"cavalry": tactic = "六骑冲阵 · 横穿离开阵线"
+		"diagonal_cleave": tactic = "三刀错峰 · 闪出斜列刀路"
+		"ground_pincer": tactic = "两翼收束 · 提前离开夹击线"
+		"halberd_encircle": tactic = "六戟合围 · 射出前离开阵心"
+		"returning_fan": tactic = "三刃抛回 · 侧向避开回旋"
 	var subtitle = ("对手 · " if hostile else "己方 · ") + tactic
 	var subtitle_width = body_font.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
 	_text(Vector2((1280 - subtitle_width) * 0.5, 276), subtitle, 12, PAPER)
@@ -416,7 +424,7 @@ func _draw() -> void:
 	if game.combat_mode == "mounted":
 		var cooldown: float = maxf(0.0, game.player.mount_charge_cooldown)
 		var charge_status = "冲刺冷却 %.1f 秒" % cooldown if cooldown > 0.05 else "冲刺就绪"
-		_text(Vector2(52, 164), "骑速 %.1f 米/秒  ·  %s" % [absf(game.player.mount_speed), charge_status], 12, JADE)
+		_text(Vector2(52, 164), "骑速 %.1f 米/秒  ·  %s" % [float(game.player.call("cavalry_status").get("signed_speed",game.player.mount_speed)) if game.player.has_method("cavalry_status") else game.player.mount_speed, charge_status], 12, JADE)
 	if game.phase in ["countdown", "round_end"]:
 		var title = ""
 		var subtitle = ""
@@ -434,19 +442,30 @@ func _draw() -> void:
 		var text: String = game.toast
 		var width = body_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 19).x
 		_text(Vector2((1280 - width) / 2.0, 191), text, 19, GOLD)
-	if game.phase == "fight" and is_instance_valid(game.camera):
-		var target = game.enemy.global_position + Vector3.UP * 1.08
+	if game.lock_active() and game.phase == "fight" and is_instance_valid(game.camera):
+		var target = game.enemy.global_position + Vector3.UP * (2.55 if game.combat_mode == "mounted" else 1.20)
 		if not game.camera.is_position_behind(target):
 			var screen = game.camera.unproject_position(target)
-			var color = Color(0.88, 0.79, 0.54, 0.8)
+			var color = Color(JADE, 0.95)
+			draw_arc(screen, 12.0, 0.0, TAU, 32, Color(JADE, 0.65), 1.2, true)
+			draw_circle(screen, 2.5, color)
 			for side in [-1, 1]:
 				draw_line(screen + Vector2(side * 26, -7), screen + Vector2(side * 31, 0), color, 1.5, true)
 				draw_line(screen + Vector2(side * 31, 0), screen + Vector2(side * 26, 7), color, 1.5, true)
+	if game.lock_active():
+		_text(Vector2(569, 146), "锁定 · " + game.fighter_name(game.enemy.character_id), 12, JADE)
+	if game.combat_mode == "mounted":
+		var offset: Vector3 = game.enemy.position-game.player.position
+		var bearing = game.player.forward().signed_angle_to(offset.slide(Vector3.UP).normalized(),Vector3.UP)
+		var direction = "前方" if absf(bearing)<0.55 else ("后方" if absf(bearing)>2.5 else ("左侧" if bearing>0 else "右侧"))
+		var status: Dictionary = game.player.call("cavalry_status") if game.player.has_method("cavalry_status") else {}
+		var aim = int(status.get("attack_side",0))
+		_text(Vector2(52,188),"对手 %s · %d米  |  出手 %s" % [direction,offset.length(),"右侧" if aim<0 else ("左侧" if aim>0 else "前方")],12,PAPER)
 	_ultimate_warning()
 	draw_texture_rect(bottom_veil, Rect2(0, 650, 1280, 150), false)
-	_text(Vector2(52, 721), "WASD  控马    J / K  马上攻击" if game.combat_mode == "mounted" else "WASD  移动    J  连击    K  重击", 12, PAPER)
-	_text(Vector2(52, 747), "L / Shift  格挡    Space  冲刺" if game.combat_mode == "mounted" else "L / Shift  格挡    Space  闪避", 12, PAPER)
-	_text(Vector2(52, 777), "Esc  暂停    F  全屏    M  静音", 11, MUTED)
+	_text(Vector2(52, 721), "W/S 调速  A/D 转马  X 刹车" if game.combat_mode == "mounted" else ("W/S 进退  A/D 绕敌" if game.lock_active() else "WASD 移动  J 连击  K 重击"), 12, PAPER)
+	_text(Vector2(52, 747), "Z/C 左右击  J/K 自动选侧" if game.combat_mode == "mounted" else "L / Shift  格挡    Space  闪避", 12, PAPER)
+	_text(Vector2(52, 777), "Space 催马  V 跳跃  L 格挡  Tab 标记" if game.combat_mode == "mounted" else "V 跳跃  Tab 锁定  Esc 暂停  F 全屏", 11, MUTED)
 	_skill_card(Rect2(460, 682, 210, 98), "Q", "rush")
 	_skill_card(Rect2(682, 682, 210, 98), "E", "counter")
 	_ultimate_card(Rect2(904, 682, 324, 98))

@@ -14,6 +14,7 @@
     <a class="wordmark" href="./" aria-label="问锋首页">问锋<span>DUEL OF BLADES</span></a>
     <nav aria-label="游戏工具">
       <button id="pause-btn" disabled>暂停</button>
+      <button id="lock-btn" aria-pressed="false" disabled>锁定视角</button>
       <button id="sound-btn" aria-pressed="false" disabled>声音 开</button>
       <button id="help-btn">操作说明 <span>?</span></button>
       <button id="fullscreen-btn">全屏 <span>↗</span></button>
@@ -22,7 +23,7 @@
 
   <main>
     <section id="stage" aria-label="问锋游戏">
-      <canvas id="canvas" width="1280" height="800" tabindex="0" aria-label="3D 步战与马战。选将菜单按 B 切换模式。WASD 移动，J 轻击，K 重击，L 格挡，空格闪避或骑马冲刺，Q E 技能，U 绝技。"></canvas>
+      <canvas id="canvas" width="1280" height="800" tabindex="0" aria-label="3D 步战与马战。开战默认锁定对手，Tab 或鼠标中键切换视角。步战 W S 进退、A D 绕行，空格闪避，V 跳跃且空中可出招。马战 W 加速、S 减速至倒退、A D 转马、X 急刹、Z C 左右出手，空格催马，V 跳跃。J 轻击，K 重击，L 格挡，Q E 技能，战意达到100后按U施展绝技。选将菜单按 B 切换模式。"></canvas>
       <div id="cover">
         <div class="cover-art" aria-hidden="true"></div>
         <div class="cover-copy">
@@ -49,6 +50,7 @@
           <button data-action="move_right" aria-label="向右移动">→</button>
         </div>
         <div class="action-pad">
+          <button id="touch-jump" data-action="jump" class="jump-action" aria-label="跳跃，快捷键 V；空中可继续出招" aria-keyshortcuts="V">跳跃 V</button>
           <button data-action="skill_rush">Q 技能</button>
           <button data-action="skill_counter">E 技能</button>
           <button data-action="ultimate" class="ultimate">U 绝技</button>
@@ -56,12 +58,15 @@
           <button id="touch-dodge" data-action="dodge" aria-label="闪避">闪避</button>
           <button data-action="heavy">重击</button>
           <button data-action="light" class="primary-action">轻击</button>
+          <button data-action="cavalry_left" class="mounted-only">Z 左击</button>
+          <button data-action="cavalry_right" class="mounted-only">C 右击</button>
+          <button data-action="cavalry_brake" class="mounted-only">X 刹车</button>
         </div>
       </div>
     </section>
   </main>
 
-  <footer><span id="controls-footer">WASD 移动 <i>·</i> J / K 攻击 <i>·</i> Space 闪避 <i>·</i> Q / E / U 技能</span><a href="credits.txt" target="_blank" rel="noopener">制作与许可 ↗</a></footer>
+  <footer><span id="controls-footer">WASD 移动 <i>·</i> J / K 攻击 <i>·</i> Space 闪避 <i>·</i> V 跳跃 <i>·</i> Q / E / U 技能</span><a href="credits.txt" target="_blank" rel="noopener">制作与许可 ↗</a></footer>
 
   <dialog id="help-dialog" aria-labelledby="help-title">
     <form method="dialog"><button class="close-dialog" aria-label="关闭操作说明">×</button></form>
@@ -69,17 +74,30 @@
     <h2 id="help-title">出招有度，进退有时。</h2>
     <dl class="controls-list">
       <div><dt><kbd>W A S D</kbd> / 方向键</dt><dd id="help-movement">步战移动，自动面向对手</dd></div>
+      <div><dt><kbd>Tab</kbd> / 鼠标中键</dt><dd>开战默认锁敌；步战锁定后 W/S 进退、A/D 绕敌。马战只标记与跟镜，A/D 始终转马</dd></div>
+      <div><dt><kbd>X</kbd> / <kbd>Z</kbd> / <kbd>C</kbd></dt><dd>马战：急刹 / 左侧出手 / 右侧出手；J、K自动选择近侧，A/D始终转马</dd></div>
       <div><dt><kbd>B</kbd></dt><dd id="help-mode">仅选将菜单：切换步战 / 马战。当前步战</dd></div>
       <div><dt><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> / <kbd>4</kbd> / <kbd>5</kbd> / <kbd>6</kbd></dt><dd>菜单选将：赵云 / 马超 / 关羽 / 张飞 / 吕布 / 许褚</dd></div>
       <div><dt><kbd>J</kbd> / 鼠标左键</dt><dd id="help-light">轻击，连续按下衔接三段连招</dd></div>
       <div><dt><kbd>K</kbd> / 鼠标右键</dt><dd id="help-heavy">重击，造成更高伤害与格挡压力</dd></div>
       <div><dt><kbd>L</kbd> / <kbd>Shift</kbd></dt><dd>按住格挡，命中前举刃可招架轻击</dd></div>
       <div><dt><kbd>Space</kbd></dt><dd id="help-dodge">沿移动方向闪避；静止时向后撤</dd></div>
+      <div><dt><kbd>V</kbd></dt><dd>步战或马战跳跃；空中可轻重击、格挡和施放 Q / E / U。Space 仍用于闪避或催马</dd></div>
       <div><dt><kbd>Q</kbd> / <kbd>E</kbd></dt><dd>武将各自的进攻技与战术技，选将时可查看</dd></div>
-      <div><dt><kbd>U</kbd></dt><dd>战意满后施展武将绝技</dd></div>
+      <div><dt><kbd>U</kbd></dt><dd>战意达到 100 后施展绝技，释放一次消耗一次战意</dd></div>
       <div><dt><kbd>Esc</kbd> / <kbd>R</kbd> / <kbd>F</kbd> / <kbd>M</kbd></dt><dd>暂停 / 重新对决 / 全屏 / 静音</dd></div>
     </dl>
-    <p class="help-note">六位武将都可参加步战或马战，在选将菜单点击模式按钮或按 B 切换。马战菜单可分别为己方和对手选择棕马或白马，六将均可骑乘，换将保留马色。步战游斗，马战需顾及转向与惯性，Space 改为骑马冲刺，Q / E / U 为马上招式。赵云、马超与张飞双手持丈八蛇矛，关羽持青龙偃月刀，吕布持方天画戟，许褚可选专用大刀、单手刀和剑。攻击、闪避与冲刺消耗体力，收招片刻可恢复。每回合 90 秒，超时按剩余生命判胜。触屏可同时按住方向与招式按键。</p>
+    <p class="help-note">六位武将的 U 绝技，均需 100 战意：</p>
+    <dl class="controls-list">
+      <div><dt>赵云 · <kbd>U</kbd> 七曜龙矛</dt><dd>七支实际丈八蛇矛分三轮直线齐射，逐矛实际接触才命中；横移或策马离开矛路</dd></div>
+      <div><dt>马超 · <kbd>U</kbd> 西凉铁骑</dt><dd>六骑分三路两排冲锋，旗帜与蹄尘提示路线；各骑实际经过才结算，横穿离阵</dd></div>
+      <div><dt>关羽 · <kbd>U</kbd> 青龙刀阵</dt><dd>三把青龙刀斜列错峰斩进，前后分段到达；及时闪出刀路</dd></div>
+      <div><dt>张飞 · <kbd>U</kbd> 蛇矛破军</dt><dd>五支长矛低位分道、两翼收束；离开交汇路线可避开，骑战提高至实际骑手受击高度</dd></div>
+      <div><dt>吕布 · <kbd>U</kbd> 无双方天阵</dt><dd>六把方天戟围住释放时的阵心，预示至少半秒后多向包夹；步战与马战都在地面施展，及时冲出阵心</dd></div>
+      <div><dt>许褚 · <kbd>U</kbd> 虎啸回刃</dt><dd>当前大刀、单手刀或剑分成三刃，错峰扇形抛回；各刃往返同一对手最多命中一次，全部回手后恢复普通攻击</dd></div>
+    </dl>
+    <p class="help-note">Q / E 仍保留各将进攻与战术技：关羽 Q 青龙裂地向前推进刀气，张飞 E 喝断长坂扩散震退，许褚 Q 回旋断刃只抛一把当前兵器。U 阵列在释放时固定目标与路线，空中施放保留当时高度；刀气与战吼也从释放高度扩散，必须实际接触，墙体能阻挡。步战可移动配合 Space 闪避，静止时后撤；马战可转马、减速或催马离阵。许褚 Q 与 U 共用回收状态，仍有兵刃飞行时暂不能普通轻重击。</p>
+    <p class="help-note">六将都可参加步战或马战，选将菜单点击模式按钮或按 B 切换；双方棕马、白马可分别选择。马战使用约 56 米宽的专用马场：W 加速，S 减速至倒退，松键巡航，A/D 转马，X 急刹，Space 催马。Z / C 指定左 / 右侧出手，J / K 自动选择近侧。Tab 只改变标记与镜头，马身不会自动横移或转向对手。赵云、马超与张飞双手持丈八蛇矛，关羽持青龙偃月刀，吕布持方天画戟，许褚可选专用大刀、单手刀和剑。攻击、闪避与冲刺消耗体力，收招片刻可恢复。每回合 90 秒，超时按剩余生命判胜。触屏可同时按住方向与招式按键。</p>
   </dialog>
 
   <script>window.WENFENG_CONFIG = $GODOT_CONFIG;</script>

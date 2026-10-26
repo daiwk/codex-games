@@ -19,17 +19,29 @@ var _rig: Skeleton3D
 var _model: Node3D
 var _hips = -1
 var _spine = -1
+var _chest = -1
+var _head = -1
 var _hip_rest = Transform3D.IDENTITY
 var _legs: Array[Dictionary] = []
 var _speed_ratio = 0.0
 var _configured = false
 var _mount_width_m = 0.68
+var _lean = Vector3.ZERO
+var _lean_velocity = Vector3.ZERO
+var _activity_weight = 1.0
+var _activity_provider = Callable()
+var last_secondary = Vector3.ZERO
+var _speed_ready = false
+var _jump_provider = Callable()
+var last_jump_tuck = 0.0
 
 func setup(rig: Skeleton3D, character_model: Node3D) -> bool:
 	_rig = rig
 	_model = character_model
 	_hips = _find_bone("Hips")
 	_spine = _find_bone("Spine")
+	_chest = _find_bone("Spine2")
+	_head = _find_bone("Head")
 	if _hips < 0 or _spine < 0:
 		push_error("RiderPose requires the supplied Mixamo pelvis and spine")
 		return false
@@ -68,10 +80,49 @@ func setup(rig: Skeleton3D, character_model: Node3D) -> bool:
 	_configured = true
 	return true
 
-func update(_delta: float, speed_ratio = 0.0) -> void:
-	# At speed, the thighs lean forward a little. There is deliberately no gait
-	# phase: the rider never takes alternating walking steps on the horse.
-	_speed_ratio = clampf(speed_ratio, 0.0, 1.0)
+func update(delta: float, speed_ratio = 0.0, turn_rate = 0.0,
+		saddle_basis = Basis.IDENTITY, activity = 1.0) -> void:
+	# A rider absorbs the actual saddle's pitch and roll through the waist.
+	# Acceleration/braking and turns settle on a damped spring; the hips and
+	# stirrups still remain anchored instead of bobbing through the horse.
+	var dt = clampf(delta, 0.0, 0.05)
+	var next_speed = clampf(speed_ratio, 0.0, 1.0)
+	var acceleration = (next_speed - _speed_ratio) / maxf(dt, 0.001) if _speed_ready and dt > 0.0 else 0.0
+	_speed_ready = true
+	_speed_ratio = next_speed
+	_activity_weight = clampf(activity, 0.0, 1.0)
+	var saddle_angles: Vector3 = saddle_basis.get_euler()
+	var target = Vector3(
+		clampf(next_speed * 0.033 - acceleration * 0.024 + saddle_angles.x * 0.20, -0.065, 0.065),
+		clampf(-turn_rate * 0.010, -0.028, 0.028),
+		clampf(-turn_rate * 0.022 + saddle_angles.z * 0.18, -0.060, 0.060))
+	var steps = maxi(1, ceili(dt / 0.0084))
+	var step = dt / float(steps)
+	for index in steps:
+		_lean_velocity += ((target - _lean) * 112.0 - _lean_velocity * 21.2) * step
+		_lean += _lean_velocity * step
+
+func reset_motion() -> void:
+	_speed_ratio = 0.0
+	_lean = Vector3.ZERO
+	_lean_velocity = Vector3.ZERO
+	_activity_weight = 1.0
+	last_secondary = Vector3.ZERO
+	_speed_ready = false
+	last_jump_tuck = 0.0
+
+func set_activity_provider(provider: Callable) -> void:
+	_activity_provider = provider
+
+func set_jump_provider(provider: Callable) -> void:
+	_jump_provider = provider
+
+func current_activity_weight() -> float:
+	# State/contact windows advance in physics, which can run several times
+	# before render calls update(). Read a live provider at the point of use.
+	if _activity_provider.is_valid():
+		return clampf(float(_activity_provider.call()), 0.0, 1.0)
+	return _activity_weight
 
 func set_mount_width(width_m: float) -> void:
 	_mount_width_m = clampf(width_m, 0.20, 1.10)
@@ -109,9 +160,31 @@ func _process_modification_with_delta(_delta: float) -> void:
 	spine_pose.origin += _hip_rest.origin - hip_pose.origin
 	_rig.set_bone_global_pose(_hips, _hip_rest)
 	_rig.set_bone_global_pose(_spine, spine_pose)
+	# Preserve the attack's upper-body pose at contact. During travel, distribute
+	# the saddle response through waist/chest and stabilize the gaze softly.
+	var tuck = 0.0
+	var jump_lean = 0.0
+	if _jump_provider.is_valid():
+		var jump: Dictionary = _jump_provider.call()
+		if bool(jump.get("active", false)) and not bool(jump.get("interrupted", false)):
+			if bool(jump.airborne):
+				tuck = sin(float(jump.flight_progress) * PI)
+				jump_lean = 0.075 * tuck
+			elif jump.phase == "anticipation":
+				tuck = smoothstep(0.0, float(jump.anticipation), float(jump.phase_time)) * 0.3
+			elif jump.phase == "landing":
+				tuck = (1.0 - smoothstep(0.0, float(jump.landing_duration), float(jump.phase_time))) * 0.4
+	last_jump_tuck = tuck
+	var secondary = (_lean + Vector3(jump_lean, 0.0, 0.0)) * current_activity_weight()
+	last_secondary = secondary
+	for data in [[_spine, 0.65], [_chest, 0.35], [_head, -0.35]]:
+		if int(data[0]) >= 0:
+			var pose = _rig.get_bone_global_pose(int(data[0]))
+			pose.basis = Basis.from_euler(secondary * float(data[1])) * pose.basis
+			_rig.set_bone_global_pose(int(data[0]), pose)
 	for leg in _legs:
 		var sign_value = float(leg.sign)
-		var forward_bias = 0.65 + 0.035 * _speed_ratio
+		var forward_bias = 0.65 + 0.035 * _speed_ratio + 0.10 * tuck
 		var upper_direction = Vector3(sign_value * 0.55, -0.40, forward_bias).normalized()
 		# Resolve the required spread in metres for each supplied rig instead of
 		# assuming the six characters have equal thigh lengths or hip spacing.
@@ -125,7 +198,7 @@ func _process_modification_with_delta(_delta: float) -> void:
 		var outward = clampf(maxf(absf(upper_direction.x), required_x), 0.0, 0.90)
 		var vertical_forward = Vector2(-0.40, forward_bias).normalized() * sqrt(maxf(0.0, 1.0 - outward * outward))
 		upper_direction = Vector3(sign_value * outward, vertical_forward.x, vertical_forward.y)
-		var lower_direction = Vector3(sign_value * 0.05, -0.98, -0.20).normalized()
+		var lower_direction = Vector3(sign_value * 0.05, -0.98, -0.20 - 0.10 * tuck).normalized()
 		var foot_direction = Vector3(sign_value * 0.10, 0.08, 1.0).normalized()
 		var thigh_turn = Basis(Quaternion(Vector3(leg.thigh_direction).normalized(), upper_direction))
 		var shin_turn = Basis(Quaternion(Vector3(leg.shin_direction).normalized(), lower_direction))

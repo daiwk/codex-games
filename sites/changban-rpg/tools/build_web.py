@@ -134,7 +134,7 @@ def copy_credits(stage, godot):
     for path in (GAME / "assets/licenses").glob("*.txt"):
         shutil.copy2(path, licenses / path.name)
     run([godot, "--headless", "--path", GAME, "--script", "res://tools/export_engine_licenses.gd", "--", licenses])
-    required = ["Game-THIRD-PARTY.txt", "Godot-LICENSE.txt", "Godot-THIRD-PARTY.txt", "NotoSans-LICENSE.txt", "NotoSerif-LICENSE.txt", "KayKit-CC0.txt", "Horse-CC0.txt", "Quaternius-UAL1-CC0.txt", "Quaternius-UAL2-CC0.txt"]
+    required = ["Game-THIRD-PARTY.txt", "Godot-LICENSE.txt", "Godot-THIRD-PARTY.txt", "NotoSans-LICENSE.txt", "NotoSerif-LICENSE.txt", "KayKit-CC0.txt", "Horse-CC0.txt", "Quaternius-UAL1-CC0.txt", "Quaternius-UAL2-CC0.txt", "Kenney-Particle-Pack-CC0.txt"]
     for name in required:
         if not (licenses / name).is_file():
             raise RuntimeError("Missing distribution license: " + name)
@@ -151,7 +151,7 @@ def copy_credits(stage, godot):
 https://kaylousberg.itch.io/kaykit-character-animations
 See licenses/KayKit-CC0.txt
 
-握持手指姿势及归档单手动作：Quaternius Universal Animation Library 1 & 2, CC0 1.0.
+握持手指姿势与单手冲步/架刀（冲刀叠加 KayKit 横切）：Quaternius Universal Animation Library 1 & 2, CC0 1.0.
 https://quaternius.com/
 See licenses/Quaternius-UAL1-CC0.txt and Quaternius-UAL2-CC0.txt
 
@@ -168,6 +168,7 @@ See licenses/NotoSans-LICENSE.txt and NotoSerif-LICENSE.txt
 Additional asset provenance: licenses/Game-THIRD-PARTY.txt
 RPG-only bandit geometry and rig reconstruction: licenses/RPG-THIRD-PARTY.txt
 """
+    text += "\nParticle textures: Kenney Particle Pack, CC0 1.0.\nhttps://kenney.nl/assets/particle-pack\nSee licenses/Kenney-Particle-Pack-CC0.txt\n"
     (stage / "credits.txt").write_text(text, encoding="utf-8")
 
 
@@ -221,6 +222,11 @@ def main():
             raise RuntimeError("The shared project configuration was not restored exactly")
         for name in ["web.css", "web-app.js", "landscape.svg", "icon.svg"]:
             shutil.copy2(ROOT / "web" / name, stage / name)
+        html = (stage / "index.html").read_text()
+        for name in ["web.css", "web-app.js", "index.js"]:
+            version = sha256(stage / name)[:16]
+            html = html.replace('"' + name + '"', '"' + name + '?v=' + version + '"')
+        (stage / "index.html").write_text(html)
         shutil.copy2(GAME / "assets/fonts/WenfengSerif.otf", stage / "WenfengSerif.otf")
         copy_credits(stage, godot)
         manifest = package_assets(stage)

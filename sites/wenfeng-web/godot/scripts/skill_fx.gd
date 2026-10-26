@@ -1,6 +1,8 @@
 extends Node3D
 class_name DuelSkillFX
 
+const TextureLayers = preload("res://scripts/textured_skill_fx.gd")
+
 # Effects stay independent of combat: a visible swing can still miss or be blocked.
 # All geometry is cached and transparent layers are combined into a single mesh.
 const MAX_EFFECTS = 24
@@ -20,6 +22,9 @@ var _material_pool: Array[ShaderMaterial] = []
 var _dust_material_pool: Array[ShaderMaterial] = []
 var _shader: Shader
 var _dust_shader: Shader
+var _texture_shader: Shader
+var _smoke_shader: Shader
+var _texture_material_pool: Array[ShaderMaterial] = []
 var _ultimate_strikes: Dictionary = {}
 
 
@@ -57,6 +62,12 @@ class MeshBuilder:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_PAUSABLE
+	if not RenderingServer.frame_pre_draw.is_connected(_sync_weapon_frames):
+		RenderingServer.frame_pre_draw.connect(_sync_weapon_frames)
+	_texture_shader = Shader.new()
+	_texture_shader.code = TextureLayers.shader_code(true)
+	_smoke_shader = Shader.new()
+	_smoke_shader.code = TextureLayers.shader_code(false)
 	_shader = Shader.new()
 	_shader.code = """shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, blend_add, fog_disabled;
@@ -148,15 +159,30 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 		return
 	var owner_id = fighter.get_instance_id()
 	if stage == "cancel":
+		# A cancelled cast must not leave its already released layers playing.
+		for id in active_effects.keys():
+			if active_effects[id].owner == owner_id:
+				_finish_effect(id)
+		_ultimate_strikes.erase(owner_id)
+		return
+	if stage == "complete":
+		# Natural recovery removes attached preparation cues. Released strokes
+		# and grounded dust keep their own finite lifetime instead of popping.
 		_remove_followers(owner_id)
 		_ultimate_strikes.erase(owner_id)
 		return
 	var palette: Array = PALETTES.get(fighter.character_id, PALETTES.zhaoyun)
+	var presentation = presentation_profile(fighter, skill)
+	if not String(presentation.get("fx_style", "")).is_empty():
+		_play_profile_skill(fighter, skill, stage, palette, presentation)
+		return
 	if fighter.mounted:
 		_play_mounted_skill(fighter, skill, stage, palette)
+		_play_texture_skill(fighter, skill, stage, palette)
 		return
 	if fighter.is_two_handed():
 		_play_polearm_skill(fighter, skill, stage, palette)
+		_play_texture_skill(fighter, skill, stage, palette)
 		return
 	var is_zhaoyun = fighter.character_id == "zhaoyun"
 	# Xu Chu's ground warning stays visible between his raised blade and impact.
@@ -230,6 +256,7 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 					_spawn(fighter, "slam_debris", palette, 0.95, 0.25, Vector3.ONE, Vector3.ONE)
 					_spawn(fighter, "slam_sparks", palette, 0.72, 0.04, Vector3(0.16, 0.7, 0.16), Vector3.ONE)
 				_ultimate_strikes.erase(owner_id)
+	_play_texture_skill(fighter, skill, stage, palette)
 
 
 func clear() -> void:
@@ -240,6 +267,326 @@ func clear() -> void:
 
 func active_effect_count() -> int:
 	return active_effects.size()
+
+
+func presentation_profile(fighter: DuelFighter, skill: String) -> Dictionary:
+	var data: Dictionary = fighter.skill_profile(skill).duplicate(true)
+	data["base_fx_style"] = data.get("fx_style", "")
+	data["hit_index"] = fighter.skill_hit_index
+	data["actual_clip"] = fighter.current_clip
+	if data.has("hits") and not data.hits.is_empty():
+		var index = clampi(fighter.skill_hit_index, 0, data.hits.size() - 1)
+		data.merge(data.hits[index], true)
+		data["hit_index"] = index
+	return data
+
+
+func _role_layer(fighter: DuelFighter, data: Dictionary, stage: String, palette: Array,
+		shape: String, lifetime: float, start = Vector3.ONE, end = Vector3.ONE, follow = false) -> void:
+	var weapon_stroke = TextureLayers.supports(shape) and TextureLayers.mode(shape) == 4 and shape != "tex_serpent_roar"
+	_spawn(fighter, shape, palette, lifetime, minf(0.035, lifetime * 0.10), Vector3.ONE if weapon_stroke else start, Vector3.ONE if weapon_stroke else end, follow)
+	var id: int = active_effects.keys().back()
+	active_effects[id]["fx_style"] = data.get("fx_style", "")
+	active_effects[id]["emitted_stage"] = stage
+	active_effects[id]["contact_shape"] = data.get("shape", "")
+	if TextureLayers.mode(shape) == 4 and TextureLayers.supports(shape):
+		active_effects[id].material.set_shader_parameter("ribbon_power", 1.0 if stage == "finish" else 0.76)
+	if weapon_stroke:
+		active_effects[id]["weapon_track"] = weakref(fighter)
+		active_effects[id]["stroke_reach"] = float(data.get("reach", data.get("radius", 3.1)))
+		var active: Vector2 = data.get("active", Vector2(0.0, 0.08))
+		# Ages start at this real hit, not at the beginning of its animation.
+		# Follow the blade through contact before leaving a finite world wake.
+		active_effects[id]["weapon_track_until"] = minf(lifetime * 0.65, maxf(0.08, active.y - active.x + 0.05))
+		active_effects[id]["weapon_hit_index"] = fighter.skill_hit_index
+		_update_weapon_stroke(active_effects[id])
+	elif shape.ends_with("_prepare"):
+		active_effects[id]["preparation_track"] = weakref(fighter)
+		_update_preparation_anchor(active_effects[id])
+	if shape in ["execution_fissure", "stance_scuff"]:
+		active_effects[id].node.global_position.y = fighter.global_position.y + 0.045
+
+
+func _update_preparation_anchor(effect: Dictionary) -> void:
+	var fighter: DuelFighter = effect.preparation_track.get_ref()
+	if is_instance_valid(fighter):
+		var midpoint: Vector3 = fighter.blade_base().lerp(fighter.blade_tip(), 0.5)
+		var local: Vector3 = effect.node.global_transform.affine_inverse() * midpoint
+		effect.material.set_shader_parameter("gather_anchor", local)
+
+
+func _sync_weapon_frames() -> void:
+	# AnimationPlayer/SkeletonModifier updates can run after this node's process
+	# callback. Resolve the short leading edge once more just before rendering,
+	# so a fast polearm swing does not leave an extra frame of visual lag.
+	if not is_inside_tree():
+		return
+	for effect in active_effects.values():
+		if _tracks_weapon(effect):
+			_update_weapon_stroke(effect)
+		if effect.has("preparation_track"):
+			_update_preparation_anchor(effect)
+
+
+func _tracks_weapon(effect: Dictionary) -> bool:
+	if not effect.has("weapon_track") or float(effect.age) > float(effect.get("weapon_track_until", 0.08)):
+		return false
+	var fighter: DuelFighter = effect.weapon_track.get_ref()
+	return is_instance_valid(fighter) and fighter.current_clip == effect.get("weapon_clip", "") and fighter.skill_hit_index == int(effect.get("weapon_hit_index", -1))
+
+
+func _update_weapon_stroke(effect: Dictionary) -> void:
+	var fighter: DuelFighter = effect.weapon_track.get_ref()
+	if not is_instance_valid(fighter):
+		return
+	var blade_base: Vector3 = fighter.blade_base()
+	var blade_tip: Vector3 = fighter.blade_tip()
+	var shape: String = effect.shape
+	var endpoint: Vector3 = TextureLayers.stroke_endpoint(shape)
+	var tip_vector: Vector3 = blade_tip - fighter.global_position
+	var flat = Vector2(tip_vector.x, tip_vector.z)
+	var yaw = atan2(flat.x, flat.y) if flat.length_squared() > 0.001 else fighter.global_rotation.y
+	var size = Vector3.ONE
+	var basis = Basis(Vector3.UP, yaw)
+	if TextureLayers.is_thrust(shape):
+		var axis = (blade_tip - blade_base).normalized()
+		if axis.length_squared() < 0.5:
+			axis = fighter.forward()
+		basis = Basis(Vector3.UP, atan2(axis.x, axis.z)) * Basis(Vector3.RIGHT, -asin(clampf(axis.y, -1.0, 1.0)))
+		size.z = clampf(minf(float(effect.stroke_reach), tip_vector.length()) / endpoint.z, 0.30, 1.55)
+	else:
+		var layout: Dictionary = TextureLayers.ARC_LAYOUT.get(shape, {})
+		if layout.get("vertical", false):
+			size.z = clampf(flat.length() / maxf(endpoint.z, 0.4), 0.45, 1.55)
+		else:
+			basis = Basis(Vector3.UP, yaw - float(layout.get("b", 0.0)))
+			size.x = clampf(flat.length() / TextureLayers.stroke_radius(shape), 0.45, 1.55)
+			size.z = size.x
+	effect.mesh.scale = size
+	effect.node.global_basis = basis
+	effect.node.global_position = blade_tip - basis * (endpoint * size)
+	effect["weapon_clip"] = fighter.current_clip
+	effect["blade_base"] = blade_base
+	effect["blade_tip"] = blade_tip
+	effect["visual_blade_tip"] = effect.node.global_transform * (endpoint * size)
+
+
+func _play_profile_skill(fighter: DuelFighter, skill: String, stage: String, palette: Array, data: Dictionary) -> void:
+	if skill not in ["rush", "counter", "ultimate"] or stage not in ["start", "release", "strike", "finish"]:
+		return
+	var style: String = data.get("fx_style", "")
+	var index: int = data.get("hit_index", 0)
+	var owner_id = fighter.get_instance_id()
+	var windup: float = fighter.ultimate_windup() if skill == "ultimate" else float(data.get("active", Vector2(0.35, 0.55)).x)
+	windup = clampf(windup + 0.06, 0.16, 3.5)
+	if stage == "start":
+		_remove_followers(owner_id)
+		var preparation = "tex_dragon_prepare"
+		if style.begins_with("tiger_"):
+			preparation = "tex_tiger_prepare"
+		elif style.begins_with("crescent_"):
+			preparation = "tex_crescent_prepare"
+		elif style.begins_with("serpent_"):
+			preparation = "tex_serpent_prepare"
+		elif style.begins_with("halberd_"):
+			preparation = "tex_halberd_prepare"
+		elif style.begins_with("brute_"):
+			preparation = "tex_brute_prepare"
+		_role_layer(fighter, data, stage, palette, preparation, windup, Vector3.ONE, Vector3.ONE, true)
+		if style in ["dragon_slip", "crescent_draw"]:
+			_role_layer(fighter, data, stage, palette, "evade_echo", 0.34, Vector3.ONE, Vector3.ONE)
+		elif style in ["tiger_couch", "tiger_breakthrough", "brute_close", "brute_execution"]:
+			_role_layer(fighter, data, stage, palette, "stance_scuff", minf(windup, 0.60), Vector3.ONE, Vector3.ONE)
+		return
+	if stage == "release" and skill == "ultimate":
+		_remove_followers(owner_id)
+		# Actual hit events choose the shape below; windup release is not a hit.
+		return
+	_remove_followers(owner_id)
+	var shape = _profile_stroke_shape(style, data, index)
+	var contact_shape: String = data.get("shape", "")
+	# Equipment adapters may retain a role style while changing a hit's motion.
+	# The concrete contact and authored clip outrank its family presentation.
+	if contact_shape == "line" and shape != "roar" and not TextureLayers.is_thrust(shape):
+		shape = "tex_lance"
+	elif contact_shape in ["sector", "radial"] and TextureLayers.is_thrust(shape):
+		shape = "tex_halberd_orbit" if contact_shape == "radial" else "tex_blade"
+	var reach: float = maxf(0.5, float(data.get("reach", data.get("radius", 2.8))))
+	var radial = data.get("shape", "") == "radial" or data.get("radial", false)
+	if shape == "roar":
+		var ground_scale = minf(reach / 2.75, 1.25)
+		_role_layer(fighter, data, stage, palette, "roar_dust", 0.54, Vector3(0.35, 1, 0.35) * ground_scale, Vector3.ONE * ground_scale)
+		_role_layer(fighter, data, stage, palette, "roar_sparks", 0.30, Vector3.ONE * 0.25, Vector3.ONE * ground_scale)
+		_role_layer(fighter, data, stage, palette, "tex_serpent_roar", 0.30, Vector3.ONE * 0.55, Vector3.ONE * ground_scale)
+		return
+	var size = Vector3.ONE
+	if shape in ["tex_dragon_high", "tex_dragon_low", "tex_tiger_couch", "tex_tiger_breaker", "tex_serpent_counter", "tex_serpent_anchor"]:
+		size.z = clampf(reach / 3.05, 0.65, 1.55)
+	else:
+		var base_radius = 2.60
+		if shape in ["tex_brute_close", "tex_brute_rebuke"]:
+			base_radius = 2.15
+		size.x = clampf(reach / base_radius, 0.65, 1.45)
+		size.z = size.x
+	_role_layer(fighter, data, stage, palette, shape, 0.32 if stage == "finish" else 0.25, size * Vector3(0.96, 1, 0.96), size)
+	if style.begins_with("dragon_"):
+		_role_layer(fighter, data, stage, palette, "tex_pressure" if TextureLayers.is_thrust(shape) else "tex_cut_mist", 0.24, Vector3.ONE * 0.65, Vector3.ONE * 0.85)
+	elif style.begins_with("tiger_"):
+		_role_layer(fighter, data, stage, palette, "tex_tiger_pressure" if TextureLayers.is_thrust(shape) else "tex_cut_mist", 0.48, Vector3.ONE * 0.80, Vector3.ONE)
+		_role_layer(fighter, data, stage, palette, "tex_step_dust", 0.48, Vector3.ONE, Vector3.ONE)
+	elif style.begins_with("serpent_"):
+		_role_layer(fighter, data, stage, palette, "tex_serpent_pressure" if TextureLayers.is_thrust(shape) else "tex_cut_mist", 0.30, Vector3.ONE * 0.8, Vector3.ONE)
+	elif style.begins_with("crescent_") or style.begins_with("halberd_"):
+		_role_layer(fighter, data, stage, palette, "tex_cut_mist", 0.38, size, size)
+	elif style.begins_with("brute_"):
+		_role_layer(fighter, data, stage, palette, "tex_brute_pressure", 0.42, Vector3.ONE * 0.7, Vector3.ONE)
+	if shape in ["tex_halberd_fall", "tex_brute_execution"]:
+		# These animations really strike the ground. A forward fissure follows
+		# that action; it does not announce an invented full-radius attack.
+		_role_layer(fighter, data, stage, palette, "execution_fissure", 0.58, Vector3.ONE, Vector3.ONE)
+		_role_layer(fighter, data, stage, palette, "tex_step_dust", 0.62, Vector3.ONE * 1.1, Vector3.ONE * 1.35)
+		if radial:
+			_role_layer(fighter, data, stage, palette, "slam_debris", 0.64, Vector3.ONE * 0.45, Vector3.ONE * 0.6)
+
+
+func _profile_stroke_shape(style: String, data: Dictionary, index: int) -> String:
+	if style.begins_with("serpent_") and (style == "serpent_roar" or data.get("shape", "") == "radial"):
+		return "roar"
+	if style.begins_with("dragon_"):
+		var clip: String = data.get("actual_clip", data.get("clip", ""))
+		return "tex_dragon_low" if "Low" in clip else "tex_dragon_high"
+	if style == "tiger_couch":
+		return "tex_tiger_couch"
+	if style.begins_with("tiger_"):
+		return "tex_tiger_breaker"
+	if style == "crescent_low":
+		return "tex_crescent_low"
+	if style == "crescent_draw":
+		return "tex_crescent_draw"
+	if style == "crescent_orbit":
+		return "tex_crescent_revolve"
+	if style.begins_with("crescent_"):
+		return "tex_crescent_diagonal" if index == 0 else "tex_crescent_revolve"
+	if style.begins_with("serpent_"):
+		return "tex_serpent_counter" if style == "serpent_brace" else "tex_serpent_anchor"
+	if style in ["halberd_rise", "halberd_lift"] or (style.begins_with("halberd_dance") and index == 0):
+		return "tex_halberd_rise"
+	if style in ["halberd_orbit", "halberd_spin"] or (style.begins_with("halberd_dance") and index == 1):
+		return "tex_halberd_orbit"
+	if style.begins_with("halberd_"):
+		return "tex_halberd_fall"
+	if style == "brute_close":
+		return "tex_brute_close"
+	if style == "brute_rebuke":
+		return "tex_brute_rebuke"
+	if style.begins_with("brute_"):
+		return "tex_brute_execution"
+	return "tex_lance" if data.get("shape", "") == "line" else "tex_blade"
+
+
+# Only real impact_received events call this. Release trails can miss and
+# never manufacture contact flashes, chips or dust on their own.
+func impact(at: Vector3, outcome: String, direction = Vector3.FORWARD, strength = 1.0) -> void:
+	if not is_inside_tree() or outcome in ["evade", "dead"]:
+		return
+	var precision = outcome in ["parry", "counter"]
+	var heavy = outcome in ["heavy_hit", "break", "counter"]
+	var color = Color("63c9bd") if precision else Color("d8a152")
+	var palette: Array = [color, Color("fff0ca"), Color("40352c")]
+	var size = clampf(float(strength), 0.55, 1.40)
+	_world_effect(at, direction, "tex_contact_cut", palette, 0.14, Vector3.ONE * size)
+	_world_effect(at, direction, "rpg_impact_flash", palette, 0.085, Vector3.ONE * size)
+	_world_effect(at, direction, "rpg_impact_sparks", palette, 0.40 if precision else 0.30, Vector3.ONE * size)
+	if heavy:
+		_world_effect(at - Vector3.UP * 0.10, direction, "tex_contact_dust", palette, 0.58, Vector3.ONE * size)
+		_world_effect(at - Vector3.UP * 0.10, direction, "contact_chips", palette, 0.54, Vector3.ONE * size)
+
+
+func _world_effect(at: Vector3, direction: Vector3, shape: String, palette: Array, lifetime: float, size: Vector3) -> void:
+	while active_effects.size() >= MAX_EFFECTS:
+		_finish_effect(active_effects.keys()[0])
+	var node = Node3D.new()
+	node.name = "SkillContact_" + shape
+	add_child(node)
+	node.global_position = at
+	var flat = Vector2(direction.x, direction.z)
+	node.global_rotation.y = atan2(flat.x, flat.y) if flat.length_squared() > 0.001 else 0.0
+	node.scale = size
+	var mesh = MeshInstance3D.new()
+	mesh.mesh = _get_mesh(shape, "impact", palette)
+	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mesh.extra_cull_margin = 2.0
+	var material = _take_material(shape)
+	if TextureLayers.supports(shape):
+		material.set_shader_parameter("effect_lifetime", lifetime)
+	mesh.material_override = material
+	node.add_child(mesh)
+	var tween = node.create_tween().set_parallel(true)
+	var id = node.get_instance_id()
+	active_effects[id] = {"node": node, "mesh": mesh, "material": material, "tween": tween,
+		"owner": 0, "follow": null, "shape": shape, "age": 0.0, "lifetime": lifetime}
+	tween.tween_property(node, "scale", size * 1.25, lifetime).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_method(_set_alpha.bind(id), 1.0, 0.0, lifetime).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.chain().tween_callback(_finish_effect.bind(id))
+
+
+func _play_texture_skill(fighter: DuelFighter, skill: String, stage: String, palette: Array) -> void:
+	if skill not in ["rush", "counter", "ultimate"]:
+		return
+	if stage == "start":
+		var windup = fighter.ultimate_windup() if skill == "ultimate" else float(fighter.skill_profile(skill).active.x)
+		windup = clampf(windup + 0.05, 0.18, 1.65)
+		_spawn(fighter, "tex_focus", palette, windup, windup * 0.65, Vector3.ONE * 0.65, Vector3.ONE, true)
+		if skill == "ultimate":
+			_spawn(fighter, "tex_gather", palette, windup, windup * 0.75, Vector3.ONE, Vector3.ONE, true)
+		elif skill == "rush":
+			_spawn(fighter, "tex_step_dust", palette, 0.48, 0.025, Vector3.ONE * 0.65, Vector3.ONE)
+	elif stage in ["release", "strike", "finish"]:
+		if skill == "ultimate" and stage == "release":
+			# The charge releases before the first contact window. A small flash
+			# marks that beat; the weapon trace waits for the actual strike event.
+			_spawn(fighter, "tex_release", palette, 0.16, 0.01, Vector3.ONE * 0.45, Vector3.ONE * 0.75)
+			return
+		if fighter.skill_profile(skill).get("kind", "") == "roar":
+			# Some original character presentations already emit these two
+			# layers; share them instead of doubling transparent overdraw.
+			if not _has_owner_shape(fighter.get_instance_id(), "roar_dust"):
+				_spawn(fighter, "roar_dust", palette, 0.58, 0.025, Vector3.ONE * 0.32, Vector3.ONE)
+			if not _has_owner_shape(fighter.get_instance_id(), "roar_sparks"):
+				_spawn(fighter, "roar_sparks", palette, 0.40, 0.015, Vector3.ONE * 0.3, Vector3.ONE)
+			_spawn(fighter, "tex_release", palette, 0.18, 0.01, Vector3.ONE * 0.65, Vector3.ONE)
+			return
+		var thrust = _uses_thrust_fx(fighter, skill)
+		_spawn(fighter, "tex_lance" if thrust else "tex_blade", palette, 0.30 if stage == "finish" else 0.23,
+			0.015, Vector3.ONE * 0.92, Vector3.ONE)
+		var edge_id: int = active_effects.keys().back()
+		active_effects[edge_id].material.set_shader_parameter("ribbon_power", 1.0 if stage == "finish" else 0.72)
+		_spawn(fighter, "tex_pressure" if thrust else "tex_cut_mist", palette, 0.48 if stage == "finish" else 0.34,
+			0.02, Vector3.ONE * 0.92, Vector3.ONE)
+		if stage == "finish":
+			_spawn(fighter, "tex_release", palette, 0.12, 0.01, Vector3.ONE * 0.35, Vector3.ONE * 0.6)
+
+
+func _has_owner_shape(owner_id: int, shape: String) -> bool:
+	for effect in active_effects.values():
+		if effect.owner == owner_id and effect.shape == shape:
+			return true
+	return false
+
+
+func _uses_thrust_fx(fighter: DuelFighter, skill: String) -> bool:
+	var profile = presentation_profile(fighter, skill)
+	var shape: String = profile.get("shape", "")
+	# Chase describes movement between strikes. Mounted blade/halberd ultimates
+	# also chase, but their authored Attack1/2/3 clips and contacts are sweeps.
+	# The active hit's shape is authoritative; kind alone cannot choose a lance.
+	if shape == "line":
+		return true
+	if shape in ["sector", "radial"]:
+		return false
+	if profile.get("kind", "") == "thrust":
+		return true
+	return fighter.is_thrust_weapon()
 
 
 func _process(delta: float) -> void:
@@ -256,6 +603,13 @@ func _process(delta: float) -> void:
 				continue
 			effect.node.global_position = fighter.global_position + Vector3.UP * (1.15 if fighter.mounted else 0.0)
 			effect.node.global_rotation = Vector3(0.0, fighter.global_rotation.y, 0.0)
+		if _tracks_weapon(effect):
+			_update_weapon_stroke(effect)
+		if effect.has("preparation_track"):
+			_update_preparation_anchor(effect)
+		if TextureLayers.supports(effect.shape):
+			effect.material.set_shader_parameter("effect_time", float(effect.age))
+			continue
 		if effect.shape == "charge_rings":
 			effect.mesh.rotation.y = effect.age * 0.85
 		elif effect.shape == "charge_wisps":
@@ -276,7 +630,7 @@ func _process(delta: float) -> void:
 			effect.mesh.rotation.y = effect.age * 0.15
 		elif effect.shape in ["slam_sparks", "roar_sparks"]:
 			effect.mesh.position.y = effect.age * 0.25 - effect.age * effect.age * 0.8
-		elif effect.shape in ["slam_debris", "charge_pebbles"]:
+		elif effect.shape in ["slam_debris", "charge_pebbles", "contact_chips"]:
 			effect.material.set_shader_parameter("effect_progress", clampf(effect.age / effect.lifetime, 0.0, 1.0))
 
 
@@ -288,6 +642,8 @@ func _spawn(fighter: DuelFighter, shape: String, palette: Array, lifetime: float
 	root.name = "SkillFX_" + shape
 	add_child(root)
 	root.global_position = fighter.global_position + Vector3.UP * (1.15 if fighter.mounted else 0.0)
+	if TextureLayers.ground_smoke(shape):
+		root.global_position.y = fighter.global_position.y + 0.04
 	root.global_rotation.y = fighter.global_rotation.y
 	root.scale = start_scale
 	var instance = MeshInstance3D.new()
@@ -295,7 +651,11 @@ func _spawn(fighter: DuelFighter, shape: String, palette: Array, lifetime: float
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	if shape in ["slam_debris", "charge_pebbles"]:
 		instance.extra_cull_margin = 1.1
+	elif TextureLayers.supports(shape):
+		instance.extra_cull_margin = 1.0
 	var mat = _take_material(shape)
+	if TextureLayers.supports(shape):
+		mat.set_shader_parameter("effect_lifetime", lifetime)
 	instance.material_override = mat
 	root.add_child(instance)
 	var id = root.get_instance_id()
@@ -314,8 +674,22 @@ func _set_alpha(alpha: float, id: int) -> void:
 
 
 func _take_material(shape: String) -> ShaderMaterial:
+	if TextureLayers.supports(shape):
+		var textured: ShaderMaterial = _texture_material_pool.pop_back() if not _texture_material_pool.is_empty() else ShaderMaterial.new()
+		textured.shader = _smoke_shader if TextureLayers.is_smoke(shape) or TextureLayers.mode(shape) == 4 else _texture_shader
+		textured.set_shader_parameter("sprite_texture", TextureLayers.texture_for(shape))
+		textured.set_shader_parameter("grain_texture", TextureLayers.SMOKE)
+		textured.set_shader_parameter("sprite_mode", TextureLayers.mode(shape))
+		textured.set_shader_parameter("ribbon_kind", 1 if TextureLayers.is_thrust(shape) else 0)
+		textured.set_shader_parameter("ribbon_power", 0.72)
+		textured.set_shader_parameter("gather_anchor", TextureLayers.preparation_anchor(shape))
+		textured.set_shader_parameter("gather_mode", 1 if shape.ends_with("_prepare") else 0)
+		textured.set_shader_parameter("effect_alpha", 1.0)
+		textured.set_shader_parameter("effect_time", 0.0)
+		textured.set_shader_parameter("effect_lifetime", 1.0)
+		return textured
 	var mat: ShaderMaterial
-	var is_dust = shape in ["slam_dust", "roar_dust", "slam_scorch", "slam_debris", "charge_pebbles"]
+	var is_dust = shape in ["slam_dust", "roar_dust", "slam_scorch", "slam_debris", "charge_pebbles", "contact_chips", "execution_fissure", "stance_scuff"]
 	var pool: Array[ShaderMaterial] = _dust_material_pool if is_dust else _material_pool
 	if pool.is_empty():
 		mat = ShaderMaterial.new()
@@ -325,7 +699,7 @@ func _take_material(shape: String) -> ShaderMaterial:
 	mat.set_shader_parameter("effect_alpha", 1.0)
 	if is_dust:
 		mat.set_shader_parameter("effect_progress", 0.0)
-		mat.set_shader_parameter("particle_mode", 1 if shape == "slam_debris" else (2 if shape == "charge_pebbles" else 0))
+		mat.set_shader_parameter("particle_mode", 1 if shape in ["slam_debris", "contact_chips"] else (2 if shape == "charge_pebbles" else 0))
 	return mat
 
 
@@ -339,7 +713,7 @@ func _finish_effect(id: int) -> void:
 	if is_instance_valid(effect.node):
 		effect.node.visible = false
 		effect.node.queue_free()
-	var pool: Array[ShaderMaterial] = _dust_material_pool if effect.material.shader == _dust_shader else _material_pool
+	var pool: Array[ShaderMaterial] = _texture_material_pool if effect.material.shader in [_texture_shader, _smoke_shader] else (_dust_material_pool if effect.material.shader == _dust_shader else _material_pool)
 	if pool.size() < MAX_EFFECTS:
 		pool.append(effect.material)
 
@@ -351,9 +725,13 @@ func _remove_followers(owner_id: int) -> void:
 
 
 func _get_mesh(shape: String, character_id: String, palette: Array) -> ArrayMesh:
-	var key = character_id + ":" + shape
+	var key = character_id + ":" + shape + ":" + Color(palette[0]).to_html(false)
 	if _mesh_cache.has(key):
 		return _mesh_cache[key]
+	if TextureLayers.supports(shape):
+		var textured = TextureLayers.mesh_for(shape, palette)
+		_mesh_cache[key] = textured
+		return textured
 	var b = MeshBuilder.new()
 	var color: Color = palette[0]
 	var bright: Color = palette[1]
@@ -369,11 +747,11 @@ func _get_mesh(shape: String, character_id: String, palette: Array) -> ArrayMesh
 				_ribbon(b, Vector3(x, y, 0.27), Vector3(x * 1.18, y + 0.02, -1.0 - lane * 0.12), 0.005, _alpha(bright, 0.7))
 		"forward_thrust", "return_thrust":
 			var length = 3.10 if shape == "forward_thrust" else 2.70
-			_lance(b, length, 0.225, 1.08, color, bright)
+			_lance(b, length, 0.14, 1.08, color, bright)
 		"sweeping_cleave":
 			# This broad forward crescent follows a heavy blade's close-range sweep.
-			_slash(b, 2.65, 0.21, -9.0, Vector3(0, 1.0, 0), color, bright)
-			_slash(b, 2.28, 0.055, 11.0, Vector3(0, 0.91, 0), _alpha(dark, 0.55), bright)
+			_slash(b, 2.65, 0.08, -9.0, Vector3(0, 1.0, 0), _alpha(color, 0.28), _alpha(bright, 0.32))
+			_slash(b, 2.28, 0.025, 11.0, Vector3(0, 0.91, 0), _alpha(dark, 0.20), _alpha(bright, 0.22))
 		"armor_heat":
 			for side in [-1.0, 1.0]:
 				_ribbon(b, Vector3(side * 0.17, 1.1, 0.22), Vector3(side * 0.5, 1.48, 0.12), 0.07, _alpha(color, 0.3))
@@ -399,7 +777,7 @@ func _get_mesh(shape: String, character_id: String, palette: Array) -> ArrayMesh
 				_ribbon(b, Vector3(x * 0.45, 1.23, 0.20), Vector3(x, 1.55 + absf(x) * 0.4, 0.30), 0.022, _alpha(color, 0.34))
 				_ribbon(b, Vector3(x * 0.45, 1.23, 0.20), Vector3(x * 0.9, 1.52 + absf(x) * 0.4, 0.30), 0.006, _alpha(bright, 0.42))
 		"roar_wave":
-			_wave_front(b, 2.75, 0.44, color, bright)
+			_wave_front(b, 2.75, 0.18, color, bright)
 		"roar_fractures":
 			_ground_rupture(b, 2.75, 11, _alpha(dark, 0.45), _alpha(bright, 0.75), false)
 		"roar_core":
@@ -481,10 +859,31 @@ func _get_mesh(shape: String, character_id: String, palette: Array) -> ArrayMesh
 				var center = Vector3(sin(a) * radius, 0.08 + float(i % 4) * 0.07, cos(a) * radius)
 				var size = 0.07 + float(i % 5) * 0.024
 				_stone(b, center, Vector3(size, size * (1.05 + float(i % 3) * 0.3), size * 0.75), a)
+		"contact_chips":
+			# A whole local shower is one mesh. These tiny unlit fragments have
+			# mass and a short ballistic fall, unlike full-bright energy diamonds.
+			for i in 7:
+				var a = float(i) * 2.39996
+				var center = Vector3(sin(a) * (0.08 + float(i % 3) * 0.055), 0.04, cos(a) * (0.08 + float(i % 3) * 0.055))
+				var size = 0.018 + float(i % 3) * 0.007
+				_stone(b, center, Vector3(size, size * 0.6, size * 0.75), a)
+		"stance_scuff":
+			for i in 5:
+				var x = (float(i) - 2.0) * 0.16
+				_ground_line(b, Vector3(x, 0.01, 0.12), Vector3(x * 1.15, 0.01, -0.55 - float(i % 3) * 0.13), 0.026, Color(0.23, 0.18, 0.13, 0.34))
+		"execution_fissure":
+			for i in 3:
+				var x = (float(i) - 1.0) * 0.20
+				var p0 = Vector3(x, 0.01, 0.55)
+				var p1 = Vector3(x * 1.7 + 0.11, 0.01, 1.18)
+				var p2 = Vector3(x * 2.6 - 0.08, 0.01, 2.25)
+				_ground_line(b, p0, p1, 0.034, Color(0.18, 0.14, 0.10, 0.50))
+				_ground_line(b, p1, p2, 0.020, Color(0.18, 0.14, 0.10, 0.36))
+				_ground_line(b, p0, p1, 0.008, _alpha(color, 0.25))
 		"slam_sparks":
 			_impact_rays(b, 3.65, 14, 1.25, color, bright)
 		"shockwave":
-			_wave_front(b, ULTIMATE_RADIUS, 0.78, color, bright)
+			_wave_front(b, ULTIMATE_RADIUS, 0.28, color, bright)
 	var mesh = b.finish()
 	_mesh_cache[key] = mesh
 	return mesh
@@ -493,10 +892,10 @@ func _get_mesh(shape: String, character_id: String, palette: Array) -> ArrayMesh
 func _wave_front(b: MeshBuilder, radius: float, height: float, color: Color, bright: Color) -> void:
 	# An asymmetric ridge has a broad hot face and a narrow pale crest. Its outer
 	# edge matches the skill radius rather than implying a larger damage area.
-	var radii = [radius - 0.65, radius - 0.48, radius - 0.25, radius - 0.16, radius - 0.07, radius]
+	var radii = [radius - 0.40, radius - 0.30, radius - 0.18, radius - 0.10, radius - 0.04, radius]
 	var heights = [0.035, 0.08, height * 0.76, height, 0.15, 0.035]
-	var shades = [_alpha(color, 0.0), _alpha(color, 0.28), _alpha(color, 0.84),
-		_alpha(bright, 0.98), _alpha(color, 0.65), _alpha(color, 0.0)]
+	var shades = [_alpha(color, 0.0), _alpha(color, 0.16), _alpha(color, 0.42),
+		_alpha(bright, 0.68), _alpha(color, 0.28), _alpha(color, 0.0)]
 	for i in 40:
 		var a0 = float(i) * TAU / 40.0
 		var a1 = float(i + 1) * TAU / 40.0

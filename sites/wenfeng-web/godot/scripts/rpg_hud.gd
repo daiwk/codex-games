@@ -364,7 +364,7 @@ func refresh(data: Dictionary) -> void:
 	var locked = bool(lock_on.get("active", false))
 	_lock_status.text = "已锁定 · %s · %.1f m    R 切换" % [String(lock_on.get("name", "目标")), float(lock_on.get("distance", 0.0))] if locked else "Tab / 中键点击锁定目标"
 	_lock_status.add_theme_color_override("font_color", JADE if locked else MUTED)
-	_key_hint.text = "W/S 进退 · A/D 绕敌  J/K 攻击  L 格挡  Space 冲刺  Q/E/U 技能  Tab/中键 解锁  R 切换 · 远离/死亡自动解锁" if locked else "WASD 策马  J/K 攻击  L 格挡  Space 冲刺  Q/E/U 技能  Tab/中键 锁定  R 切换"
+	_key_hint.text = "W/S 进退 · A/D 绕敌  J/K 攻击  Space 冲刺  V 跳跃  Q/E/U 技能  Tab/中键 解锁  R 切换" if locked else "WASD 策马  J/K 攻击  Space 冲刺  V 跳跃  Q/E/U 技能  L 格挡  Tab/中键 锁定"
 	_target_panel.visible = not target.is_empty()
 	_target_name.text = "%s  ·  Lv.%d" % [target.get("name", ""), int(target.get("level", 1))]
 	_set_bar(_target_hp, float(target.get("hp", 0)), float(target.get("max_hp", 1)))

@@ -10,7 +10,7 @@ animations/
   kaykit/          四份免费动作 GLB、来源与 CC0 许可
   ual1/            手指握持姿势来源 GLB、来源与 CC0 许可
   horse/           马匹参考 GLB、动作、解剖标定及许可
-  ual2/            历史使用来源与许可记录，已移除未使用的动作 GLB
+  ual2/            免费Standard动画GLB、许可与SHA256；2026-10-24重新获取用于专属冲刀/架刀
 originals/         吕布修复前的原件和修复记录
 glb-manifest.json  24 个保留 GLB 的路径、字节数与 SHA256
 ```
@@ -28,3 +28,5 @@ python3 tools/build_web.py --godot /absolute/path/to/Godot
 ```
 
 `onehand_sword.glb` 的原件与现有运行副本均保留，当前准备脚本不重新生成剑。直接本地游玩仅需要仓库根目录的启动脚本和 `dist/`，不需要这些素材准备依赖。
+
+2026-10-24新增的 UAL2_Standard.glb 为官方免费 Standard 原件，独立元数据见 `animations/ual2/metadata-2026-10-24.json`。两个项目原有 glb-manifest.json 共25项历史校验基准保持不变，新增文件使用独立元数据，不改变用户模型原件。

@@ -4,7 +4,7 @@ extends Node
 var game: Node
 var _callback: JavaScriptObject
 var _clock = 0.0
-const ACTIONS = ["move_left", "move_right", "move_up", "move_down", "light", "heavy", "guard", "dodge", "skill_rush", "skill_counter", "ultimate"]
+const ACTIONS = ["move_left", "move_right", "move_up", "move_down", "light", "heavy", "guard", "dodge", "jump", "skill_rush", "skill_counter", "ultimate", "cavalry_left", "cavalry_right", "cavalry_brake"]
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -27,6 +27,8 @@ func _command(args: Array) -> void:
 	if args.is_empty():
 		return
 	match str(args[0]):
+		"lock":
+			game.toggle_lock()
 		"pause":
 			game.toggle_pause()
 		"blur":
@@ -49,6 +51,8 @@ func _command(args: Array) -> void:
 		"input":
 			if args.size() >= 3 and str(args[1]) in ACTIONS:
 				if bool(args[2]):
+					if str(args[1]) in game.COMBAT_INPUTS and not Input.is_action_pressed(str(args[1])):
+						game.queue_combat_input(str(args[1]))
 					Input.action_press(str(args[1]))
 				else:
 					Input.action_release(str(args[1]))
@@ -73,6 +77,7 @@ func _publish() -> void:
 	JavaScriptBridge.eval("window.__wenfengState=" + JSON.stringify(data) + ";window.wenfengStateChanged && window.wenfengStateChanged();")
 
 func _release_inputs() -> void:
+	game._clear_combat_input()
 	for action in ACTIONS:
 		Input.action_release(action)
 

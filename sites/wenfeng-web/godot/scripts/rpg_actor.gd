@@ -8,6 +8,7 @@ const RPG_LENGTHS = {"serpent_spear": 3.05, "guandao": 2.85, "halberd": 3.15}
 const LOCK_FORWARD_SPEED = 4.8
 const LOCK_REVERSE_SPEED = 2.2
 const LOCK_ORBIT_SPEED = 2.6
+const NORMAL_STEP_ACCELERATION = 44.0
 const CUT_CLIPS = {
 	"Attack1": "RPGSlash", "Attack2": "RPGChop", "Attack3": "RPGSpin", "Heavy": "RPGChop",
 	"CrescentSweep": "RPGSpin", "CrescentStep": "CloudStep", "CrescentCounter": "RPGChop",
@@ -25,6 +26,74 @@ var lock_facing = false
 var lock_forward_speed = 0.0
 var _lock_move_velocity = Vector3.ZERO
 var _lock_motion_active = false
+var _normal_assist_target: DuelFighter
+var _normal_assist_travel = 0.0
+var _normal_step_velocity = Vector3.ZERO
+
+func _light_attacks() -> Array:
+	var options = super._light_attacks().duplicate(true)
+	if not is_player:
+		return options
+	# Speed the complete authored phrase and its contact interval together.
+	# The blade still has to cross the real body; this creates no ranged hits.
+	for data in options:
+		data.duration *= 0.72
+		data.active *= 0.72
+	return options
+
+func _begin_attack(index: int) -> bool:
+	if is_player and is_instance_valid(opponent) and opponent.hp > 0.0:
+		# A follow-up begins after the previous active window. Reacquire here,
+		# rather than keeping the first thrust's heading for the entire chain.
+		var toward = (opponent.global_position - global_position).slide(Vector3.UP)
+		if toward.length_squared() > 0.01:
+			rotation.y = atan2(toward.x, toward.z)
+	return super._begin_attack(index)
+
+func _enter_attack() -> void:
+	_normal_assist_target = null
+	_normal_assist_travel = 0.0
+	_normal_step_velocity = Vector3(velocity.x, 0.0, velocity.z)
+	if is_player and lock_facing and not bool(attack.get("heavy", false)) and is_instance_valid(opponent) and opponent.hp > 0.0:
+		var gap = (opponent.global_position - global_position).slide(Vector3.UP).length()
+		if gap <= 3.4001:
+			_normal_assist_target = opponent
+	super._enter_attack()
+
+func _normal_assist_active() -> bool:
+	return state == "attack" and not bool(attack.get("heavy", false)) and not hit_landed and not contact_latched and is_instance_valid(_normal_assist_target) and _normal_assist_target.hp > 0.0 and action_time <= float(attack.active.y) and _normal_assist_travel < 0.9
+
+func _normal_assist_velocity() -> Vector3:
+	var toward = (_normal_assist_target.global_position - global_position).slide(Vector3.UP)
+	var gap = toward.length()
+	if gap < 0.01:
+		return Vector3.ZERO
+	# A spear needs room for its point, while a blade can cut at the flank.
+	# Step back when crowded and close a small gap through ordinary collision.
+	var spacing = 1.95 if is_thrust_weapon() else 1.7
+	var error = gap - spacing
+	var speed = clampf(error * 12.0, -3.2, 6.0)
+	var brake_distance = maxf(0.0, minf(absf(error) - 0.06, 0.9 - _normal_assist_travel))
+	speed = signf(speed) * minf(absf(speed), sqrt(2.0 * NORMAL_STEP_ACCELERATION * brake_distance))
+	if absf(error) < 0.08:
+		speed = 0.0
+	var direction = toward.normalized() if action_time < float(attack.active.x) else forward()
+	return direction * speed
+
+func _step_normal_assist(delta: float) -> Vector3:
+	var desired = _normal_assist_velocity() if _normal_assist_active() else Vector3.ZERO
+	_normal_step_velocity = _normal_step_velocity.move_toward(desired, delta * NORMAL_STEP_ACCELERATION)
+	# Include braking travel in the same small step budget. Collision, not
+	# a position correction, remains responsible for the actual displacement.
+	_normal_step_velocity = _normal_step_velocity.limit_length(maxf(0.0, 0.9 - _normal_assist_travel) / maxf(delta, 0.001))
+	return _normal_step_velocity
+
+func _limit_thrust_motion() -> void:
+	if not mounted and is_player and state == "attack" and is_instance_valid(_normal_assist_target):
+		_step_normal_assist(get_physics_process_delta_time())
+		velocity.x = _normal_step_velocity.x
+		velocity.z = _normal_step_velocity.z
+	super._limit_thrust_motion()
 
 func _init() -> void:
 	movement_radius = 155.0
@@ -42,6 +111,9 @@ func reset_fighter() -> void:
 	_lock_move_velocity = Vector3.ZERO
 	_lock_motion_active = false
 	lock_forward_speed = 0.0
+	_normal_assist_target = null
+	_normal_assist_travel = 0.0
+	_normal_step_velocity = Vector3.ZERO
 
 func resolve_equipped_weapon(selected: String) -> String:
 	if character_id == "zhaoyun" and selected in RPG_WEAPONS:
@@ -87,20 +159,24 @@ func equip_weapon(id: String) -> bool:
 	_tune_materials(weapon_mesh)
 	grip_roll_ready = false
 	if is_instance_valid(thrust_contact):
-		thrust_contact.pose_cached = false
+		thrust_contact.reset_motion()
 	_idle()
 	_update_two_hand_grip(0.0, true)
 	previous_tip = blade_tip()
+	if is_player:
+		prewarm_attack_animations()
 	return true
 
-func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
+func resolve_animation_clip(clip: String) -> String:
 	if character_id == "zhaoyun" and weapon_id in ["guandao", "halberd"]:
 		clip = String(CUT_CLIPS.get(clip, clip))
-	super.play_clip(clip, blend, duration)
+	return super.resolve_animation_clip(clip)
 
 func skill_profile(id: String) -> Dictionary:
-	if not mounted and character_id == "zhaoyun" and weapon_id in ["guandao", "halberd"]:
+	if character_id == "zhaoyun" and weapon_id in ["guandao", "halberd"]:
 		var owner_id = "guanyu" if weapon_id == "guandao" else "lubu"
+		if mounted:
+			return MountedCombat.profile(id, false, basic_reach(), owner_id)
 		return RoleSkills.for_character(owner_id).get(id, {})
 	return super.skill_profile(id)
 
@@ -108,12 +184,21 @@ func receive_strike(attacker: DuelFighter, data: Dictionary) -> String:
 	# Resolve stats once, at the receiver, for normals, skills and guard chip.
 	# World hit resolution should still add its physical cavalry bonus first.
 	var resolved = data.duplicate(true)
+	resolved["rpg_mob_light"] = attacker.character_id == "bandit" and not bool(data.get("heavy", false)) and not data.has("skill")
 	var damage_scale = attacker.attack_multiplier if attacker is RPGActor else 1.0
 	var mitigation = 100.0 / (100.0 + defense)
 	resolved["damage"] = maxf(0.0, float(data.get("damage", 0.0))) * damage_scale * mitigation
 	if data.has("guard_chip"):
 		resolved["guard_chip"] = maxf(0.0, float(data.guard_chip)) * damage_scale * mitigation
 	return super.receive_strike(attacker, resolved)
+
+func _has_skill_armor(data: Dictionary) -> bool:
+	# Small mobs still deal their full resolved damage, but one chip hit does
+	# not erase an already-started player jab. Heavy/boss/skill hits interrupt
+	# normally; the protection ends with this light attack's contact window.
+	if is_player and state == "attack" and not bool(attack.get("heavy", false)) and action_time <= float(attack.active.y) and bool(data.get("rpg_mob_light", false)):
+		return true
+	return super._has_skill_armor(data)
 
 func _physics_process(delta: float) -> void:
 	if is_instance_valid(opponent) and opponent.hp <= 0.0:
@@ -130,7 +215,16 @@ func _physics_process(delta: float) -> void:
 		_lock_motion_active = false
 		lock_forward_speed = 0.0
 	var before_move = position
+	var normal_step = state == "attack" and is_instance_valid(_normal_assist_target)
 	super._physics_process(delta)
+	if normal_step:
+		_normal_assist_travel += (position - before_move).slide(Vector3.UP).length()
+	if normal_step and mounted and delta > 0.0:
+		var travelled = (position - before_move).slide(Vector3.UP) / delta
+		mount_speed = minf(_normal_step_velocity.length(), travelled.length())
+		lock_forward_speed = travelled.dot(forward())
+	if state != "attack":
+		_normal_assist_target = null
 	if _lock_motion_active and enabled and delta > 0.0:
 		# DuelFighter measures only forward travel to stop a blocked horse. In
 		# lock mode sideways/reverse travel is deliberate, so use actual planar
@@ -142,9 +236,14 @@ func _physics_process(delta: float) -> void:
 		lock_forward_speed = _lock_move_velocity.dot(forward())
 
 func _has_lock_target() -> bool:
-	return mounted and lock_facing and hp > 0.0 and is_instance_valid(opponent) and opponent != self and opponent.hp > 0.0
+	return lock_facing and hp > 0.0 and is_instance_valid(opponent) and opponent != self and opponent.hp > 0.0
 
 func _update_facing(delta: float) -> void:
+	if _normal_assist_active() and action_time < float(attack.active.x):
+		var toward = (_normal_assist_target.global_position - global_position).slide(Vector3.UP)
+		if toward.length_squared() > 0.01:
+			rotation.y = rotate_toward(rotation.y, atan2(toward.x, toward.z), delta * 6.0)
+		return
 	if _has_lock_target() and state in ["idle", "move", "block"]:
 		turning_in_place = false
 		turn_speed = 0.0
@@ -173,7 +272,7 @@ func _update_mount_facing(delta: float) -> void:
 		return
 	# Keep the existing physical thrust's committed contact window. Outside
 	# that window the target, rather than an orbit tangent, determines heading.
-	if state == "attack" and action_time >= float(attack.active.x) - 0.08 and action_time <= float(attack.active.y):
+	if action_facing_committed():
 		return
 	var toward = opponent.global_position - global_position
 	toward.y = 0.0
@@ -185,6 +284,14 @@ func _update_mount_facing(delta: float) -> void:
 	mount_turn_rate = step / maxf(delta, 0.001)
 
 func _update_mount_motion(delta: float) -> void:
+	if is_player and state == "attack" and not bool(attack.get("heavy", false)) and is_instance_valid(_normal_assist_target):
+		_lock_motion_active = false
+		_mount_action_velocity = _step_normal_assist(delta)
+		velocity.x = _mount_action_velocity.x
+		velocity.z = _mount_action_velocity.z
+		mount_speed = _mount_action_velocity.length()
+		lock_forward_speed = _mount_action_velocity.dot(forward())
+		return
 	if not _has_lock_target() or state not in ["idle", "move", "block"]:
 		_lock_motion_active = false
 		lock_forward_speed = 0.0
@@ -229,8 +336,12 @@ func _aim_attack() -> void:
 	if Vector2(direction.x, direction.z).length_squared() > 0.01:
 		rotation.y = atan2(direction.x, direction.z)
 
+func _normal_recovery_cancel() -> void:
+	if is_player and state == "attack" and not bool(attack.get("heavy", false)) and action_time >= float(attack.active.y) + 0.07:
+		_idle()
+
 func request_dodge(direction = Vector3.ZERO) -> bool:
-	if _has_lock_target():
+	if mounted and _has_lock_target():
 		var movement = input_move.slide(Vector3.UP).limit_length()
 		if movement.length_squared() > 0.01:
 			var toward = (opponent.global_position - global_position).slide(Vector3.UP).normalized()
@@ -238,6 +349,8 @@ func request_dodge(direction = Vector3.ZERO) -> bool:
 			# Reject before the shared method spends stamina or starts cooldown.
 			if movement.dot(toward) < 0.45 or absf(movement.dot(tangent)) > 0.45:
 				return false
+	if stamina >= 24.0 and (not mounted or mount_charge_cooldown <= 0.0):
+		_normal_recovery_cancel()
 	return super.request_dodge(direction)
 
 func request_light() -> bool:
@@ -245,13 +358,19 @@ func request_light() -> bool:
 	return super.request_light()
 
 func request_heavy() -> bool:
+	if stamina >= 34.0:
+		_normal_recovery_cancel()
 	_aim_attack()
 	return super.request_heavy()
 
 func request_skill(id: String) -> bool:
+	if id in cooldowns and cooldowns[id] <= 0.0 and stamina >= skill_cost(id):
+		_normal_recovery_cancel()
 	_aim_attack()
 	return super.request_skill(id)
 
 func request_ultimate() -> bool:
+	if energy >= 99.999:
+		_normal_recovery_cancel()
 	_aim_attack()
 	return super.request_ultimate()
