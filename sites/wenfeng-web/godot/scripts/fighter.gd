@@ -1036,6 +1036,9 @@ func _update_facing(delta: float) -> void:
 	var step = clampf(turn_speed * delta, -absf(error), absf(error))
 	rotation.y += step
 
+func locomotion_step_interval(clip: String) -> float:
+	return 0.34 if clip == "Run" else 0.40
+
 func _update_locomotion(delta: float) -> void:
 	if mounted:
 		var guarding = wants_block and stamina > 1.0 and mount_charge_time <= 0.0
@@ -1085,7 +1088,7 @@ func _update_locomotion(delta: float) -> void:
 			clip = "StrafeLeft" if local.x > 0 else "StrafeRight"
 			gait_rate = 1.65 * speed / 1.65
 		footstep_clock += delta * movement.length()
-		if footstep_clock > (0.34 if clip == "Run" else 0.40):
+		if footstep_clock > locomotion_step_interval(clip):
 			footstep_clock = 0.0
 			action_started.emit(self, "step")
 	else:

@@ -1,5 +1,11 @@
 # 素材来源
 
+## CMU 真人移动动作
+
+赵云步战单挑的前跑与正常倒走来自 [CMU Graphics Lab Motion Capture Database](https://mocap.cs.cmu.edu/)，原始数据为09_01与136_25（Normal Walk Backwards）。原始ASF/AMC、官方使用条款页面、下载地址及SHA256在 `animations/cmu-locomotion/`；允许在游戏中使用、修改与再分发，禁止销售原始或转换后的动作数据本身，不声明为CC0。原用户角色模型的权属保持不变。
+
+The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+
 ## Quaternius 动画
 
 - 作者：Quaternius

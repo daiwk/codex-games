@@ -48,6 +48,9 @@ var _cavalry_intended_speed = 0.0
 var _cavalry_pose: SkeletonModifier3D
 var _cavalry_edge_side = Vector3.ZERO
 var _duel_actual_velocity = Vector3.ZERO
+var _recorded_gaits = false
+var _recorded_retreat_speed = 1.65
+var _recorded_step_intervals: Dictionary = {}
 
 func strike_source_position(attacker: DuelFighter, data: Dictionary) -> Vector3:
 	if data.has("source_position") and String(data.get("special", "")) != "": return Vector3(data.source_position)
@@ -63,6 +66,7 @@ func skill_profile(id: String) -> Dictionary:
 
 func _ready() -> void:
 	super._ready()
+	_setup_recorded_gaits()
 	if not mounted and character_id in ["zhaoyun", "machao"] and is_thrust_weapon():
 		# Keep the shared/RPG and mounted contact modifiers untouched.
 		if is_instance_valid(thrust_contact):
@@ -76,6 +80,40 @@ func _ready() -> void:
 		if is_instance_valid(thrust_contact): skeleton.move_child(_cavalry_pose, thrust_contact.get_index())
 	# Opponent normals must also be ready before their first visible attack.
 	if not is_player: prewarm_attack_animations()
+
+func _setup_recorded_gaits() -> void:
+	if mounted or character_id != "zhaoyun" or not is_thrust_weapon(): return
+	var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/characters/animation_manifest.json"))
+	var config: Dictionary = manifest[character_id].get("recorded_duel_gaits", {})
+	if config.is_empty(): return
+	var aliases = {"Run": "DuelMocapRun", "WalkBack": "DuelMocapWalkBack"}
+	for alias in aliases.values():
+		if not animation_names.has(alias): return
+	for logical in aliases:
+		var key: String = animation_names[aliases[logical]]
+		animation_player.get_animation(key).loop_mode = Animation.LOOP_LINEAR
+		animation_names[logical] = key
+	_recorded_retreat_speed = float(config["retreat_speed"])
+	_recorded_step_intervals = config.get("step_intervals", {})
+	_recorded_gaits = true
+
+func _update_locomotion(delta: float) -> void:
+	super._update_locomotion(delta)
+	if not _recorded_gaits or state != "move" or current_clip != "WalkBack" or is_jumping(): return
+	# Match recorded retreat cadence. Keep the original acceleration while
+	# braking from forward travel; limit only speed along the new input.
+	var movement = input_move.limit_length()
+	if movement.length_squared() < 0.0001: return
+	var direction = movement.normalized()
+	var flat = Vector3(velocity.x, 0.0, velocity.z)
+	var excess = flat.dot(direction) - _recorded_retreat_speed * movement.length()
+	if excess > 0.0:
+		flat -= direction * excess
+		velocity.x = flat.x
+		velocity.z = flat.z
+
+func locomotion_step_interval(clip: String) -> float:
+	return float(_recorded_step_intervals.get(clip, super.locomotion_step_interval(clip)))
 
 func set_cavalry_input(throttle: float, steering: float, brake = false) -> void:
 	_cavalry_input_explicit = true

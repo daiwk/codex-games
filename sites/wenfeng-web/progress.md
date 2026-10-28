@@ -41,3 +41,19 @@ Publication: existing public Site appgprj_6ad22bc314348191a4822de5abd4c9f9. Offi
 - User also explicitly requested GitHub push. origin/main equals local pre-polish HEAD1410b56; GitHub synchronization is prepared and will push the verified final build.
 
 - Compact release rebuilt from pushed Sites source ad0361e8327f78bbbaeac6cb5e1607032bc24ab5: 34 static files,129.23MB total; PCK115.80MB gzip. Only two unselectable original spear runtime resources are excluded; original source models remain in the canonical repository. Native upload retry of this verified compact archive is pending.
+
+## 2026-10-29 · 用户否决v17后，改用既有真人动作
+
+用户实玩指出v17前进、后退比原来更怪。已将原Sites成功回退到v16；GitHub main仍为4a28b6d，否决的程序步态实验只保留在本地codex/zhaoyun-motion-v2，不作为可发布成果。此前数值锁脚检查不能证明自然度，相关视觉验收撤回。
+
+替换输入为CMU官方下载09_01前跑、136_25正常倒走；原件和使用条款完整归档。未沿用v17脚端轨迹、支撑相位或上身权重调整。仅赵云步战单挑opt-in两个新别名；旧46动画/几何/蒙皮与其他角色模式保留。后退按原素材正常步行节奏匹配约0.739m/s，前进仍2.85m/s。
+
+适配中，直接rest-delta迁移造成内收与交叉腿，已用连续正常/侧面录像否决。按Foot→Toe骨方向对齐也错误倾斜实际鞋底：原模型脚骨下倾约42–46度，鞋底本身接近平面。最终候选保留解剖腿/躯干对应，只为Foot/Toe各使用固定source mid-stance→target Idle三轴参考，保留完整源时序旋转；实际鞋底参考帧倾角由约26度降至约2.5度。每段最终仅作一个全身高度常数摆放；不逐帧压地、不生成脚步。
+
+状态：本地连续视觉与控制回归中，尚未发布新真人动作版。最终验证和发布结果在完成后补记。
+
+最终发布候选：赵云运行GLB SHA256 ae7a153643e3471aa7a6956f7c3c96b8ae0a8ae5ab5fce1119d9fe2eb13fab47；portable baker从归档原件精确重现，原46段动画、几何、蒙皮及旧二进制完整保留。正常/侧面前跑与后退各5秒、连续换向/停步/出枪/跳跃10秒均以真实60Hz原生帧录制；检查的真实画面不再出现否决版的交叉腿或扁平脚步。实际鞋底摆放后，后退仍保留约2.7cm左右骨架比例差，未通过逐帧脚端曲线掩盖。
+
+实际输入/模式回归36项有效检查通过，W→S保留制动而非瞬间硬截速度；旧直刺接触/回收120项通过。仅修正临时RPG测试对自由转向的错误预期，未为测试更改产品。最终Web构建成功（35文件、约129.27MB），gzip/解压长度/SHA256校验通过；本机IAB实际进入选将/对局并操作进退、攻击、跳跃、暂停和重新开局，控制台error为空。最终连续预览、输入probe、独立逐样本脚掌核验及构建/部署状态归档在忽略的qa/recorded-locomotion-2026-10-29/。
+
+准备同步原Sites并发布此真人动作候选；此条不把数值检查当作用户的观感认可。原站和GitHub的最终同步结果由发布记录补记。

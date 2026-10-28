@@ -1,5 +1,13 @@
 # 素材来源
 
+## CMU 真人移动动作
+
+- 作者与官方来源：[CMU Graphics Lab Motion Capture Database](https://mocap.cs.cmu.edu/)。
+- 使用内容：09_01 前跑、136_25（Normal Walk Backwards）正常倒走；只用于赵云步战单挑的前进与后退。
+- 原始 ASF/AMC、下载地址、SHA256 与官方条款页面归档于 `source-assets/animations/cmu-locomotion/`。允许在游戏中使用、修改与再分发；禁止销售原始或转换后的动作数据本身。本素材不声明为 CC0。
+- 离线处理：选择完整步态周期、统一朝向、移除线性根位移并匹配游戏移动速度；按骨架参考姿态重定向，脚掌与脚趾使用固定站立参考校准，整个片段仅作一次恒定高度摆放。保留真人腿部与脚掌运动，没有运行时脚步生成器。上肢保留原有持枪姿态并跟随真人躯干。
+- The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+
 ## Quaternius 动画
 
 - 作者：Quaternius

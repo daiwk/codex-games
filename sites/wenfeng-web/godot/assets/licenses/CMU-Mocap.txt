@@ -1,0 +1,16 @@
+CMU Graphics Lab Motion Capture Database
+https://mocap.cs.cmu.edu/
+Official usage terms: https://mocap.cs.cmu.edu/faqs.php
+Retrieved 2026-10-29.
+
+Used in this game: forward run 09_01; Normal Walk Backwards 136_25.
+The official FAQ permits copying, modifying and redistributing the motion
+capture data without permission. The official homepage allows commercial
+products while prohibiting sale of the raw or converted motion data itself.
+This is not a CC0 declaration. Original terms pages, input files, exact URLs
+and SHA256 values are archived in source-assets/animations/cmu-locomotion/.
+The character geometry and materials remain user-provided assets.
+
+Required acknowledgement:
+The data used in this project was obtained from mocap.cs.cmu.edu.
+The database was created with funding from NSF EIA-0196217.

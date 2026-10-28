@@ -24,6 +24,11 @@ Additional asset attribution: licenses/Game-THIRD-PARTY.txt
 Courtyard stone/wood textures: Poly Haven, CC0 1.0. See licenses/Autumn-Courtyard.txt.
 Original mountain panorama generated for this project using OpenAI imagegen; prompt and source provenance are included in the source repository.
 
+Zhao Yun foot-duel forward run and backward walk: CMU Graphics Lab Motion Capture Database, 09_01 and 136_25.
+https://mocap.cs.cmu.edu/
+The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+See licenses/CMU-Mocap.txt.
+
 Particle textures: Kenney Particle Pack, CC0 1.0.
 https://kenney.nl/assets/particle-pack
 See licenses/Kenney-Particle-Pack-CC0.txt

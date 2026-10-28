@@ -1,0 +1,44 @@
+{
+  "retrieved": "2026-10-29",
+  "author": "CMU Graphics Lab",
+  "license": "Original official FAQ permits copying/modifying/redistributing without permission; original homepage permits commercial products, prohibits selling raw or converted data itself. See archived official pages.",
+  "acknowledgement": "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.",
+  "files": {
+    "09.asf": {
+      "url": "https://mocap.cs.cmu.edu/subjects/09/09.asf",
+      "bytes": 7260,
+      "sha256": "be10dbce393fd60a2d322410032d618757afcc5bb2f7a508d887c5b0213f1897"
+    },
+    "09_01.amc": {
+      "url": "https://mocap.cs.cmu.edu/subjects/09/09_01.amc",
+      "bytes": 118653,
+      "sha256": "02c94e8c2d4d2ff05f9a784f06403700c2c9d7caedd9bd92b50284d1a05f2bee"
+    },
+    "136.asf": {
+      "url": "https://mocap.cs.cmu.edu/subjects/136/136.asf",
+      "bytes": 7271,
+      "sha256": "48eb3f19477086e28495d841c604157b354fc76be054fa662ff10843ac698427"
+    },
+    "136_25.amc": {
+      "url": "https://mocap.cs.cmu.edu/subjects/136/136_25.amc",
+      "bytes": 1440285,
+      "sha256": "081917e7e8bf01cc3c9893cbfd82f15c9cb386321e10e7464d09c7cf76f2fe3f"
+    },
+    "official-faq.html": {
+      "url": "https://mocap.cs.cmu.edu/faqs.php",
+      "bytes": 8654,
+      "sha256": "518f04f07d7b0e0e8b605089f1033320d3ad5aa092f9d164f2c76c484a3f4f4e"
+    },
+    "official-home.html": {
+      "url": "https://mocap.cs.cmu.edu/",
+      "bytes": 8445,
+      "sha256": "4ac0024566573a10c87b668c826c2c44014b032ae57cbc5fbef2794b80c21cbc"
+    },
+    "136-official-index.html": {
+      "url": "https://mocap.cs.cmu.edu/search.php?subjectnumber=136",
+      "bytes": 14877,
+      "sha256": "d66845af19b829af983ec71cd521481d6fbe97e45ac5b2f5579a26b7e7252870"
+    }
+  },
+  "status": "Downloaded original source data for the recorded-locomotion replacement; runtime clip selection and retarget metadata are tracked separately."
+}

@@ -1937,6 +1937,38 @@
             0.6857142959322248
           ]
         ]
+      },
+      "DuelMocapRun": {
+        "source": "CMU 09_01",
+        "library": "CMU Graphics Lab Motion Capture Database",
+        "seconds": 1.251537714709203,
+        "source_frames_1based": [
+          52,
+          142
+        ],
+        "source_fps": 120,
+        "runtime_cycle_seconds": 0.9069113874704371,
+        "foot_reference_frames_1based": {
+          "Left": 93,
+          "Right": 51
+        },
+        "uniform_ground_placement_model_units": 0.01959884161115798
+      },
+      "DuelMocapWalkBack": {
+        "source": "CMU 136_25",
+        "library": "CMU Graphics Lab Motion Capture Database",
+        "seconds": 1.9348214285714285,
+        "source_frames_1based": [
+          857,
+          1054
+        ],
+        "source_fps": 120,
+        "runtime_cycle_seconds": 1.1726190476190477,
+        "foot_reference_frames_1based": {
+          "Left": 1033,
+          "Right": 936
+        },
+        "uniform_ground_placement_model_units": 0.030480889218230386
       }
     },
     "grip": {
@@ -1956,11 +1988,20 @@
       "axis_sign": -1.0,
       "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
     },
-    "runtime_sha256": "707628b708ab34526ae16dac1c3c735530f962191af47e5219de6c7c5f08a2b8",
+    "runtime_sha256": "ae7a153643e3471aa7a6956f7c3c96b8ae0a8ae5ab5fce1119d9fe2eb13fab47",
     "duel_foot_polish": {
       "existing_animation_count": 42,
       "existing_binary_bytes_retained": 4887644,
       "mode": "append_only"
+    },
+    "recorded_duel_gaits": {
+      "retreat_speed": 0.7390582046734684,
+      "step_intervals": {
+        "Run": 0.45345569373521855,
+        "WalkBack": 0.5863095238095238
+      },
+      "source": "CMU 09_01 + 136_25; see source-assets/animations/cmu-locomotion/SOURCE.json",
+      "processing": "Fixed anatomical/foot reference retarget; original source rotation curves; uniform time scale and one constant whole-body height per clip."
     }
   },
   "machao": {
@@ -3261,7 +3302,7 @@
   },
   "guanyu": {
     "source": {
-      "file": "characters/关羽.glb",
+      "file": "characters/\u5173\u7fbd.glb",
       "sha256": "8a3eec371c6b959e5a92b2d4eb0a25ca83d5bf4e9e3d4dee6651c89521c16310"
     },
     "clips": {
@@ -4033,7 +4074,7 @@
   },
   "zhangfei": {
     "source": {
-      "file": "characters/张飞.glb",
+      "file": "characters/\u5f20\u98de.glb",
       "sha256": "60fe6eab6dce29d8df4b2214d6643322c14f3f107da54a6825dd52210d42f975"
     },
     "clips": {
@@ -4718,7 +4759,7 @@
   },
   "lubu": {
     "source": {
-      "file": "characters/吕布.glb",
+      "file": "characters/\u5415\u5e03.glb",
       "sha256": "f52a3bbdca491a9b92861e1c3d31f8bfbe4fe97489eaee577d5d18ec35e2582e"
     },
     "clips": {
@@ -5377,7 +5418,7 @@
   },
   "xuchu": {
     "source": {
-      "file": "characters/许褚.glb",
+      "file": "characters/\u8bb8\u891a.glb",
       "sha256": "b0e17f2b5d4870ad873ad38ef722dcd7b27a09725508733484df42f0a2eb78a0"
     },
     "clips": {
@@ -6079,7 +6120,7 @@
   "bandit": {
     "source": {
       "site": "changban-rpg",
-      "file": "source-assets/characters/山贼.glb",
+      "file": "source-assets/characters/\u5c71\u8d3c.glb",
       "sha256": "097023c37f5e2dacc7dc13f5c3d389240eaca8e0a39781a8da9de72d9c33cd4c"
     },
     "clips": {

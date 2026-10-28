@@ -1,0 +1,285 @@
+{
+  "runtime_sha256": "ae7a153643e3471aa7a6956f7c3c96b8ae0a8ae5ab5fce1119d9fe2eb13fab47",
+  "recorded_locomotion": {
+    "baker": "tools/prepare_recorded_locomotion.py",
+    "baker_sha256": "258ec86e189d4f17b1b1741d3c8eb56b6f2d8b625f0bb4959f7293eaf0646d32",
+    "baseline": "source-assets/animations/runtime-baselines/zhaoyun-before-recorded-gaits.glb",
+    "baseline_sha256": "707628b708ab34526ae16dac1c3c735530f962191af47e5219de6c7c5f08a2b8",
+    "runtime_sha256": "ae7a153643e3471aa7a6956f7c3c96b8ae0a8ae5ab5fce1119d9fe2eb13fab47",
+    "existing_animation_count": 46,
+    "existing_binary_bytes_retained": 5085212,
+    "mode": "append_only",
+    "actor_scale": 1.98,
+    "configuration": {
+      "DuelMocapRun": {
+        "subject": "09",
+        "trial": "01",
+        "frames_1based": [
+          52,
+          142
+        ],
+        "foot_reference_frames_1based": {
+          "Left": 93,
+          "Right": 51
+        },
+        "game_speed_mps": 2.85,
+        "controller_rate": 1.38,
+        "whole_clip_ground_y_model_units": 0.01959884161115798
+      },
+      "DuelMocapWalkBack": {
+        "subject": "136",
+        "trial": "25",
+        "frames_1based": [
+          857,
+          1054
+        ],
+        "foot_reference_frames_1based": {
+          "Left": 1033,
+          "Right": 936
+        },
+        "source_playback_rate": 1.4,
+        "controller_rate": 1.65,
+        "whole_clip_ground_y_model_units": 0.030480889218230386
+      }
+    },
+    "duel_foot_aliases": {
+      "Run": "DuelMocapRun",
+      "WalkBack": "DuelMocapWalkBack"
+    },
+    "license_archive": "source-assets/animations/cmu-locomotion/SOURCE.json"
+  },
+  "clips": {
+    "DuelMocapRun": {
+      "source": "CMU 09_01",
+      "library": "CMU Graphics Lab Motion Capture Database",
+      "source_frames_1based": [
+        52,
+        142
+      ],
+      "fps": 120,
+      "samples": 91,
+      "source_seconds": 0.75,
+      "seconds": 1.251537714709203,
+      "source_asf_sha256": "be10dbce393fd60a2d322410032d618757afcc5bb2f7a508d887c5b0213f1897",
+      "source_amc_sha256": "02c94e8c2d4d2ff05f9a784f06403700c2c9d7caedd9bd92b50284d1a05f2bee",
+      "source_url": "https://mocap.cs.cmu.edu/subjects/09/09_01.amc",
+      "retarget_root_cycle_distance_m": 2.5846974542907457,
+      "retarget_native_speed_mps": 3.446263272387661,
+      "game_speed_mps": 2.85,
+      "required_source_playback_rate": 0.8269826692681682,
+      "existing_controller_speed_scale": 1.38,
+      "actual_runtime_cycle_seconds": 0.9069113874704371,
+      "uniform_ground_placement_model_units": 0.01959884161115798,
+      "ground_reference": "One fixed whole-clip Y chosen from actual CPU-skinned shoe support medians; mean sole +9mm compensates actor root about -9mm. Remaining left/right difference is preserved.",
+      "foot_static_reference": {
+        "Left": {
+          "source_frame_1based": 93,
+          "rotation_mapping": {
+            "Foot": {
+              "source_reference_world_delta_xyzw": [
+                0.06746817007809813,
+                -0.033255593272511264,
+                -0.21968280185992442,
+                0.9726672494277677
+              ],
+              "target_idle_world_rotation_xyzw": [
+                0.49500804963678846,
+                0.4257087320337646,
+                0.75715162329653,
+                -0.021459860307487665
+              ],
+              "fixed_right_calibration_xyzw": [
+                0.41224724806204904,
+                0.5728814444054429,
+                0.6884112088528854,
+                -0.16717973754887286
+              ]
+            },
+            "ToeBase": {
+              "source_reference_world_delta_xyzw": [
+                -0.002363752115478924,
+                -0.0420637862838722,
+                -0.22296337367348923,
+                0.9739160048790333
+              ],
+              "target_idle_world_rotation_xyzw": [
+                -0.2188509762480392,
+                -0.6724478763664785,
+                -0.6723269094921792,
+                0.21884841908999164
+              ],
+              "fixed_right_calibration_xyzw": [
+                -0.08882668723494845,
+                -0.6931874464756224,
+                -0.5995903471375825,
+                0.3899902553948038
+              ]
+            }
+          }
+        },
+        "Right": {
+          "source_frame_1based": 51,
+          "rotation_mapping": {
+            "Foot": {
+              "source_reference_world_delta_xyzw": [
+                0.08012079621203562,
+                -0.07242316833271412,
+                0.20393034946494537,
+                0.9730097405833644
+              ],
+              "target_idle_world_rotation_xyzw": [
+                -0.18252111286776943,
+                -0.3299812456114245,
+                -0.8859949947634729,
+                -0.26983567250517015
+              ],
+              "fixed_right_calibration_xyzw": [
+                -0.28455004813633045,
+                -0.3742461838193595,
+                -0.7680010769329416,
+                -0.43490850742667736
+              ]
+            },
+            "ToeBase": {
+              "source_reference_world_delta_xyzw": [
+                0.09794237671584141,
+                -0.07496950463417947,
+                0.20463361464863158,
+                0.9710365327700052
+              ],
+              "target_idle_world_rotation_xyzw": [
+                0.1688341471817005,
+                -0.6867152732680539,
+                -0.686597010887448,
+                -0.16882449125121557
+              ],
+              "fixed_right_calibration_xyzw": [
+                -0.009098245455323839,
+                -0.781310323716778,
+                -0.5768267818414523,
+                -0.23820634696340903
+              ]
+            }
+          }
+        }
+      },
+      "processing": "Source hip/pelvis and complete spine/neck/head/leg rotations; original bone lengths and mesh. Arms/hands retain Idle relative to source chest. Fixed Foot/Toe anatomical reference, unchanged source temporal rotation. One shared heading/scale, linear rootXZ path removal, original pelvis Y curve, one constant whole-clip ground placement, uniform playback timing. No foot planner, runtime/offline IK, per-frame grounding, stride warp, or loop pose editing."
+    },
+    "DuelMocapWalkBack": {
+      "source": "CMU 136_25",
+      "library": "CMU Graphics Lab Motion Capture Database",
+      "source_frames_1based": [
+        857,
+        1054
+      ],
+      "fps": 120,
+      "samples": 198,
+      "source_seconds": 1.6416666666666666,
+      "seconds": 1.9348214285714285,
+      "source_asf_sha256": "48eb3f19477086e28495d841c604157b354fc76be054fa662ff10843ac698427",
+      "source_amc_sha256": "081917e7e8bf01cc3c9893cbfd82f15c9cb386321e10e7464d09c7cf76f2fe3f",
+      "source_url": "https://mocap.cs.cmu.edu/subjects/136/136_25.amc",
+      "retarget_root_cycle_distance_m": 0.8666337280992457,
+      "retarget_native_speed_mps": 0.527898717623906,
+      "game_speed_mps": 0.7390582046734684,
+      "required_source_playback_rate": 1.4,
+      "existing_controller_speed_scale": 1.65,
+      "actual_runtime_cycle_seconds": 1.1726190476190477,
+      "uniform_ground_placement_model_units": 0.030480889218230386,
+      "ground_reference": "One fixed whole-clip Y chosen from actual CPU-skinned shoe support medians; mean sole +9mm compensates actor root about -9mm. Remaining left/right difference is preserved.",
+      "foot_static_reference": {
+        "Left": {
+          "source_frame_1based": 1033,
+          "rotation_mapping": {
+            "Foot": {
+              "source_reference_world_delta_xyzw": [
+                -0.14554735677606012,
+                0.664478153772656,
+                -0.16094992333119437,
+                0.7151082940884321
+              ],
+              "target_idle_world_rotation_xyzw": [
+                0.49500804963678846,
+                0.4257087320337646,
+                0.75715162329653,
+                -0.021459860307487665
+              ],
+              "fixed_right_calibration_xyzw": [
+                0.4088627836575588,
+                0.5284814951218144,
+                0.7190274636165577,
+                -0.19114926109913097
+              ]
+            },
+            "ToeBase": {
+              "source_reference_world_delta_xyzw": [
+                -0.08697050771364916,
+                0.669812628321574,
+                -0.21432228305120943,
+                0.705587083722975
+              ],
+              "target_idle_world_rotation_xyzw": [
+                -0.2188509762480392,
+                -0.6724478763664785,
+                -0.6723269094921792,
+                0.21884841908999164
+              ],
+              "fixed_right_calibration_xyzw": [
+                -0.09690318898988429,
+                -0.7568879237838542,
+                -0.5455073256539171,
+                0.3466297743294262
+              ]
+            }
+          }
+        },
+        "Right": {
+          "source_frame_1based": 936,
+          "rotation_mapping": {
+            "Foot": {
+              "source_reference_world_delta_xyzw": [
+                0.11797702630190017,
+                0.652600535347482,
+                0.16420144140011825,
+                0.7302272585786319
+              ],
+              "target_idle_world_rotation_xyzw": [
+                -0.18252111286776943,
+                -0.3299812456114245,
+                -0.8859949947634729,
+                -0.26983567250517015
+              ],
+              "fixed_right_calibration_xyzw": [
+                -0.2905680365868642,
+                -0.27113987511407756,
+                -0.8150896172563539,
+                -0.4215237835259926
+              ]
+            },
+            "ToeBase": {
+              "source_reference_world_delta_xyzw": [
+                0.19437806409887803,
+                0.6391711619204588,
+                0.09548746724821217,
+                0.737942773909295
+              ],
+              "target_idle_world_rotation_xyzw": [
+                0.1688341471817005,
+                -0.6867152732680539,
+                -0.686597010887448,
+                -0.16882449125121557
+              ],
+              "fixed_right_calibration_xyzw": [
+                -0.003016682547442029,
+                -0.7632040819564495,
+                -0.5946596261365945,
+                -0.25276542080456094
+              ]
+            }
+          }
+        }
+      },
+      "processing": "Source hip/pelvis and complete spine/neck/head/leg rotations; original bone lengths and mesh. Arms/hands retain Idle relative to source chest. Fixed Foot/Toe anatomical reference, unchanged source temporal rotation. One shared heading/scale, linear rootXZ path removal, original pelvis Y curve, one constant whole-clip ground placement, uniform playback timing. No foot planner, runtime/offline IK, per-frame grounding, stride warp, or loop pose editing."
+    }
+  }
+}

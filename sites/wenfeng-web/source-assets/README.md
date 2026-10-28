@@ -11,6 +11,8 @@ animations/
   ual1/            手指握持姿势来源 GLB、来源与 CC0 许可
   horse/           马匹参考 GLB、动作、解剖标定及许可
   ual2/            免费Standard动画GLB、许可与SHA256；2026-10-24重新获取用于专属冲刀/架刀
+  cmu-locomotion/  真人前跑09_01、正常倒走136_25，原始ASF/AMC、来源哈希与官方使用条款
+  runtime-baselines/  追加真人步态前的赵云运行骨架与动画，供离线重建；保留用户模型原权属
 originals/         吕布修复前的原件和修复记录
 glb-manifest.json  24 个保留 GLB 的路径、字节数与 SHA256
 ```
@@ -22,6 +24,7 @@ glb-manifest.json  24 个保留 GLB 的路径、字节数与 SHA256
 ```sh
 python3 tools/repair_lubu.py                 # 可选，修复脚本可重复执行
 python3 tools/prepare_polearms.py             # 六位武将的动作和武器
+python3 tools/prepare_recorded_locomotion.py   # 在原运行基线上追加赵云单挑真人前跑/后退
 python3 tools/prepare_mounts.py               # 两匹马的绑定和动作
 python3 tools/prepare_saddle.py               # 必须在马匹运行副本就绪后执行
 python3 tools/build_web.py --godot /absolute/path/to/Godot
