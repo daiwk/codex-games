@@ -358,14 +358,32 @@ func _light_attacks() -> Array:
 		{"clip": "Attack3", "duration": 1.34, "active": Vector2(0.42, 0.80), "damage": 28.0, "cost": 24.0, "reach": basic_reach() + 0.15, "lunge": 1.1, "heavy": false, "min_dot": -0.30},
 	]
 
-func _tune_materials(node: Node) -> void:
+func _tune_materials(node: Node, category = "") -> void:
+	var duel_presentation = has_method("duel_strike_forward")
+	if category == "": category = "weapon" if node == weapon_mesh else "character"
 	if node is MeshInstance3D:
-		for i in node.get_surface_override_material_count():
+		var surfaces = node.mesh.get_surface_count() if node.mesh != null else 0
+		if not duel_presentation: surfaces = node.get_surface_override_material_count()
+		for i in surfaces:
 			var mat = node.get_active_material(i)
 			if mat is StandardMaterial3D:
-				mat.roughness = maxf(mat.roughness, 0.52)
+				if not duel_presentation:
+					mat.roughness = maxf(mat.roughness, 0.52)
+					continue
+				# Private material copies preserve the imported RPG resources. The
+				# character's metal/cloth separation already lives in its PBR map;
+				# retain those authored factors rather than treating skin as steel.
+				mat = mat.duplicate() as StandardMaterial3D
+				if category == "weapon":
+					if mat.roughness_texture != null:
+						mat.roughness = clampf(mat.roughness * 0.86, 0.40, 1.0)
+					elif mat.metallic > 0.45:
+						mat.roughness = clampf(mat.roughness, 0.28, 0.46)
+					else:
+						mat.roughness = maxf(mat.roughness, 0.68)
+				node.set_surface_override_material(i, mat)
 	for child in node.get_children():
-		_tune_materials(child)
+		_tune_materials(child, category)
 
 func _find_node(node: Node, kind: String) -> Node:
 	if node.is_class(kind):

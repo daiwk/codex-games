@@ -1,0 +1,77 @@
+{
+  "retrieved": "2026-10-28",
+  "license_url": "https://polyhaven.com/license",
+  "files": [
+    {
+      "file": "stone_diff.jpg",
+      "asset": "stone_tiles_02",
+      "author": "Charlotte Baglioni",
+      "source": "https://polyhaven.com/a/stone_tiles_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/stone_tiles_02/stone_tiles_02_diff_1k.jpg",
+      "license": "CC0-1.0",
+      "bytes": 817710,
+      "sha256": "687ef4a6cc07fb680352cf26b0a2a6256d4c18d8084dcd59ac739bc509296e18",
+      "original_md5": "8d2ebfc3505efbb610aa5010d38d2df8",
+      "changes": "None; original 1K JPG"
+    },
+    {
+      "file": "stone_normal.jpg",
+      "asset": "stone_tiles_02",
+      "author": "Charlotte Baglioni",
+      "source": "https://polyhaven.com/a/stone_tiles_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/stone_tiles_02/stone_tiles_02_nor_gl_1k.jpg",
+      "license": "CC0-1.0",
+      "bytes": 873564,
+      "sha256": "ab19cc9baacb0bc30a219f841254beb6837412ddad9bfc9c052b5aa805d1c3f0",
+      "original_md5": "cca5bd87964b755cc85c01322e8d1a0e",
+      "changes": "None; original 1K JPG"
+    },
+    {
+      "file": "stone_rough.jpg",
+      "asset": "stone_tiles_02",
+      "author": "Charlotte Baglioni",
+      "source": "https://polyhaven.com/a/stone_tiles_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/stone_tiles_02/stone_tiles_02_rough_1k.jpg",
+      "license": "CC0-1.0",
+      "bytes": 476160,
+      "sha256": "889f66231be4f25ecd80b5d87f06f4e8c22c801edb8dcc7e34c13e6b4b74491c",
+      "original_md5": "714fdf8447c0c1745d3c2957bb581af4",
+      "changes": "None; original 1K JPG"
+    },
+    {
+      "file": "wood_diff.jpg",
+      "asset": "weathered_brown_planks",
+      "author": "Poly Haven",
+      "source": "https://polyhaven.com/a/weathered_brown_planks",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/weathered_brown_planks/weathered_brown_planks_diff_1k.jpg",
+      "license": "CC0-1.0",
+      "bytes": 226049,
+      "sha256": "94833feda44e025a9139f7b5723ea84e4f0258d3b54939a79e1013c133085e29",
+      "original_md5": "e2fbdf7ed402e272e33e3f7ba707cf69",
+      "changes": "None; original 1K JPG"
+    },
+    {
+      "file": "wood_normal.jpg",
+      "asset": "weathered_brown_planks",
+      "author": "Poly Haven",
+      "source": "https://polyhaven.com/a/weathered_brown_planks",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/weathered_brown_planks/weathered_brown_planks_nor_gl_1k.jpg",
+      "license": "CC0-1.0",
+      "bytes": 223250,
+      "sha256": "8d38f02f121c0e58eaedc19cd668faea21381ae3ff4d5332cd90de75e6683393",
+      "original_md5": "1180a2ce3566529b25128252e02bd049",
+      "changes": "None; original 1K JPG"
+    }
+  ],
+  "generated_environment": {
+    "file": "mountain_panorama.png",
+    "bytes": 2332983,
+    "sha256": "577b98ef6de50e5fb42be81caffad7db38cd62166200b6845e7214c73d71e1fd",
+    "provenance": "Generated with the image generation tool for this project on 2026-10-28; project copy supplied by the root agent.",
+    "prompt_summary": "Wide mountain valley panorama at warm late-afternoon sunset; layered forested karst mountains, autumn trees, distant cloud sea and subtle blue sky; no text, people, buildings or interface.",
+    "usage": "Custom sky shader for distant scenery and sky reflection: horizontal overlap crossfade is C1-continuous across the panorama seam; horizontal eye direction maps to image V=0.58; no X sky rotation. Local geometry supplies court, gate, trees and collision.",
+    "license_note": "AI-generated project artwork, not a third-party CC0 asset. No commercial game art extracted.",
+    "sky_shader": "godot/assets/environment/autumn_court/mountain_sky.gdshader",
+    "sky_shader_sha256": "6f224a312adf32b225ac806a1de61a71e5b5e22c9c9ecb097b799262fecd4c1a"
+  }
+}

@@ -4,6 +4,8 @@ These are deliberately new clips. Existing basic-attack / contact regression
 clips are never changed. Retargeting and both-hand IK still run afterwards.
 Angles are this project's art direction, not motion copied from another game.
 """
+from copy import deepcopy
+
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
@@ -75,6 +77,50 @@ for owner in ['guanyu', 'lubu']:
     SIGNATURES['zhaoyun'].update(SIGNATURES[owner])
 
 
+def duel_normal(keys, stance):
+    """A new foot-combat phrase; the original spear socket remains the axis.
+
+    Lower keys: time, hip yaw, L/R thigh pitch, L/R knee flex, hip fore/aft.
+    The exporter applies rotations only, then solves the original-length arms
+    onto the unchanged shaft axis. Shared/RPG animations never opt into these.
+    """
+    spec = phrase('Melee_2H_Attack_Stab', keys)
+    spec.update(stance=stance, distributed_torso=True, weapon_axis_fixed=True)
+    return spec
+
+
+DUEL_NORMALS = {
+    'zhaoyun': {
+        'DuelDragonJab': duel_normal(
+            [(0, 2, -14, 3, 0, .10, -.025), (.17, 5, -9, 2, 0, .14, -.035), (.30, -1, 3, -1, 0, .02, .012), (.46, 1, 4, -1, 0, .04, .015), (.72, 4, -8, 2, 0, .12, -.025), (1, 0, 0, 0, 0, .02, 0)],
+            [(0, -7, -5, 3, 5, 3, -.015), (.18, -9, -8, 4, 8, 4, -.025), (.35, 3, -3, 2, 2, 3, .018), (.50, 3, -3, 2, 2, 3, .018), (.78, -4, -4, 2, 5, 3, -.01), (1, 0, 0, 0, 0, 0, 0)]),
+        'DuelDragonLow': duel_normal(
+            [(0, 10, 15, -4, -2, .28, .035), (.18, 13, 11, -3, -2, .34, .04), (.32, 4, -4, 2, 0, .10, -.012), (.48, 5, -6, 2, 0, .12, -.02), (.75, 8, 10, -2, -1, .22, .025), (1, 0, 0, 0, 0, .02, 0)],
+            [(0, 8, 4, -8, 4, 9, -.01), (.18, 12, 5, -10, 6, 13, -.025), (.34, -3, 2, -4, 4, 7, .02), (.52, -4, 2, -4, 5, 8, .02), (.78, 5, 3, -5, 4, 7, -.01), (1, 0, 0, 0, 0, 0, 0)]),
+        'DuelDragonDrive': duel_normal(
+            [(0, 6, -20, 5, -2, .22, -.04), (.18, 10, -17, 4, -2, .28, -.045), (.32, -2, 6, -2, 1, .02, .025), (.48, 2, 8, -2, 0, .05, .03), (.70, 7, 14, -3, -1, .16, .035), (1, 1, 0, 0, 0, .02, 0)],
+            [(0, -12, -9, 6, 9, 6, -.025), (.17, -14, -11, 7, 12, 7, -.04), (.34, 5, -5, 3, 3, 4, .035), (.53, 6, -5, 3, 4, 4, .035), (.75, 7, -6, 4, 7, 4, .01), (1, 0, 0, 0, 0, 0, 0)]),
+        'DuelDragonHeavy': duel_normal(
+            [(0, 9, 18, -5, -3, .28, .04), (.16, 15, 24, -6, -4, .42, .05), (.29, -3, -6, 2, 0, .04, -.02), (.45, 3, -9, 3, 0, .12, -.025), (.67, 12, 12, -3, -2, .30, .025), (1, 1, 0, 0, 0, .03, 0)],
+            [(0, 10, 5, -7, 8, 10, -.02), (.16, 16, 7, -10, 14, 17, -.04), (.30, -5, 2, -5, 5, 8, .035), (.48, -6, 2, -5, 7, 10, .035), (.72, 7, 3, -6, 8, 10, -.01), (1, 0, 0, 0, 0, 0, 0)]),
+    },
+    'machao': {},
+}
+# Ma Chao carries more forward weight, with a longer compression and a firmer
+# recovery. These are separate authored phrases rather than faster Zhao Yun.
+for alias, source in [('DuelTigerProbe', 'DuelDragonJab'), ('DuelTigerLow', 'DuelDragonLow'),
+                      ('DuelTigerDrive', 'DuelDragonDrive'), ('DuelTigerHeavy', 'DuelDragonHeavy')]:
+    spec = deepcopy(DUEL_NORMALS['zhaoyun'][source])
+    spec['keys'] = [(p, pitch + (4 if p < .72 else 1), yaw * .80, roll * .70,
+                     arm, min(.52, crouch * 1.18), side * .75)
+                    for p, pitch, yaw, roll, arm, crouch, side in spec['keys']]
+    spec['stance'] = [(p, yaw * .85, left * .9, right * .9, lk * 1.12,
+                       rk * 1.12, advance * 1.15) for p, yaw, left, right, lk, rk, advance in spec['stance']]
+    DUEL_NORMALS['machao'][alias] = spec
+for owner, phrases in DUEL_NORMALS.items():
+    SIGNATURES[owner].update(phrases)
+
+
 def interpolate(keys, progress):
     for a, b in zip(keys, keys[1:]):
         if progress <= b[0]:
@@ -99,7 +145,10 @@ def sample_signature(spec, sources, time, duration):
         arm_name = name.startswith(('upperarm', 'lowerarm', 'wrist.', 'hand', 'handslot', 'clavicle'))
         pos, rot = world[node]
         if upper_name:
-            rot = upper * rot
+            weight = 1.
+            if spec.get('distributed_torso'):
+                weight = .35 if name == 'spine' else (.72 if name == 'chest' else (.18 if name in ['head', 'Head'] else 1.))
+            rot = R.from_rotvec(upper.as_rotvec() * weight) * rot
             if arm_name:
                 rot = arms * rot
             world[node] = (pos, rot)
@@ -118,5 +167,21 @@ def sample_signature(spec, sources, time, duration):
     pos, rot = world[hip]
     pos = pos.copy()
     pos[0] += side
+    if spec.get('stance'):
+        hip_yaw, left_pitch, right_pitch, left_knee, right_knee, advance = interpolate(spec['stance'], p)
+        yaw_rotation = R.from_euler('y', hip_yaw, degrees=True)
+        rot = yaw_rotation * rot
+        pos[2] += advance
+        for suffix, thigh, knee in [('l', left_pitch, left_knee), ('r', right_pitch, right_knee)]:
+            for part, angle in [('upperleg', thigh), ('lowerleg', thigh + knee), ('foot', 0.), ('toes', 0.)]:
+                node = src.names.get(part + '.' + suffix)
+                if node is not None:
+                    position, rotation = world[node]
+                    world[node] = (position, yaw_rotation * R.from_euler('x', angle, degrees=True) * rotation)
     world[hip] = (pos, rot)
+    if spec.get('weapon_axis_fixed'):
+        # Torso counter-rotation may not turn a thrust into a sideways slash.
+        original = src.pose(spec['source'], clock)[0]
+        slot = src.names['handslot.r']
+        world[slot] = original[slot]
     return world

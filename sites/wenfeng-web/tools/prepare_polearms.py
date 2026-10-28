@@ -18,7 +18,7 @@ from scipy.spatial.transform import Rotation as R, Slerp
 from scipy.ndimage import gaussian_filter1d
 
 from gltf_tools import GLB, compact_buffers, write_glb
-from signature_motion import SIGNATURES, sample_signature
+from signature_motion import SIGNATURES, DUEL_NORMALS, sample_signature
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "source-assets"
@@ -472,6 +472,7 @@ def grasp_active_windows(character, metrics):
              [(.90,[.19,.39]), (1.,[.21,.43]), (1.14,[.24,.49]), (1.4,[.29,.60])] if character in ['zhaoyun','machao','zhangfei'] else \
              [(.98,[.32,.54]), (1.10,[.35,.61]), (1.34,[.42,.80]), (1.48,[.48,.83])]
     for alias, (duration, active) in zip(['Attack1','Attack2','Attack3','Heavy'], normal): add(alias,0.,duration,active)
+    for alias, (duration, active) in zip(DUEL_NORMALS.get(character, {}), normal): add(alias, 0., duration, active)
     for alias,duration,active in [('RPGSlash',.98,[.32,.54]),('RPGChop',1.10,[.35,.61]),('RPGSpin',1.34,[.42,.80]),('RPGChop',1.48,[.48,.83])]: add(alias,0.,duration,active)
     return result
 
@@ -504,11 +505,12 @@ def grasp_playback_rates(character, clips, sources, signatures):
              [(.90, 1.9), (1., 1.9), (1.14, 1.9), (1.4, 2.35)] if character in ['zhaoyun', 'machao', 'zhangfei'] else \
              [(.98, 1.9), (1.10, 1.9), (1.34, 1.9), (1.48, 2.35)]
     for alias, (seconds, factor) in zip(['Attack1', 'Attack2', 'Attack3', 'Heavy'], normal): add(alias, seconds, factor)
+    for alias, (seconds, factor) in zip(DUEL_NORMALS.get(character, {}), normal): add(alias, seconds, factor)
     for alias, seconds, factor in [('RPGSlash', .98, 1.9), ('RPGChop', 1.1, 2.35), ('RPGSpin', 1.34, 1.9), ('RPGFinish', .65, 1.)]: add(alias, seconds, factor)
     return {alias: max(rate, .001) if rate > 0. else 1.5 for alias, rate in rates.items()}
 
 
-def bake(character, source_name, sources, finger_source):
+def bake(character, source_name, sources, finger_source, only_aliases=None, destination=None):
     one_hand = character == 'xuchu'
     target = GLB(ASSETS / source_name)
     bind, rest = target.pose()
@@ -578,6 +580,8 @@ def bake(character, source_name, sources, finger_source):
     clips = clip_set(character)
     signatures = SIGNATURES.get(character, {})
     clips.update({alias: (spec['library'], spec['source']) for alias, spec in signatures.items()})
+    if only_aliases is not None:
+        clips = {alias: clip for alias, clip in clips.items() if alias == 'Idle' or alias in only_aliases}
     playback_rates = grasp_playback_rates(character, clips, sources, signatures)
     shared_rates = {}
     for alias, (library, authored) in clips.items():
@@ -762,6 +766,10 @@ def bake(character, source_name, sources, finger_source):
                                          'reverse': signature['reverse'], 'crop': signature['crop'],
                                          'method': 'Torso/whole-arm branch rotations, authored crouch blend and lateral weight shift; calibrated hand IK afterwards'}
             if signature.get('upper_source'): metrics[alias]['signature']['upper_source'] = signature['upper_source']
+            if signature.get('stance'):
+                metrics[alias]['signature'].update(stance_keys=signature['stance'],
+                    weapon_axis_fixed=True, distributed_torso=True, scope='duel_foot_only',
+                    method='Authored shoulder/hip counter-rotation, independent leg rotations and weight transfer; unchanged thrust axis; calibrated two-palm IK, original bone lengths')
         if authored == 'Melee_2H_Attack_Stab':
             metrics[alias]['grip_startup_blend_source_seconds'] = .25
         if cut_motion: metrics[alias]['weapon_socket_smoothing_gameplay_seconds'] = .080
@@ -779,7 +787,7 @@ def bake(character, source_name, sources, finger_source):
     blob = compact_buffers(out, blob)
     blob = resize_images(out, blob, normal_maximum=512 if character in ('zhaoyun', 'machao', 'xuchu') else None)
     out['asset']['generator'] = 'Wenfeng: CC0 KayKit T-pose world-space retarget, closed-finger grip'
-    destination = GAME / ('assets/characters/' + character + '.glb')
+    destination = destination or GAME / ('assets/characters/' + character + '.glb')
     write_glb(destination, out, blob)
     grip = ({'mode': 'one_hand', 'rotation_xyzw': grip_rotations['Right'].as_quat().tolist(),
              'position': palms['right'], 'right_palm': palms['right'],
@@ -792,10 +800,59 @@ def bake(character, source_name, sources, finger_source):
               'clips': metrics, 'grip': grip}
     # Close only locomotion seams. Combat channels must retain the exact shared
     # palm/weapon path solved above; independently filtering arm bones changes it.
-    from refine_motion import refine_animations
-    closed_scene, closed_binary, _ = refine_animations(GLB(destination), record)
-    write_glb(destination, closed_scene, closed_binary)
+    if only_aliases is None:
+        from refine_motion import refine_animations
+        closed_scene, closed_binary, _ = refine_animations(GLB(destination), record)
+        write_glb(destination, closed_scene, closed_binary)
     record['runtime_sha256'] = hashlib.sha256(destination.read_bytes()).hexdigest()
+    return record
+
+
+def append_duel_normals(character, source_name, sources, fingers, output_path=None):
+    """Append only new animation buffers, preserving every old runtime byte.
+
+    Shared/RPG clips, geometry, textures and binding remain unchanged even if
+    an old preparation recipe has since evolved. Re-running replaces only the
+    Duel aliases. A full bake remains available separately.
+    """
+    import tempfile
+    aliases = DUEL_NORMALS.get(character, {})
+    assert aliases, 'Duel foot polish is only authored for Zhao Yun and Ma Chao'
+    destination = GAME / ('assets/characters/' + character + '.glb')
+    baseline = GLB(destination)
+    with tempfile.TemporaryDirectory(prefix='wenfeng-duel-motion-') as folder:
+        generated_path = Path(folder) / (character + '.glb')
+        record = bake(character, source_name, sources, fingers, set(aliases), generated_path)
+        generated = GLB(generated_path)
+        out = deepcopy(baseline.j)
+        out['animations'] = [a for a in out['animations'] if a['name'] not in aliases]
+        blob = bytearray(baseline.bin)
+        copied = {}
+        def copy_accessor(index):
+            if index in copied: return copied[index]
+            values = generated.accessor(index)
+            blob.extend(b'\0' * (-len(blob) % 4))
+            view = len(out['bufferViews'])
+            out['bufferViews'].append({'buffer': 0, 'byteOffset': len(blob), 'byteLength': values.nbytes})
+            blob.extend(values.tobytes())
+            accessor = deepcopy(generated.j['accessors'][index])
+            accessor.update(bufferView=view, byteOffset=0)
+            copied[index] = len(out['accessors'])
+            out['accessors'].append(accessor)
+            return copied[index]
+        for alias in aliases:
+            animation = deepcopy(generated.anims[alias])
+            for sampler in animation['samplers']:
+                sampler['input'] = copy_accessor(sampler['input'])
+                sampler['output'] = copy_accessor(sampler['output'])
+            out['animations'].append(animation)
+        assert bytes(blob[:len(baseline.bin)]) == baseline.bin
+        for alias, animation in baseline.anims.items():
+            if alias not in aliases:
+                assert next(a for a in out['animations'] if a['name'] == alias) == animation
+        write_glb(output_path or destination, out, blob)
+    record['preservation'] = {'existing_animation_count': len(baseline.anims) - len(set(baseline.anims) & set(aliases)),
+                              'existing_binary_bytes_retained': len(baseline.bin), 'mode': 'append_only'}
     return record
 
 
@@ -1039,7 +1096,16 @@ def main():
     parser.add_argument('--weapons-only', action='store_true', help='Prepare weapon geometry/textures without rebaking character animations')
     parser.add_argument('--characters', nargs='+', choices=CHARACTERS,
                         help='Rebake only selected characters and their corresponding weapons')
+    parser.add_argument('--duel-polish-only', action='store_true',
+                        help='Append Duel-only foot attack clips; preserve every shared/RPG clip and all geometry/materials')
     args = parser.parse_args()
+    selected = args.characters or (list(DUEL_NORMALS) if args.duel_polish_only else list(CHARACTERS))
+    if args.duel_polish_only:
+        if args.weapons_only:
+            parser.error('--duel-polish-only and --weapons-only are separate preparation modes')
+        unsupported = set(selected) - set(DUEL_NORMALS)
+        if unsupported:
+            parser.error('--duel-polish-only only supports: ' + ', '.join(DUEL_NORMALS))
     if args.weapons_only:
         prepare_weapons(args.characters)
         return
@@ -1049,7 +1115,29 @@ def main():
     fingers = Sampler(ASSETS / 'animations/ual1/UAL1_Standard.glb')
     manifest_path = GAME / 'assets/characters/animation_manifest.json'
     manifest = json.loads(manifest_path.read_text())
-    for character in args.characters or CHARACTERS:
+    if args.duel_polish_only:
+        # Stage the entire requested set before publishing any runtime file.
+        # A failed second rig cannot leave the first rig ahead of its manifest.
+        import tempfile
+        import os
+        with tempfile.TemporaryDirectory(prefix='wenfeng-duel-stage-') as folder:
+            pending = []
+            for character in selected:
+                file, _ = CHARACTERS[character]
+                staged = Path(folder) / (character + '.glb')
+                record = append_duel_normals(character, file, sources, fingers, staged)
+                for alias in DUEL_NORMALS[character]:
+                    manifest[character]['clips'][alias] = record['clips'][alias]
+                manifest[character]['duel_foot_polish'] = record['preservation']
+                manifest[character]['runtime_sha256'] = hashlib.sha256(staged.read_bytes()).hexdigest()
+                pending.append((staged, GAME / ('assets/characters/' + character + '.glb')))
+            staged_manifest = Path(folder) / 'animation_manifest.json'
+            staged_manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
+            for staged, destination in pending:
+                os.replace(staged, destination)
+            os.replace(staged_manifest, manifest_path)
+        return
+    for character in selected:
         file, _ = CHARACTERS[character]
         manifest[character] = bake(character, file, sources, fingers)
     prepare_weapons(args.characters)

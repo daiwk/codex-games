@@ -4,6 +4,7 @@ const DuelTempo = preload("res://scripts/duel_attack_tempo.gd")
 const DuelSkills = preload("res://scripts/duel_skill_profiles.gd")
 const Cavalry = preload("res://scripts/duel_mounted_combat.gd")
 const CavalryPose = preload("res://scripts/duel_mounted_pose.gd")
+const FootMotionPolish = preload("res://scripts/duel_motion_polish.gd")
 signal duel_landed(at: Vector3)
 
 const DUEL_COMBO_CLIPS = {
@@ -12,6 +13,10 @@ const DUEL_COMBO_CLIPS = {
 	"zhangfei": {"Attack2": "SerpentRoot", "Attack3": "SerpentLong"},
 	"guanyu": {"Attack3": "CrescentLow"},
 	"lubu": {"Attack2": "HalberdRise", "Attack3": "HalberdDrop", "Heavy": "HalberdDrop"},
+}
+const DUEL_FOOT_NORMALS = {
+	"zhaoyun": {"Attack1": "DuelDragonJab", "Attack2": "DuelDragonLow", "Attack3": "DuelDragonDrive", "Heavy": "DuelDragonHeavy"},
+	"machao": {"Attack1": "DuelTigerProbe", "Attack2": "DuelTigerLow", "Attack3": "DuelTigerDrive", "Heavy": "DuelTigerHeavy"},
 }
 
 # Duel-only opt-in target navigation. Shared combat and RPG actors retain
@@ -58,6 +63,13 @@ func skill_profile(id: String) -> Dictionary:
 
 func _ready() -> void:
 	super._ready()
+	if not mounted and character_id in ["zhaoyun", "machao"] and is_thrust_weapon():
+		# Keep the shared/RPG and mounted contact modifiers untouched.
+		if is_instance_valid(thrust_contact):
+			skeleton.remove_child(thrust_contact)
+			thrust_contact.free()
+		thrust_contact = FootMotionPolish.new()
+		thrust_contact.setup(self, skeleton)
 	if mounted:
 		_cavalry_pose = CavalryPose.new()
 		_cavalry_pose.setup(self, skeleton)
@@ -157,6 +169,11 @@ func _update_two_hand_grip(delta = 0.0, instant = false) -> void:
 	grip.global_basis = Basis(_cavalry_edge_side, axis, _cavalry_edge_side.cross(axis))
 
 func resolve_animation_clip(clip: String) -> String:
+	# Only the duel's foot spear normals select these newly baked whole-body
+	# phrases. Mounted combat and the independent RPG retain their exact clips.
+	if not mounted and is_thrust_weapon() and DUEL_FOOT_NORMALS.has(character_id):
+		var authored = String(DUEL_FOOT_NORMALS[character_id].get(clip, ""))
+		if authored != "" and animation_names.has(authored): return authored
 	if mounted:
 		var directional = Cavalry.normal_clip(character_id, clip, _cavalry_selected_side)
 		if directional != clip: return directional

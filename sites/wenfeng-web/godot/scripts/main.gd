@@ -73,8 +73,11 @@ var pending_input_until = 0
 var captured_inputs: Dictionary = {}
 
 func _ready() -> void:
+	# Only this standalone Duel entry allocates the sharper shadow atlas.
+	# The shared project default remains unchanged for the RPG export.
+	RenderingServer.directional_shadow_atlas_set_size(2048, true)
 	if OS.has_feature("web"):
-		get_viewport().scaling_3d_scale = 0.78
+		get_viewport().scaling_3d_scale = 1.0
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	testing = "--test" in OS.get_cmdline_user_args() or "--skills-test" in OS.get_cmdline_user_args() or "--role-test" in OS.get_cmdline_user_args()
 	rng.seed = 714 if testing else int(Time.get_unix_time_from_system())
@@ -82,6 +85,8 @@ func _ready() -> void:
 	arena = Arena.new()
 	add_child(arena)
 	fx = Effects.new()
+	# DuelSkillFX owns the contact sparks; retain this host's audio and text.
+	fx.legacy_contact_sparks = false
 	add_child(fx)
 	skill_fx = SkillEffects.new()
 	add_child(skill_fx)
@@ -233,9 +238,11 @@ func select_horse_color(id: String, for_enemy = false) -> void:
 func _position_preview() -> void:
 	player.enabled = false
 	enemy.enabled = false
-	player.position = Vector3(1.1, 0.015, 0.6) if combat_mode == "mounted" else Vector3(1.45, 0.015, 0.7)
-	enemy.position = Vector3(3.8, 0.015, -2.2) if combat_mode == "mounted" else Vector3(3.3, 0.015, -0.9)
-	player.rotation.y = -0.20
+	# The chosen hero owns the clear right-hand portrait area. Keep the
+	# opponent behind the menu's left vignette instead of reversing emphasis.
+	player.position = Vector3(2.65, 0.015, 0.6) if combat_mode == "mounted" else Vector3(2.65, 0.015, 0.7)
+	enemy.position = Vector3(-0.7, 0.015, -2.6) if combat_mode == "mounted" else Vector3(-0.7, 0.015, -1.8)
+	player.rotation.y = 0.12
 	enemy.rotation.y = -0.35
 	player.reset_fighter()
 	enemy.reset_fighter()
@@ -599,8 +606,8 @@ func _on_special_hit(attacker: DuelFighter, defender: DuelFighter, data: Diction
 		"volley_id": data.get("volley_id", 0), "projectile_index": data.get("projectile_index", 0),
 		"point": [at.x, at.y, at.z]}
 	if kind in ["shockwave", "roar", "air_slam"] and outcome != "evade":
-		shake = maxf(shake, 0.14)
-		impact_zoom = maxf(impact_zoom, 2.6)
+		shake = maxf(shake, 0.045)
+		impact_zoom = maxf(impact_zoom, 1.15)
 
 func _on_duel_landed(_at: Vector3, fighter: DuelFighter) -> void:
 	if phase != "fight" or fighter.hp <= 0.0 or fighter.skill_id != "ultimate": return
@@ -609,7 +616,7 @@ func _on_duel_landed(_at: Vector3, fighter: DuelFighter) -> void:
 		specials.play_skill(fighter, "ultimate", "landing")
 		skill_fx.play_skill(fighter, "ultimate", "landing")
 		fx.sound("heavy", -10.0, 0.64)
-		shake = maxf(shake, 0.11)
+		shake = maxf(shake, 0.035)
 
 func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 	var damage = int(fighter.opponent.attack.get("damage", 0)) if outcome in ["hit", "heavy_hit"] else 0
@@ -622,12 +629,14 @@ func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 	if outcome != "evade":
 		var heavy = outcome in ["heavy_hit", "parry", "counter", "break"]
 		skill_fx.impact(at, outcome, -fighter.forward(), 1.35 if heavy else 0.8)
-		shake = maxf(shake, 0.10 if heavy else 0.045)
+		# Directional recoil reads as contact; only hard contacts add a small
+		# tremor, rather than vibrating through every ordinary thrust.
+		shake = maxf(shake, 0.032 if heavy else 0.008)
 		camera_motion.kick(-fighter.forward(), heavy)
-		impact_zoom = maxf(impact_zoom, 1.8 if heavy else 0.65)
+		impact_zoom = maxf(impact_zoom, 0.9 if heavy else 0.22)
 		if not testing and not paused and phase == "fight":
-			var stop = 20 if resolving_special in ["flying_blades", "cavalry", "weapon_array"] else (65 if heavy else 32)
-			hit_stop_until = hit_feedback.request(stop, 0.10)
+			var stop = 16 if resolving_special in ["flying_blades", "cavalry", "weapon_array"] else (48 if heavy else 26)
+			hit_stop_until = hit_feedback.request(stop, 0.14)
 	if outcome == "parry":
 		toast = "招架成功 · 趁势反击" if fighter.is_player else "被招架 · 注意出招节奏"
 		toast_time = 1.5
@@ -680,7 +689,9 @@ func _on_skill(fighter: DuelFighter, id: String, stage: String) -> void:
 	var sound = "roar" if voice else ("thrust" if String(data.get("shape", "")) == "line" else "heavy")
 	fx.sound(sound, -12.0 if stage == "finish" else -15.0, 0.85 if stage == "finish" else 1.0)
 	if id == "ultimate":
-		shake = maxf(shake, 0.13 if stage == "finish" else 0.055)
+		# The released weapon carries the spectacle. Strong camera feedback
+		# waits for impact_received, including when an ultimate misses.
+		shake = maxf(shake, 0.018 if stage == "finish" else 0.0)
 
 func _end_round(winner: int) -> void:
 	_clear_combat_input()
@@ -718,9 +729,9 @@ func _update_camera(delta: float, instant = false) -> void:
 	var target: Vector3
 	var fov: float
 	if phase == "menu":
-		desired = Vector3(3.5 + sin(elapsed * 0.16) * 0.12, 2.55, 6.8)
-		target = Vector3(0.6, 0.98, 0.0)
-		fov = 42.0
+		desired = Vector3(4.1 + sin(elapsed * 0.16) * 0.065, 2.15, 6.7)
+		target = Vector3(1.48, 1.03, 0.20)
+		fov = 35.0
 		if combat_mode == "mounted":
 			desired = Vector3(4.8, 3.45, 9.6)
 			target = Vector3(1.0, 1.65, 0.0)
@@ -737,10 +748,10 @@ func _update_camera(delta: float, instant = false) -> void:
 		axis = Vector3(sin(camera_axis_yaw), 0, cos(camera_axis_yaw))
 		var side = Vector3(-axis.z, 0, axis.x)
 		var middle = (player.global_position + enemy.global_position) * 0.5
-		var distance = clampf(5.4 + separation * 0.30, 6.0, 8.6)
-		desired = middle - axis * distance + side * 1.7 + Vector3.UP * 3.25
-		target = middle + Vector3.UP * 0.92
-		fov = 54.0
+		var distance = clampf(4.85 + separation * 0.28, 5.45, 8.6)
+		desired = middle - axis * distance + side * 1.7 + Vector3.UP * 2.70
+		target = middle + Vector3.UP * 1.14
+		fov = 49.0
 		if combat_mode == "mounted":
 			distance = clampf(8.1 + separation * 0.29, 9.0, 14.0)
 			desired = middle - axis * distance + side * 2.4 + Vector3.UP * 4.35
@@ -754,16 +765,16 @@ func _update_camera(delta: float, instant = false) -> void:
 			for group in specials.groups.values():
 				if group.type in ["cavalry", "flying_blades", "weapon_array"]:
 					wide_special = 0.85
-			var behind = clampf(3.7 + separation * 0.22 + vertical_span * 0.45 + wide_special, 4.25, 8.2)
+			var behind = clampf(3.30 + separation * 0.22 + vertical_span * 0.45 + wide_special, 3.85, 8.2)
 			var anchor = player.global_position
 			anchor.y = minf(player.position.y, enemy.position.y)
 			var anticipation = (player.velocity + enemy.velocity * 0.4).slide(Vector3.UP).limit_length(6.0) * 0.07
 			# Armour and two-handed weapons need a clear lane past the shoulder.
 			# The smaller offset hid the opponent behind the player's torso.
-			var shoulder = clampf(2.05 + (2.5 - separation) * 0.18, 1.85, 2.35)
-			desired = anchor - axis * behind + side * shoulder + Vector3.UP * (2.12 + vertical_span * 0.22)
-			target = player.global_position.lerp(enemy.global_position, 0.48) + Vector3.UP * 1.08 + anticipation
-			fov = 60.0 + wide_special * 2.5
+			var shoulder = clampf(1.85 + (2.5 - separation) * 0.12, 1.75, 2.12)
+			desired = anchor - axis * behind + side * shoulder + Vector3.UP * (2.02 + vertical_span * 0.22)
+			target = player.global_position.lerp(enemy.global_position, 0.51) + Vector3.UP * 1.20 + anticipation
+			fov = 52.0 + wide_special * 2.5
 		if phase == "fight":
 			fov -= maxf(CombatCamera.anticipation(player), CombatCamera.anticipation(enemy))
 	if combat_mode == "mounted" and phase != "menu":
@@ -798,7 +809,7 @@ func _update_camera(delta: float, instant = false) -> void:
 	camera.fov = camera_base_fov + impact_zoom
 	if shake > 0.0:
 		var clock = Time.get_ticks_msec() * 0.001
-		var tremor = Vector3(sin(clock * 91), cos(clock * 79) * 0.65, sin(clock * 63) * 0.3)
+		var tremor = Vector3(sin(clock * 61), cos(clock * 53) * 0.45, 0.0)
 		camera.position += camera.basis * tremor * shake
 	if instant or not camera_look_ready:
 		camera_look_position = target

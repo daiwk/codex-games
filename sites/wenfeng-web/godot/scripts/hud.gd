@@ -44,7 +44,7 @@ func _ready() -> void:
 func _gradient(reverse: bool) -> GradientTexture2D:
 	var gradient = Gradient.new()
 	gradient.offsets = PackedFloat32Array([0.0, 0.52, 1.0])
-	gradient.colors = PackedColorArray([Color(0.025, 0.065, 0.08, 0.95), Color(0.025, 0.065, 0.08, 0.60), Color(0.025, 0.065, 0.08, 0.0)])
+	gradient.colors = PackedColorArray([Color(0.018, 0.029, 0.031, 0.86), Color(0.018, 0.029, 0.031, 0.38), Color(0.018, 0.029, 0.031, 0.0)])
 	var texture = GradientTexture2D.new()
 	texture.gradient = gradient
 	texture.width = 16
@@ -290,7 +290,9 @@ func _update_role_preview() -> void:
 	menu_role_skills[2].add_theme_color_override("font_color", _role_color(fighter))
 
 func _text(at: Vector2, text: String, font_size: int, color: Color = PAPER, serif = false) -> void:
-	draw_string(display_font if serif else body_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+	var font = display_font if serif else body_font
+	draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 2, Color(0.015, 0.025, 0.025, 0.48))
+	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 
 func _fit_copy(text: String, font_size: int, width: float) -> String:
 	if body_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= width:
@@ -308,15 +310,13 @@ func _skill_card(rect: Rect2, key: String, id: String) -> void:
 	var active: bool = fighter.state == "skill" and fighter.skill_id == id
 	var accent = _role_color(fighter) if ready or active else MUTED
 	var border = Color(accent, 0.65 if ready or active else 0.23)
-	draw_rect(rect, Color(0.025, 0.07, 0.085, 0.90))
-	draw_rect(rect, border, false, 1.0)
-	draw_line(rect.position, rect.position + Vector2(36, 0), accent, 2.0, true)
-	var key_rect = Rect2(rect.position + Vector2(13, 15), Vector2(31, 32))
+	draw_rect(rect, Color(0.022, 0.034, 0.035, 0.78))
+	draw_line(rect.position, rect.position + Vector2(rect.size.x, 0), border, 1.0, true)
+	var key_rect = Rect2(rect.position + Vector2(10, 12), Vector2(28, 28))
 	draw_rect(key_rect, Color(accent, 0.12 if ready or active else 0.05))
 	draw_rect(key_rect, Color(accent, 0.55), false, 1.0)
-	_text(key_rect.position + Vector2(9, 23), key, 18, accent)
-	_text(rect.position + Vector2(56, 29), fighter.skill_name(id), 16, PAPER if ready or active else MUTED)
-	_text(rect.position + Vector2(13, 56), _fit_copy(fighter.skill_description(id), 11, rect.size.x - 26), 11, PAPER if ready or active else MUTED)
+	_text(key_rect.position + Vector2(8, 21), key, 16, accent)
+	_text(rect.position + Vector2(49, 27), fighter.skill_name(id), 16, PAPER if ready or active else MUTED, true)
 	var status = "就绪 · %d 体力" % int(cost) if ready else "伺机 · %d 体力" % int(cost)
 	if cooldown > 0.05:
 		status = "冷却  %.1f 秒" % cooldown
@@ -324,9 +324,9 @@ func _skill_card(rect: Rect2, key: String, id: String) -> void:
 		status = "体力不足 · 需 %d" % int(cost)
 	if active:
 		status = "收势中" if fighter.skill_stage == "recovery" else "施展中"
-	_text(rect.position + Vector2(13, 76), status, 11, accent if ready or active else MUTED)
+	_text(rect.position + Vector2(49, 45), status, 10, accent if ready or active else MUTED)
 	var progress: float = clampf(1.0 - cooldown / maxf(fighter.skill_cooldown(id), 0.01), 0.0, 1.0)
-	var bar = Rect2(rect.position + Vector2(13, rect.size.y - 12), Vector2(rect.size.x - 26, 3))
+	var bar = Rect2(rect.position + Vector2(10, rect.size.y - 7), Vector2(rect.size.x - 20, 2))
 	draw_rect(bar, Color(0.18, 0.28, 0.29, 0.8))
 	draw_rect(Rect2(bar.position, Vector2(bar.size.x * progress, bar.size.y)), Color(accent, 0.9 if ready or active else 0.4))
 
@@ -339,22 +339,20 @@ func _ultimate_card(rect: Rect2) -> void:
 	var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.005)
 	var accent = _role_color(fighter)
 	draw_rect(rect.grow(3), Color(accent, 0.05 + pulse * 0.10) if charged else Color.TRANSPARENT)
-	draw_rect(rect, Color(0.035, 0.07, 0.085, 0.94))
-	draw_rect(rect, Color(accent, 0.55 + pulse * 0.35 if charged else 0.3), false, 1.0)
-	draw_line(rect.position, rect.position + Vector2(48, 0), accent, 2.0, true)
-	var key_rect = Rect2(rect.position + Vector2(14, 15), Vector2(32, 32))
+	draw_rect(rect, Color(0.025, 0.035, 0.035, 0.82))
+	draw_line(rect.position, rect.position + Vector2(rect.size.x, 0), Color(accent, 0.65 + pulse * 0.25 if charged else 0.3), 1.0, true)
+	var key_rect = Rect2(rect.position + Vector2(10, 12), Vector2(28, 28))
 	draw_rect(key_rect, Color(accent, 0.22 if charged else 0.07))
 	draw_rect(key_rect, Color(accent, 0.85 if charged else 0.35), false, 1.0)
-	_text(key_rect.position + Vector2(9, 23), "U", 18, accent)
-	_text(rect.position + Vector2(59, 29), fighter.ultimate_name(), 18, PAPER if charged or active else MUTED, true)
-	_text(rect.position + Vector2(14, 56), _fit_copy(fighter.skill_description("ultimate"), 11, rect.size.x - 28), 11, PAPER if charged or active else MUTED)
+	_text(key_rect.position + Vector2(8, 21), "U", 16, accent)
+	_text(rect.position + Vector2(49, 27), fighter.ultimate_name(), 17, PAPER if charged or active else MUTED, true)
 	var status = "战意 %d / 100 · 攻防积攒" % int(energy)
 	if charged:
 		status = "战意已满 · 按 U 施展" if ready else "战意已满 · 伺机出招"
 	if active:
 		status = "蓄势" if fighter.skill_stage == "windup" else "绝技施展中"
-	_text(rect.position + Vector2(14, 76), status, 11, accent if charged or active else MUTED)
-	var bar = Rect2(rect.position + Vector2(14, rect.size.y - 12), Vector2(rect.size.x - 28, 4))
+	_text(rect.position + Vector2(49, 45), status, 10, accent if charged or active else MUTED)
+	var bar = Rect2(rect.position + Vector2(10, rect.size.y - 7), Vector2(rect.size.x - 20, 2))
 	draw_rect(bar, Color(0.18, 0.28, 0.29, 0.8))
 	draw_rect(Rect2(bar.position, Vector2(bar.size.x * energy / 100.0, bar.size.y)), accent)
 	for tick in [0.25, 0.5, 0.75]:
@@ -393,7 +391,7 @@ func _draw() -> void:
 	if not is_instance_valid(game) or not is_instance_valid(game.player) or game.phase == "menu":
 		return
 	# The shallow top veil makes the duel readable against sky and gate alike.
-	draw_texture_rect(top_veil, Rect2(0, 0, 1280, 182), false)
+	draw_texture_rect(top_veil, Rect2(0, 0, 1280, 158), false)
 	for i in 2:
 		var fighter = game.player if i == 0 else game.enemy
 		var x = 52.0 if i == 0 else 796.0
@@ -462,10 +460,9 @@ func _draw() -> void:
 		var aim = int(status.get("attack_side",0))
 		_text(Vector2(52,188),"对手 %s · %d米  |  出手 %s" % [direction,offset.length(),"右侧" if aim<0 else ("左侧" if aim>0 else "前方")],12,PAPER)
 	_ultimate_warning()
-	draw_texture_rect(bottom_veil, Rect2(0, 650, 1280, 150), false)
-	_text(Vector2(52, 721), "W/S 调速  A/D 转马  X 刹车" if game.combat_mode == "mounted" else ("W/S 进退  A/D 绕敌" if game.lock_active() else "WASD 移动  J 连击  K 重击"), 12, PAPER)
-	_text(Vector2(52, 747), "Z/C 左右击  J/K 自动选侧" if game.combat_mode == "mounted" else "L / Shift  格挡    Space  闪避", 12, PAPER)
-	_text(Vector2(52, 777), "Space 催马  V 跳跃  L 格挡  Tab 标记" if game.combat_mode == "mounted" else "V 跳跃  Tab 锁定  Esc 暂停  F 全屏", 11, MUTED)
-	_skill_card(Rect2(460, 682, 210, 98), "Q", "rush")
-	_skill_card(Rect2(682, 682, 210, 98), "E", "counter")
-	_ultimate_card(Rect2(904, 682, 324, 98))
+	draw_texture_rect(bottom_veil, Rect2(0, 690, 1280, 110), false)
+	_text(Vector2(52, 738), "W/S 调速  A/D 转马  X 刹车" if game.combat_mode == "mounted" else ("W/S 进退  A/D 绕敌  J/K 出招" if game.lock_active() else "WASD 移动  J 连击  K 重击"), 12, PAPER)
+	_text(Vector2(52, 764), "Z/C 左右击 · Space 催马 · V 跳跃" if game.combat_mode == "mounted" else "L 格挡 · Space 闪避 · V 跳跃 · Esc 暂停", 11, MUTED)
+	_skill_card(Rect2(460, 716, 210, 64), "Q", "rush")
+	_skill_card(Rect2(682, 716, 210, 64), "E", "counter")
+	_ultimate_card(Rect2(904, 716, 324, 64))

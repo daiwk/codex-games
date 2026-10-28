@@ -21,6 +21,9 @@ Subsetted for this game's UI. See licenses/NotoSans-LICENSE.txt and licenses/Not
 
 Additional asset attribution: licenses/Game-THIRD-PARTY.txt
 
+Courtyard stone/wood textures: Poly Haven, CC0 1.0. See licenses/Autumn-Courtyard.txt.
+Original mountain panorama generated for this project using OpenAI imagegen; prompt and source provenance are included in the source repository.
+
 Particle textures: Kenney Particle Pack, CC0 1.0.
 https://kenney.nl/assets/particle-pack
 See licenses/Kenney-Particle-Pack-CC0.txt

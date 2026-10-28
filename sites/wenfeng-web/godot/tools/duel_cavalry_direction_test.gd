@@ -17,6 +17,10 @@ func frames(n:int)->void:
 func v(p:Vector3)->Array:return [p.x,p.y,p.z]
 func key(code:int,down:bool)->void:
 	var e=InputEventKey.new();e.keycode=code;e.physical_keycode=code;e.pressed=down;Input.parse_input_event(e)
+	# Several physics ticks can share one process frame after a delayed frame.
+	# Deliver this real queued key event before counting the fixture's ticks;
+	# otherwise even two physics_frame waits can precede the engine's flush.
+	Input.flush_buffered_events()
 func release_inputs()->void:
 	for code in [KEY_W,KEY_S,KEY_A,KEY_D,KEY_LEFT,KEY_RIGHT,KEY_UP,KEY_DOWN]:key(code,false)
 	for action in ["move_up","move_down","move_left","move_right","cavalry_brake"]:Input.action_release(action)

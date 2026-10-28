@@ -682,6 +682,8 @@ func _take_material(shape: String) -> ShaderMaterial:
 		textured.set_shader_parameter("sprite_mode", TextureLayers.mode(shape))
 		textured.set_shader_parameter("ribbon_kind", 1 if TextureLayers.is_thrust(shape) else 0)
 		textured.set_shader_parameter("ribbon_power", 0.72)
+		textured.set_shader_parameter("ribbon_width", 1.0)
+		textured.set_shader_parameter("particle_scale", 1.0)
 		textured.set_shader_parameter("gather_anchor", TextureLayers.preparation_anchor(shape))
 		textured.set_shader_parameter("gather_mode", 1 if shape.ends_with("_prepare") else 0)
 		textured.set_shader_parameter("effect_alpha", 1.0)

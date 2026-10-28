@@ -109,6 +109,8 @@ uniform float effect_lifetime = 1.0;
 uniform int sprite_mode = 0;
 uniform int ribbon_kind = 0;
 uniform float ribbon_power = 0.72;
+uniform float ribbon_width = 1.0;
+uniform float particle_scale = 1.0;
 uniform vec3 gather_anchor = vec3(0.0, 1.15, 0.0);
 uniform int gather_mode = 0;
 varying float particle_alpha;
@@ -118,7 +120,7 @@ void vertex() {
 	float age = max(effect_time - delay, 0.0);
 	float t = clamp(age / max(effect_lifetime - delay, 0.01), 0.0, 1.0);
 	vec3 centre = VERTEX;
-	float size = UV2.x;
+	float size = UV2.x * particle_scale;
 	vec2 card = UV * 2.0 - 1.0;
 	float angle = phase;
 	if (sprite_mode == 4) {
@@ -165,6 +167,12 @@ void fragment() {
 		float wake = smoothstep(tail, tail + 0.18, UV.x);
 		float lead = exp(-pow((UV.x - 0.98) / 0.19, 2.0));
 		float across = max(0.0, sin(UV.y * 3.14159));
+		// The default preserves shared RPG materials. Duel's smaller mask
+		// leaves a narrow edge around the real weapon without moving its tip.
+		if (ribbon_width < 0.999) {
+			float transverse = abs(UV.y * 2.0 - 1.0) / max(ribbon_width, 0.05);
+			across = max(0.0, cos(min(transverse, 1.0) * 1.570796));
+		}
 		float grain = texture(grain_texture, vec2(UV.x * 2.5 - effect_time * 0.8, UV.y * 0.65 + 0.15)).a;
 		float erosion = smoothstep(t * 0.65 - 0.12, t * 0.65 + 0.14, grain + across * 0.45);
 		float core = pow(across, ribbon_kind == 1 ? 11.0 : mix(10.0, 5.5, ribbon_power));

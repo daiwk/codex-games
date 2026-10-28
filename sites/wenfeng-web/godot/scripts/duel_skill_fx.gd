@@ -5,13 +5,47 @@ extends "res://scripts/skill_fx.gd"
 ## preparation is deliberately smaller than the released moving geometry.
 var _duel_events: Dictionary = {}
 var _step_clock: Dictionary = {}
+const DUEL_PALETTES = {
+	"zhaoyun": [Color("85c4d0"), Color("e4f0e8"), Color("406774")],
+	"machao": [Color("dbac67"), Color("fff0ce"), Color("8b5636")],
+	"guanyu": [Color("89b8a2"), Color("e5ebd4"), Color("426b59")],
+	"zhangfei": [Color("ab9ab5"), Color("e5dfeb"), Color("65546c")],
+	"lubu": [Color("cd8991"), Color("f2d7b0"), Color("824351")],
+	"xuchu": [Color("c8a878"), Color("eee0c4"), Color("766047")],
+}
+
+func _palette(character: String) -> Array:
+	return DUEL_PALETTES.get(character, DUEL_PALETTES.zhaoyun)
+
+func _get_mesh(shape: String, character: String, palette: Array) -> ArrayMesh:
+	# Cache the same batched geometry with Duel's restrained mineral/metal
+	# palette. The shared RPG effects retain their own original colours.
+	return super._get_mesh(shape, character, DUEL_PALETTES.get(character, palette))
+
+func _take_material(shape: String) -> ShaderMaterial:
+	var material = super._take_material(shape)
+	if TextureLayers.supports(shape):
+		material.set_shader_parameter("ribbon_width", 0.62 if TextureLayers.is_thrust(shape) else 0.70)
+		material.set_shader_parameter("particle_scale", 0.68 if shape.ends_with("_prepare") else (0.72 if shape == "rpg_impact_sparks" else 0.88))
+	return material
+
+func _spawn(fighter: DuelFighter, shape: String, palette: Array, lifetime: float, hold: float,
+		start_scale: Vector3, end_scale: Vector3, follow = false) -> void:
+	super._spawn(fighter, shape, palette, lifetime, hold, start_scale, end_scale, follow)
+	var id: int = active_effects.keys().back()
+	var effect: Dictionary = active_effects[id]
+	# Preparation is quiet, release has a crisp leading edge, the contact
+	# layer supplies the brightness. Dust never masks the fighter's torso.
+	effect["duel_opacity"] = 0.58 if shape.ends_with("_prepare") else (0.70 if TextureLayers.is_smoke(shape) else 0.85)
+	if TextureLayers.ground_smoke(shape):
+		effect.mesh.scale.y = 0.55
 
 func _event(key: String) -> void:
 	_duel_events[key] = int(_duel_events.get(key, 0)) + 1
 
 func action(fighter: DuelFighter, name: String) -> void:
 	if not is_instance_valid(fighter) or not fighter.is_inside_tree(): return
-	var palette: Array = PALETTES.get(fighter.character_id, PALETTES.zhaoyun)
+	var palette: Array = _palette(fighter.character_id)
 	if name in ["jump", "land"]:
 		_jump_feedback(fighter, name)
 		_event(name)
@@ -29,9 +63,9 @@ func action(fighter: DuelFighter, name: String) -> void:
 		var id: int = active_effects.keys().back()
 		active_effects[id]["weapon_track_until"] = remaining + 0.025
 		active_effects[id]["duel_activation_delay"] = maxf(0.0, window.x - fighter.action_time - 0.015)
-		active_effects[id].material.set_shader_parameter("ribbon_power", 0.78 if heavy else 0.34)
-		active_effects[id].material.set_shader_parameter("effect_alpha", 0.0 if active_effects[id].duel_activation_delay > 0.0 else (0.65 if heavy else 0.34))
-		active_effects[id]["duel_opacity"] = 0.65 if heavy else 0.34
+		active_effects[id].material.set_shader_parameter("ribbon_power", 0.66 if heavy else 0.28)
+		active_effects[id].material.set_shader_parameter("effect_alpha", 0.0 if active_effects[id].duel_activation_delay > 0.0 else (0.56 if heavy else 0.28))
+		active_effects[id]["duel_opacity"] = 0.56 if heavy else 0.28
 		_event(name)
 	elif name in ["step", "hoof", "dodge", "charge"]:
 		if name in ["step", "hoof"] and fighter.has_method("is_jumping") and fighter.call("is_jumping"): return
@@ -45,7 +79,7 @@ func action(fighter: DuelFighter, name: String) -> void:
 
 func _jump_feedback(fighter: DuelFighter, name: String) -> void:
 	var landing = name == "land"
-	var palette: Array = PALETTES.get(fighter.character_id, PALETTES.zhaoyun)
+	var palette: Array = _palette(fighter.character_id)
 	_spawn(fighter, "tex_step_dust", palette, 0.48 if landing else 0.28, 0.0,
 		Vector3.ONE * (0.62 if fighter.mounted else 0.38), Vector3.ONE * (1.10 if landing and fighter.mounted else 0.70))
 	if landing and fighter.mounted:
@@ -71,7 +105,7 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 	if stage in ["cancel", "complete"]:
 		super.play_skill(fighter, skill, stage)
 		return
-	var palette: Array = PALETTES.get(fighter.character_id, PALETTES.zhaoyun)
+	var palette: Array = _palette(fighter.character_id)
 	var type: String = special.get("type", "")
 	var formation: String = special.get("formation", "")
 	if stage == "start":
@@ -108,18 +142,21 @@ func impact(at: Vector3, outcome: String, direction = Vector3.FORWARD, strength 
 	if not is_inside_tree() or outcome in ["evade", "dead"]: return
 	var precision = outcome in ["parry", "counter"]
 	var heavy = outcome in ["heavy_hit", "break", "counter"]
-	var tint = Color("82d5cb") if precision else Color("dfb36d")
+	var tint = Color("a6d3ca") if precision else Color("e4ba7b")
 	var palette: Array = [tint, Color("fff2d6"), Color("463a2c")]
 	var size = clampf(strength, 0.55, 1.40)
 	# The high-contrast cut is local and brief; a warm flying metal shower
 	# continues after its hot core has disappeared, so impact has a clear beat.
-	_world_effect(at, direction, "tex_contact_cut", palette, 0.11, Vector3.ONE * size)
-	_world_effect(at, direction, "rpg_impact_sparks", palette, 0.39 if precision else 0.28, Vector3.ONE * size * (1.10 if precision else 0.72))
+	_world_effect(at, direction, "tex_contact_cut", palette, 0.085, Vector3.ONE * size * 0.85)
+	_world_effect(at, direction, "rpg_impact_sparks", palette, 0.30 if precision else 0.22, Vector3.ONE * size * (0.88 if precision else 0.66))
 	if precision or heavy:
-		_world_effect(at, direction, "rpg_impact_flash", palette, 0.065, Vector3.ONE * size * 0.70)
+		_world_effect(at, direction, "rpg_impact_flash", palette, 0.050, Vector3.ONE * size * 0.54)
 	if heavy:
-		_world_effect(at - Vector3.UP * 0.10, direction, "tex_contact_dust", palette, 0.55, Vector3.ONE * size)
-		_world_effect(at, direction, "contact_chips", palette, 0.46, Vector3.ONE * size * 0.85)
+		# Metal flecks come from the blade contact. Dust belongs on the floor
+		# below it; an airborne clash must not spawn a cloud in mid-air.
+		_world_effect(at, direction, "contact_chips", palette, 0.34, Vector3.ONE * size * 0.55)
+		if at.y < 2.4:
+			_world_effect(Vector3(at.x, 0.055, at.z), direction, "tex_contact_dust", palette, 0.43, Vector3(size * 0.72, size * 0.32, size * 0.72))
 	_event("impact:" + outcome)
 
 func _process(delta: float) -> void:

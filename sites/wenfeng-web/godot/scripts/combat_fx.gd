@@ -10,6 +10,7 @@ var muted = false:
 		if muted:
 			for player in audio_pool:
 				player.stop()
+var legacy_contact_sparks = true
 var sounds: Dictionary = {}
 var audio_pool: Array[AudioStreamPlayer] = []
 var trails: Dictionary = {}
@@ -114,7 +115,7 @@ func burst(at: Vector3, outcome: String, damage = 0) -> void:
 	material.emission_enabled = true
 	material.emission = color
 	material.emission_energy_multiplier = 1.4
-	var count = 20 if outcome in ["parry", "heavy_hit"] else 12
+	var count = (20 if outcome in ["parry", "heavy_hit"] else 12) if legacy_contact_sparks else 0
 	for i in count:
 		var spark = MeshInstance3D.new()
 		var mesh = BoxMesh.new()
