@@ -1,0 +1,73 @@
+{
+  "status": "reference candidates only; NOT USED BY RUNTIME",
+  "publisher": "Open Motion Project, ACCAD / The Ohio State University",
+  "source_page": "https://accad.osu.edu/research/motion-lab/mocap-system-and-data",
+  "original_archive_url": "https://accad.osu.edu/sites/accad.osu.edu/files/Male2_bvh.zip",
+  "original_archive_sha256": "f30dc56f8557d4b9f1bd6b8b0c4218c076471de0a9c1a20f3bc4a8b776cc14b1",
+  "license": "CC BY 3.0 Unported",
+  "license_url": "https://creativecommons.org/licenses/by/3.0/",
+  "attribution": "Open Motion Project by ACCAD / The Ohio State University, licensed under CC BY 3.0. Raw BVH files unchanged.",
+  "limitations": "Unarmed martial arts. No recorded weapon/grip/prop trajectories. These are body/defense/choreography candidates, not a sword/spear ready set. No model retarget, runtime integration or game quality acceptance implied.",
+  "files": [
+    {
+      "file": "Male2_Extended_1.bvh",
+      "sha256": "696158c170e09b4e36e1e2fbec14d8d4e7dbf18225ca6857328e67afcda9f25c",
+      "frames": 603,
+      "frame_time": 0.0333333,
+      "seconds": 20.0999799,
+      "preview": "/private/tmp/wenfeng-combat-assets/accad/preview/Male2_Extended_1.mp4",
+      "runtime_use": false,
+      "source_pose_modified": false
+    },
+    {
+      "file": "Male2_Extended_2.bvh",
+      "sha256": "4e224d2d372427a2d137c04cfde09295501b439c30da073484931959bc4c5f50",
+      "frames": 533,
+      "frame_time": 0.0333333,
+      "seconds": 17.766648900000003,
+      "preview": "/private/tmp/wenfeng-combat-assets/accad/preview/Male2_Extended_2.mp4",
+      "runtime_use": false,
+      "source_pose_modified": false
+    },
+    {
+      "file": "Male2_Extended_3.bvh",
+      "sha256": "37fc2ccc7c3d9de19d84dd42869e8f1c23ffc5e8232c795140579199c02c3e6a",
+      "frames": 1591,
+      "frame_time": 0.0333333,
+      "seconds": 53.03328030000001,
+      "preview": "/private/tmp/wenfeng-combat-assets/accad/preview/Male2_Extended_3.mp4",
+      "runtime_use": false,
+      "source_pose_modified": false
+    },
+    {
+      "file": "Male2_Form_1.bvh",
+      "sha256": "b1cc77a2adae9e8d5597d0010d35c8eaf2e5f9e85a0879cf2a0ef21e8f747d06",
+      "frames": 556,
+      "frame_time": 0.0333333,
+      "seconds": 18.533314800000003,
+      "preview": "/private/tmp/wenfeng-combat-assets/accad/preview/Male2_Form_1.mp4",
+      "runtime_use": false,
+      "source_pose_modified": false
+    },
+    {
+      "file": "Male2_E11_BlockLeftHigh.bvh",
+      "sha256": "5d236f72108468793d87242c7c99e30e496e0ea7a3434922a77276265913e629",
+      "frames": 82,
+      "frame_time": 0.0333333,
+      "seconds": 2.7333306000000004,
+      "preview": "/private/tmp/wenfeng-combat-assets/accad/preview/Male2_E11_BlockLeftHigh.mp4",
+      "runtime_use": false,
+      "source_pose_modified": false
+    },
+    {
+      "file": "Male2_E19_DodgeLeft.bvh",
+      "sha256": "6939bd3ce70ee223ccc416cf34e0036e54337d64b9485e6b53bb91b07b30a7c2",
+      "frames": 78,
+      "frame_time": 0.0333333,
+      "seconds": 2.5999974000000003,
+      "preview": "/private/tmp/wenfeng-combat-assets/accad/preview/Male2_E19_DodgeLeft.mp4",
+      "runtime_use": false,
+      "source_pose_modified": false
+    }
+  ]
+}

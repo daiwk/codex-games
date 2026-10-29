@@ -1,0 +1,31 @@
+{
+  "retrieved": "2026-10-29",
+  "author": "CMU Graphics Lab",
+  "official_index": "https://mocap.cs.cmu.edu/search.php?subjectnumber=2",
+  "source_category": "swordplay",
+  "license": "Free for all uses; copying, modifying and redistribution permitted by the archived official FAQ. Do not sell raw or converted data itself.",
+  "acknowledgement": "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.",
+  "files": {
+    "02.asf": {
+      "url": "https://mocap.cs.cmu.edu/subjects/02/02.asf",
+      "bytes": 7268,
+      "sha256": "c9f5ff45b4437b279f58b95dacf017afd3135373096274df69436a9354d796cf"
+    },
+    "02_07.amc": {
+      "url": "https://mocap.cs.cmu.edu/subjects/02/02_07.amc",
+      "bytes": 1791825,
+      "sha256": "6171216b0bd691843096798431a5f201b9d1340503cf89ce20180b6143597cd8"
+    },
+    "02_08.amc": {
+      "url": "https://mocap.cs.cmu.edu/subjects/02/02_08.amc",
+      "bytes": 1195070,
+      "sha256": "cbf08bb1aeba0487330b0096adb634170f6ddc617c19349b8954a99904a19634"
+    },
+    "02_09.amc": {
+      "url": "https://mocap.cs.cmu.edu/subjects/02/02_09.amc",
+      "bytes": 825503,
+      "sha256": "a217c49c4d3e834b9a7da1ccaffb12f0b8aeed9b7c90c114b365e5f3d265a6df"
+    }
+  },
+  "runtime_status": "Not used in runtime. Original full takes retained for source review and a separate Xu Chu single-hand prototype. No commercial reference game animation extracted."
+}
