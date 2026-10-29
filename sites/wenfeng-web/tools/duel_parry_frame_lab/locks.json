@@ -1,0 +1,16 @@
+{
+  "status": "FROZEN REJECTED MECHANISM / TORSO CROSSINGS AND MISSING FIT AXIS / NOT PRODUCTION",
+  "baseline_commit": "b2a1f43",
+  "model_sha256": "23ba8aabd2bafa6d06ff9332008b1828fa27d1d56d9f1def85ea0acc3dfafe29",
+  "source_table_sha256": "064b49d6c1fe9b0492a15f2510a2846ce94e729e657158c726acd2d6b1e3f50d",
+  "helper_sha256": "cae53870a0eb6ab0d354ed693b3cfa91bdd9891f6a8e1cdb7e8f385c69b0d614",
+  "baseline": {
+    "scripts/duel_actor.gd": "05ea22debc8fa50d5b2024966aa532e8db7eb0161eaa905577931b732d5dd0d6",
+    "scripts/duel_motion_polish.gd": "62553628e3c9403e6551a5f3b6edfe03869a91c7ef5774f226a4ea0f71610e2f"
+  },
+  "prepared": {
+    "scripts/duel_actor.gd": "6a4a37141894a545b34bd7287f703065bdaeac05d6a0c024215791b2444f5498",
+    "scripts/duel_motion_polish.gd": "d729ed91bba2fd25bd5cc938f3c02e656020c3fbdbc06b7c2640173cc0618ee0",
+    "scripts/duel_weapon_transition.gd": "cae53870a0eb6ab0d354ed693b3cfa91bdd9891f6a8e1cdb7e8f385c69b0d614"
+  }
+}

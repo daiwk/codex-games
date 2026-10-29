@@ -79,8 +79,26 @@ collision clearance at every interpolation time, stance transitions or combat
 quality. The current local evidence is separately frozen under
 `/private/tmp/wenfeng-dao-k-fk-full/`; it is not a reproduction dependency.
 
-No runtime animation library is produced here and no production builder is
-updated. Any later isolated runtime experiment must explicitly retain the
+This wrapper produces no runtime library. The parent library builder can now
+reproduce the frozen isolated GameK resource, without the old `/tmp`-specific
+script:
+
+```sh
+python3 -B tools/xuchu_ual1_lab/build_k_resource.py \
+  --source-glb /tmp/xu-fk-recovery-assets/xuchu-dao-k-fk-recovery.glb \
+  --baseline /tmp/xu-fk-recovery-assets/xuchu-dao-k-fk-recovery.glb \
+  --variant fk_trial --output-dir /tmp/xu-fk-game-k
+```
+
+Both inputs must be the identical50eb model. The builder verifies the GameK
+binary SHA `16edc9f4b3a2e70e12040eaad2c0156078b097a373f8d6720b0ec338c3ddeb0d`
+and sidecar SHA `06ce586f0e7fd713d07f7bc7c9ce83f999db4a699de15c601167adbef57ce1d8`
+before writing. Its import stub uses120Hz, keeps immutable tracks and disables
+optimizer/compression, matching the frozen runtime trial. The main character
+import needs those same settings; the original production30Hz import is not
+equivalent. This command does not copy, patch, build or deploy a game project.
+
+Any later isolated runtime experiment must explicitly retain the
 matching9fbc rig/skin and grip frame; this clip must not be imported onto the
 old65-bone model. UAL1 motion keeps its existing CC0 provenance; the user-provided
 Xu model/texture and original target animations do not become CC0.

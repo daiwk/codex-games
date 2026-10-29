@@ -1,0 +1,22 @@
+--- a/scripts/duel_actor.gd
++++ b/scripts/duel_actor.gd
+@@ -7,0 +8 @@
++const WeaponTransition = preload("res://scripts/duel_weapon_transition.gd")
+@@ -50,0 +52,4 @@
++var _weapon_transition = WeaponTransition.new()
++var parry_object_result: Dictionary:
++	get:
++		return _weapon_transition.result()
+@@ -70,0 +76 @@
++	_weapon_transition.setup(self)
+@@ -242,0 +249 @@
++	_weapon_transition.on_clip(clip)
+@@ -594,0 +602,4 @@
++
++# QA/contact compatibility surface; the scoped algorithm lives in the helper.
++func apply_object_parry(contact: Node, delta: float) -> bool:
++	return _weapon_transition.apply_object_parry(contact, delta)
+--- a/scripts/duel_motion_polish.gd
++++ b/scripts/duel_motion_polish.gd
+@@ -59,0 +60 @@
++	if is_instance_valid(fighter) and fighter.has_method("apply_object_parry") and fighter.call("apply_object_parry",self,delta): return
