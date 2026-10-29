@@ -6115,7 +6115,22 @@
       "mesh_grip_y": -0.075,
       "adaptation": "Authored blade axis; bounded anatomical wrist, exact upper-arm sphere grasp and continuous forearm frame; exact bone lengths"
     },
-    "runtime_sha256": "89f369ccbfce8b5ecd4735ed5f4a18467d23ca4dfc9ec684f51b9c7c30dad43c"
+    "runtime_sha256": "50ebed213d9f4d90e12935474d6b992ae75e9815774037a2b366134b78ff8a55",
+    "duel_saber_heavy": {
+      "source": "UAL1 Standard Sword_Attack; CC0 animation, user-provided target model/weapon retain their rights",
+      "source_sha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997",
+      "library": "assets/motion/xuchu_ual1_k.glb",
+      "library_sha256": "750a9b6d402537a1162a0ba6a7c36786539cca6ddbc5c12541a2494e8c0fe5de",
+      "sidecar_sha256": "467dcc0c3b10a59edf633961b441fdd6e9f41f4ae06885240f1c5a134087d047",
+      "rig": "68 bones; 8 skin influences; authored right-upper-arm twist stations",
+      "import": "120 Hz; keep immutable tracks; disable optimizer and animation compression",
+      "preparation_fit_seconds": [
+        0.075,
+        0.425
+      ],
+      "runtime_scope": "Duel ground Xu with xuchu_saber; original 27 clip aliases and grip frame retained; aerial/mounted/other weapons retain legacy attacks",
+      "reproduction": "tools/prepare_xuchu_heavy.py with archived original model and manifest; no capture files used as generation inputs"
+    }
   },
   "bandit": {
     "source": {

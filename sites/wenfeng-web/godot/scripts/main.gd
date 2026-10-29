@@ -561,6 +561,9 @@ func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 	var blade = Geometry3D.get_closest_points_between_segments(attacker.blade_base(), attacker.blade_tip(), low, high)
 	var sweep = Geometry3D.get_closest_points_between_segments(attacker.previous_tip, attacker.blade_tip(), low, high)
 	var contact = minf(blade[0].distance_to(blade[1]), sweep[0].distance_to(sweep[1]))
+	var physical_blade = bool(data.get("physical_blade", false))
+	if physical_blade and contact > defender.thrust_body_radius() + 0.07:
+		return
 	if physical_thrust and contact > defender.thrust_body_radius() + 0.07:
 		return
 	if not physical_thrust and data.get("shape", "") != "line" and not data.get("wave", false) and contact > 0.70:
@@ -576,7 +579,7 @@ func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 				return
 	attacker.hit_landed = true
 	var resolved = data.duplicate()
-	if physical_thrust:
+	if physical_thrust or physical_blade:
 		var nearest = blade if blade[0].distance_to(blade[1]) <= sweep[0].distance_to(sweep[1]) else sweep
 		var normal = (nearest[0] - nearest[1]).normalized()
 		if normal.length_squared() < 0.01:

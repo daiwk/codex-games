@@ -1,0 +1,7 @@
+# These two motion imports require the authored 120 Hz tracks, including constants.
+!godot/assets/characters/xuchu.glb.import
+!godot/assets/motion/xuchu_ual1_k.glb.import
+
+# Godot extracts these embedded images again when importing the motion library.
+godot/assets/motion/xuchu_ual1_k_*.jpg
+godot/assets/motion/xuchu_ual1_k_*.png

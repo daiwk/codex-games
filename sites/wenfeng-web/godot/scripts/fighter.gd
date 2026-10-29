@@ -907,6 +907,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_advance_jump(delta)
 	action_time += delta
+	_advance_attack_animation(delta)
 	if mounted:
 		mount_charge_time = maxf(0.0, mount_charge_time - delta)
 		mount_charge_cooldown = maxf(0.0, mount_charge_cooldown - delta)
@@ -929,7 +930,7 @@ func _physics_process(delta: float) -> void:
 				swing_announced = true
 				action_started.emit(self, "swing_heavy" if bool(attack.get("heavy", false)) else "swing_light")
 			if action_time >= window.x and action_time <= window.y and not hit_landed:
-				strike_requested.emit(self, attack)
+				_emit_attack_strike(attack)
 			# A synchronous parry/counter can change our state during the signal.
 			if state == "attack":
 				var thrust = float(attack.lunge) if action_time < window.y and action_time > 0.06 else 0.0
@@ -939,7 +940,7 @@ func _physics_process(delta: float) -> void:
 					if not _begin_attack(combo + 1):
 						combo_buffered = false
 				elif action_time >= action_duration:
-					_idle()
+					_finish_attack()
 		"dodge":
 			var speed = 7.4 * pow(maxf(0.0, 1.0 - action_time / 0.46), 0.6)
 			velocity.x = dodge_direction.x * speed
@@ -979,7 +980,20 @@ func _physics_process(delta: float) -> void:
 		# HUD speed and cavalry damage bonus, not just the physics body.
 		var travelled_speed = Vector2(position.x - before_move.x, position.z - before_move.z).length() / delta if state in ["skill", "ultimate"] else maxf(0.0, (position - before_move).dot(forward()) / delta)
 		mount_speed = minf(mount_speed, travelled_speed)
+	_after_attack_move()
 	previous_tip = blade_tip()
+
+func _advance_attack_animation(_delta: float) -> void:
+	pass
+
+func _emit_attack_strike(profile: Dictionary) -> void:
+	strike_requested.emit(self, profile)
+
+func _after_attack_move() -> void:
+	pass
+
+func _finish_attack() -> void:
+	_idle()
 
 func _update_facing(delta: float) -> void:
 	if contact_latched:

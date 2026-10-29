@@ -6,6 +6,8 @@ const Cavalry = preload("res://scripts/duel_mounted_combat.gd")
 const CavalryPose = preload("res://scripts/duel_mounted_pose.gd")
 const FootMotionPolish = preload("res://scripts/duel_motion_polish.gd")
 signal duel_landed(at: Vector3)
+const XuUAL1K = preload("res://scripts/xu_ual1_k.gd")
+var source_k = XuUAL1K.new()
 
 const DUEL_COMBO_CLIPS = {
 	"zhaoyun": {"Attack2": "DragonLow", "Attack3": "DragonHigh"},
@@ -66,6 +68,7 @@ func skill_profile(id: String) -> Dictionary:
 
 func _ready() -> void:
 	super._ready()
+	source_k.setup(self)
 	_setup_recorded_gaits()
 	if not mounted and character_id in ["zhaoyun", "machao"] and is_thrust_weapon():
 		# Keep the shared/RPG and mounted contact modifiers untouched.
@@ -237,6 +240,17 @@ func prewarm_attack_animations() -> void:
 	attack_warmup_ms = float(Time.get_ticks_usec() - begin) / 1000.0
 
 func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
+	if source_k.enabled:
+		if clip == "Hit" and state == "hit" and source_k.can_play_family_hit():
+			source_k.play_family_hit(duration)
+			return
+		if state == "attack" and attack.get("xu_ual1_k", false):
+			source_k.begin()
+			return
+		if clip == "Idle" and source_k.ready:
+			source_k.play_ready()
+			return
+		source_k.legacy_clip()
 	if state != "attack" or duration <= 0.0 or not attack.has("active"):
 		super.play_clip(clip, blend, duration)
 		return
@@ -288,8 +302,11 @@ func request_light() -> bool:
 	return super.request_light()
 
 func request_heavy() -> bool:
+	if source_k.active: return false
 	if _duel_weapon_thrown: return false
 	if enabled and hp > 0.0 and duel_can_cancel_normal_recovery() and stamina >= float(_heavy_attack_profile().cost): _idle()
+	if source_k.enabled and enabled and state in ["idle","move","block"] and hp > 0.0 and stamina >= 32.0:
+		source_k.prepare_run_request()
 	return super.request_heavy()
 
 func request_skill(id: String) -> bool:
@@ -316,6 +333,9 @@ func _duel_step_offset(time: float) -> Vector3:
 	return _duel_step_basis.z * (advance + gather + settle)
 
 func _limit_thrust_motion() -> void:
+	if source_k.enabled and (source_k.active or source_k.pending_root.length_squared() > 0.0):
+		source_k.apply_motion(get_physics_process_delta_time())
+		return
 	if not mounted and state == "attack":
 		var delta = get_physics_process_delta_time()
 		var desired = (_duel_step_offset(action_time) - _duel_step_offset(maxf(0.0, action_time - delta))) / maxf(delta, 0.001)
@@ -370,6 +390,7 @@ func _cancel_skill(completion = "cancel") -> void:
 	super._cancel_skill(completion)
 
 func reset_fighter() -> void:
+	if source_k.enabled: source_k.reset()
 	set_duel_weapon_thrown(false)
 	if _duel_air_active: floor_snap_length = _duel_floor_snap
 	_duel_air_active = false
@@ -435,6 +456,7 @@ func _physics_process(delta: float) -> void:
 		lock_forward_speed = _lock_move_velocity.dot(forward())
 
 func _update_facing(delta: float) -> void:
+	if source_k.active: return
 	if mounted:
 		_update_mount_facing(delta)
 		_update_cavalry_aim(delta)
@@ -494,3 +516,36 @@ func request_dodge(direction = Vector3.ZERO) -> bool:
 	var accepted = super.request_dodge(direction)
 	if accepted and not mounted: begin_duel_aerial(2.3)
 	return accepted
+
+# Temporary Xu ground K opt-in. Old J, mounted, RPG and other roles keep defaults.
+func _heavy_attack_profile() -> Dictionary:
+	var profile = super._heavy_attack_profile()
+	if source_k.enabled and not is_jumping():
+		# The fitted guard enters the readable downward cut at source .40s.
+		profile.merge({"clip": "XuUAL1GameK", "duration": float(source_k.data.duration) + source_k.entry_shift(), "active": Vector2(0.40, 0.55) + Vector2.ONE * source_k.entry_shift(), "lunge": 0.0, "min_dot": -1.0, "xu_ual1_k": true, "physical_blade": true}, true)
+	return profile
+
+func _weapon_adjusted_attack(profile: Dictionary) -> Dictionary:
+	var result = super._weapon_adjusted_attack(profile)
+	if profile.get("xu_ual1_k", false):
+		result.duration = profile.duration
+		result.active = profile.active
+		result.lunge = 0.0
+	return result
+
+func _advance_attack_animation(_delta: float) -> void:
+	if source_k.enabled: source_k.prepare_tick()
+
+func _emit_attack_strike(profile: Dictionary) -> void:
+	if profile.get("xu_ual1_k", false): source_k.queue_strike(profile)
+	else: super._emit_attack_strike(profile)
+
+func _after_attack_move() -> void:
+	if source_k.enabled: source_k.post_move()
+
+func _finish_attack() -> void:
+	if source_k.active: source_k.finish()
+	else: super._finish_attack()
+
+func source_k_status() -> Dictionary:
+	return source_k.status()

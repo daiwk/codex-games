@@ -1,0 +1,31 @@
+{
+  "status": "ONLY ISOLATED GAMEPLAY REVIEW; WEIGHT/TRANSITIONS NOT FINAL; NOT PB0",
+  "inputs": {
+    "source_sha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997",
+    "baseline_sha256": "89f369ccbfce8b5ecd4735ed5f4a18467d23ca4dfc9ec684f51b9c7c30dad43c",
+    "manifest_sha256": "3182fe59c2175d820cacccfe70f97e6b0bb2bfbc170d0682011307d024eec6b0"
+  },
+  "generation_dependencies": {
+    "prepare.py": "9d4867d6b2beff0e3a0e5764eccbf7ecc218e8c54b393bf3e102287146032624",
+    "_prepare_keys.py": "48e7fa4318f93b2f409bdff0cb915270f83559a1f3f919f04773901d577dc95a",
+    "_bake_full.py": "9caa06ff8fac3557607067ea84015a4e5d2c319d389184d1464a192623efeb1b",
+    "../prepare.py": "e3616b26bba62174211fce08f9aefa667108b346e717b20f04f9988bb87e8197",
+    "../_bake_arm.py": "eed0948fd834ae315a463d88f4655158dbe1c84f9cebdd88c592810bd241f7ee",
+    "../_build_upper_twist.py": "580584626a86bd1e1e8382f32f847d7de38734d93be2461b6faa279a67368684",
+    "../locks.json": "9340381d065680a389e9e3bc5ba820174640ed8996acac7bafe8bd468e3d69d9",
+    "../../prepare.py": "4ee514efedf934479d766a9e11daa1447bf93799f14a029cb940fbab45171cf5",
+    "../../_bake_raw.py": "55ac2f20fdb5755d77d18c71f31615c3515eb2e6c4ca243a007245c28679f12f",
+    "../../_bake_support.py": "1f85fb6dd63ea751e1d307db9ae86b5c66506d92ffdb13fae7007811ff1bb6ac",
+    "../../locks.json": "1a1a51742a49f9d2ed73828669757d561e8ef7b68fe93ac1d319490ae2836551",
+    "../../../prepare_polearms.py": "5c6802555766b19df63da38d978ef12e2b2119da39dc4a08e6a6b5b0bd4d3891",
+    "../../../gltf_tools.py": "8eead357447e8e64ecb6ea77b20c6282af2cc1e9264bdcf2c659b06fd4c4fc68"
+  },
+  "outputs": {
+    "upstream/upstream/xuchu-ual1-sword-raw.glb": "e19e3cbbf4c78146c6a34980189c40ef2e0c5445673612ae7a14401078179106",
+    "upstream/upstream/xuchu-ual1-support-art-trial.glb": "b3d35d9459e3f59820a4560e551fc7d8a6cfaa952d1a1632af72c7ebe4eef4e5",
+    "upstream/xuchu-dao-k-arm-art.glb": "f233a6ddb05553bf188e998a0dc20960bf00b95948230134716db1e78b54d0c1",
+    "upstream/xuchu-dao-k-upper-twist.glb": "9fbc41c922c1dd65f87e239da5fa4747eddfbb0c7dab4c06d11110d8efaed064",
+    "xuchu-dao-fk-keys.glb": "84a43012d9d670a5439d0df10aaba99bb92e2dedb9e0357f0b0ea8f20b2f59ab",
+    "xuchu-dao-k-fk-recovery.glb": "50ebed213d9f4d90e12935474d6b992ae75e9815774037a2b366134b78ff8a55"
+  }
+}

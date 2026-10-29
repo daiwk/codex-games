@@ -1,0 +1,19 @@
+{
+  "inputs": {
+    "archived_model_sha256": "89f369ccbfce8b5ecd4735ed5f4a18467d23ca4dfc9ec684f51b9c7c30dad43c",
+    "archived_manifest_sha256": "3182fe59c2175d820cacccfe70f97e6b0bb2bfbc170d0682011307d024eec6b0"
+  },
+  "generation_dependencies": {
+    "bake.py": "b92da4225838444bf554750c218d72fec0d33256cbbdcc450e74eadd67f22d23",
+    "build_library.py": "7c9bc6e92c28c027cf395786e128569c3c32b1c9326d8f97804291ba03a44c4c",
+    "../../prepare_xuchu_heavy.py": "c9a84fb65087fae5c88e77ddd4a2b12601b21efbd651dc93a6afa0bcf201a830",
+    "../build_k_resource.py": "202029ff60b00e5861ea8f5814094f9b432b67924878dc4b233c7d47bb07b5a1",
+    "../dao_k_trial/fk_recovery_trial/locks.json": "0772116404b9d369aebcfaba5efaa309a6a70603ab338a986df90706ca80eb6e"
+  },
+  "outputs": {
+    "runtime/xuchu.glb": "50ebed213d9f4d90e12935474d6b992ae75e9815774037a2b366134b78ff8a55",
+    "high-guard.glb": "9234dffff40403eeb23ee4cb61d7508b11725818ca3cc00a3cce84901751dc41",
+    "runtime/xuchu_ual1_k.glb": "750a9b6d402537a1162a0ba6a7c36786539cca6ddbc5c12541a2494e8c0fe5de",
+    "runtime/xuchu_ual1_k.json": "467dcc0c3b10a59edf633961b441fdd6e9f41f4ae06885240f1c5a134087d047"
+  }
+}
