@@ -23,7 +23,7 @@ BASELINE = ROOT / 'source-assets/animations/runtime-baselines/zhaoyun-before-rec
 RUNTIME = ROOT / 'godot/assets/characters/zhaoyun.glb'
 MANIFEST = ROOT / 'godot/assets/characters/animation_manifest.json'
 BASELINE_SHA256 = '707628b708ab34526ae16dac1c3c735530f962191af47e5219de6c7c5f08a2b8'
-REFERENCE_OUTPUT_SHA256 = 'ae7a153643e3471aa7a6956f7c3c96b8ae0a8ae5ab5fce1119d9fe2eb13fab47'
+REFERENCE_OUTPUT_SHA256 = '23ba8aabd2bafa6d06ff9332008b1828fa27d1d56d9f1def85ea0acc3dfafe29'
 ACTOR_SCALE = 1.98
 FPS = 120
 CONFIG = {
@@ -36,7 +36,7 @@ CONFIG = {
     'DuelMocapWalkBack': {
         'subject': '136', 'trial': '25', 'frames_1based': [857, 1054],
         'foot_reference_frames_1based': {'Left': 1033, 'Right': 936},
-        'source_playback_rate': 1.4, 'controller_rate': 1.65,
+        'game_speed_mps': 1.05, 'controller_rate': 1.65,
         'whole_clip_ground_y_model_units': 0.030480889218230386,
     },
 }

@@ -1957,13 +1957,13 @@
       "DuelMocapWalkBack": {
         "source": "CMU 136_25",
         "library": "CMU Graphics Lab Motion Capture Database",
-        "seconds": 1.9348214285714285,
+        "seconds": 1.3618530012988144,
         "source_frames_1based": [
           857,
           1054
         ],
         "source_fps": 120,
-        "runtime_cycle_seconds": 1.1726190476190477,
+        "runtime_cycle_seconds": 0.8253654553326149,
         "foot_reference_frames_1based": {
           "Left": 1033,
           "Right": 936
@@ -1988,17 +1988,17 @@
       "axis_sign": -1.0,
       "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
     },
-    "runtime_sha256": "ae7a153643e3471aa7a6956f7c3c96b8ae0a8ae5ab5fce1119d9fe2eb13fab47",
+    "runtime_sha256": "23ba8aabd2bafa6d06ff9332008b1828fa27d1d56d9f1def85ea0acc3dfafe29",
     "duel_foot_polish": {
       "existing_animation_count": 42,
       "existing_binary_bytes_retained": 4887644,
       "mode": "append_only"
     },
     "recorded_duel_gaits": {
-      "retreat_speed": 0.7390582046734684,
+      "retreat_speed": 1.05,
       "step_intervals": {
         "Run": 0.45345569373521855,
-        "WalkBack": 0.5863095238095238
+        "WalkBack": 0.4126827276663074
       },
       "source": "CMU 09_01 + 136_25; see source-assets/animations/cmu-locomotion/SOURCE.json",
       "processing": "Fixed anatomical/foot reference retarget; original source rotation curves; uniform time scale and one constant whole-body height per clip."

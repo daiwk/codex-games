@@ -1,11 +1,11 @@
 {
-  "runtime_sha256": "ae7a153643e3471aa7a6956f7c3c96b8ae0a8ae5ab5fce1119d9fe2eb13fab47",
+  "runtime_sha256": "23ba8aabd2bafa6d06ff9332008b1828fa27d1d56d9f1def85ea0acc3dfafe29",
   "recorded_locomotion": {
     "baker": "tools/prepare_recorded_locomotion.py",
-    "baker_sha256": "258ec86e189d4f17b1b1741d3c8eb56b6f2d8b625f0bb4959f7293eaf0646d32",
+    "baker_sha256": "919a6efa250a841726801efd9f4b5809179f9fc0a7c7bbfae79c1954f7991623",
     "baseline": "source-assets/animations/runtime-baselines/zhaoyun-before-recorded-gaits.glb",
     "baseline_sha256": "707628b708ab34526ae16dac1c3c735530f962191af47e5219de6c7c5f08a2b8",
-    "runtime_sha256": "ae7a153643e3471aa7a6956f7c3c96b8ae0a8ae5ab5fce1119d9fe2eb13fab47",
+    "runtime_sha256": "23ba8aabd2bafa6d06ff9332008b1828fa27d1d56d9f1def85ea0acc3dfafe29",
     "existing_animation_count": 46,
     "existing_binary_bytes_retained": 5085212,
     "mode": "append_only",
@@ -37,7 +37,7 @@
           "Left": 1033,
           "Right": 936
         },
-        "source_playback_rate": 1.4,
+        "game_speed_mps": 1.05,
         "controller_rate": 1.65,
         "whole_clip_ground_y_model_units": 0.030480889218230386
       }
@@ -175,16 +175,16 @@
       "fps": 120,
       "samples": 198,
       "source_seconds": 1.6416666666666666,
-      "seconds": 1.9348214285714285,
+      "seconds": 1.3618530012988144,
       "source_asf_sha256": "48eb3f19477086e28495d841c604157b354fc76be054fa662ff10843ac698427",
       "source_amc_sha256": "081917e7e8bf01cc3c9893cbfd82f15c9cb386321e10e7464d09c7cf76f2fe3f",
       "source_url": "https://mocap.cs.cmu.edu/subjects/136/136_25.amc",
       "retarget_root_cycle_distance_m": 0.8666337280992457,
       "retarget_native_speed_mps": 0.527898717623906,
-      "game_speed_mps": 0.7390582046734684,
-      "required_source_playback_rate": 1.4,
+      "game_speed_mps": 1.05,
+      "required_source_playback_rate": 1.9890179023849375,
       "existing_controller_speed_scale": 1.65,
-      "actual_runtime_cycle_seconds": 1.1726190476190477,
+      "actual_runtime_cycle_seconds": 0.8253654553326149,
       "uniform_ground_placement_model_units": 0.030480889218230386,
       "ground_reference": "One fixed whole-clip Y chosen from actual CPU-skinned shoe support medians; mean sole +9mm compensates actor root about -9mm. Remaining left/right difference is preserved.",
       "foot_static_reference": {
