@@ -1,0 +1,96 @@
+{
+  "status": "SOURCE ACQUIRED; REJECTED AS A USEFUL XU HEAVY-CUT REPLACEMENT AFTER FULL SOURCE REVIEW",
+  "author": "AnthonyMyers",
+  "title": "Wizard",
+  "source_page": "https://opengameart.org/content/wizard-4",
+  "direct_author_upload": "https://opengameart.org/sites/default/files/Wizard.zip",
+  "license": "CC-BY3.0",
+  "license_url": "https://creativecommons.org/licenses/by/3.0/",
+  "attribution": "Wizard by AnthonyMyers, OpenGameArt https://opengameart.org/content/wizard-4, CC BY3.0. Future modifications must be indicated.",
+  "files": {
+    "Wizard.zip": {
+      "bytes": 26881599,
+      "sha256": "0f233688f0756050770375373c8a44cbe26f75bcf1c1dc72c5487944a304c1f3"
+    },
+    "Wizard Swing3.blend": {
+      "bytes": 1692940,
+      "sha256": "05505595a19620e79d2e019b14b5d2bdd8986bbc68d33a67fec6c25b57f8bff2"
+    },
+    "source.mp4": {
+      "bytes": 88594,
+      "sha256": "07281fa3d3f3e380099b4cc4a19642aed9d01bbca54b1612542d068f9ae56c1e"
+    },
+    "source-contact.jpg": {
+      "bytes": 49942,
+      "sha256": "318b27a375deb39275ff7785188ec122884d2e45cd9490b142a41ca3ab1877c5"
+    }
+  },
+  "contents": {
+    "armature": "Armature",
+    "bone_count": 85,
+    "moving_action": "ArmatureAction",
+    "source_frames": [
+      1,
+      30
+    ],
+    "source_fps": 25,
+    "endpoint_duration_seconds": 1.16,
+    "rendered_frames": 30,
+    "encoded_movie_seconds": 1.2,
+    "other_actions": "mesh01Action and mesh01.011Action are single-frame static transforms, not additional combat clips",
+    "right_weapon": {
+      "object": "mesh01.004",
+      "parent_bone": "hand.R",
+      "vertices": 293,
+      "visual": "Single sword, fixed bone-parent attachment; no independent action"
+    },
+    "left_weapon": {
+      "object": "mesh01.002",
+      "parent_bone": "hand.L",
+      "vertices": 132,
+      "visual": "Staff"
+    },
+    "observation": "Low ready, right overhead lift, downward cut, low follow-through, recover into upright sword guard by F30. Last steps decelerate. Beginning and ending guards differ. No separate idle/block or combo clips. Robe occludes legs.",
+    "end_steps": [
+      {
+        "frame": 26,
+        "hand_displacement_source_world_units": 0.017311824593163744,
+        "hand_rotation_degrees": 6.538676792131333
+      },
+      {
+        "frame": 27,
+        "hand_displacement_source_world_units": 0.01515799502673621,
+        "hand_rotation_degrees": 3.5421786436211633
+      },
+      {
+        "frame": 28,
+        "hand_displacement_source_world_units": 0.011183900335434491,
+        "hand_rotation_degrees": 1.5143204548591278
+      },
+      {
+        "frame": 29,
+        "hand_displacement_source_world_units": 0.006318976287591247,
+        "hand_rotation_degrees": 0.4567361856011024
+      },
+      {
+        "frame": 30,
+        "hand_displacement_source_world_units": 0.001882183400935408,
+        "hand_rotation_degrees": 0.11387743370417278
+      }
+    ]
+  },
+  "render_scope": "All30 source frames at original25fps. Workbench untextured, recolored mesh for distinction, new inspection camera only. No source bone, curve, attachment or pose edits. No autoexec.",
+  "limits": [
+    "One hand-keyed 2014 source; not a motion capture or AAA quality claim",
+    "No retargeting performed; full-body target gait/skin/weapon/frame validation remains required",
+    "An attack-and-recovery source candidate; not a two-hand long-spear parry source",
+    "Original source model/sword not proposed as replacements for existing user characters/weapons"
+  ],
+  "contact_sheet": "/private/tmp/wenfeng-oga-sword-review-20261030/source-contact.jpg",
+  "retrieved": "2026-10-30",
+  "stored_files": [
+    "Wizard Swing3.blend"
+  ],
+  "originals_unchanged": true,
+  "fit_review": "Original full source is primarily a light right-arm sword lift/down-cut with modest visible body commitment and a staff-bearing left arm. Ending guard differs from start; no matching Idle/Block. Robe hides feet. No visible advantage over current Xu50eb heavy cut or transition problem; no retarget trial recommended."
+}

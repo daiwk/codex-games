@@ -1,0 +1,37 @@
+--- a/scripts/duel_actor.gd
++++ b/scripts/duel_actor.gd
+@@ -243,0 +244,3 @@
++		if clip == "Hit" and state == "hit" and source_k.can_play_family_hit():
++			source_k.play_family_hit(duration)
++			return
+--- a/scripts/xu_ual1_k.gd
++++ b/scripts/xu_ual1_k.gd
+@@ -1,0 +2,3 @@
++
++const FamilyHit = preload("res://scripts/xu_family_hit.gd")
++var family_hit = FamilyHit.new()
+@@ -31,0 +35 @@
++		family_hit.setup(fighter, data.idle_clip, data.clip)
+@@ -33,0 +38 @@
++	family_hit.reset()
+@@ -95,0 +101 @@
++	family_hit.finish()
+@@ -123 +129,17 @@
+-	return {"enabled": enabled, "active": active, "ready": ready, "time": last_time, "pending_root": pending_root, "queued_strike": not pending_strike.is_empty()}
++	return {"enabled": enabled, "active": active, "ready": ready, "time": last_time, "pending_root": pending_root, "queued_strike": not pending_strike.is_empty(), "family_hit":family_hit.status()}
++
++func play_family_hit(duration: float) -> void:
++	var source_time = last_time
++	var from_active = active
++	active = false
++	ready = true
++	last_time = 0.0
++	pending_root = Vector3.ZERO
++	pending_strike.clear()
++	family_hit.play(duration, source_time, from_active)
++	sync_weapon()
++
++func can_play_family_hit() -> bool:
++	# First75ms is the old-to-K AnimationPlayer blend; Ready and the released
++	# cut keep legacy reactions. Source preparation ends at .30, not active.x.
++	return enabled and active and last_time >= 0.075 and last_time <= FamilyHit.PREPARATION_END and family_hit.prefix_matches_incoming(last_time)

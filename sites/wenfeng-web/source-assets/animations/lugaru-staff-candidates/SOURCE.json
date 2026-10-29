@@ -1,0 +1,69 @@
+{
+  "official_repository": "https://github.com/osslugaru/lugaru",
+  "upstream": "https://gitlab.com/osslugaru/lugaru",
+  "author_asset_license": "CC-BY-SA-3.0-Unported",
+  "author_attribution": "Wolfire Games",
+  "license_evidence": "CONTENT-LICENSE.txt: all original Wolfire assets in Data except separately listed exceptions; no Animation files appear in exception list. Code GPL2+ is distinct from the asset license. Not CC0. Attribution and ShareAlike terms apply to derivative assets; no AI-analysis-specific restriction appears in this asset license.",
+  "candidate": "StaffHit original full authored staff attack; StaffHitCaught is separately the losing paired reversal, not generic parry/stagger or stable recovery.",
+  "format": "Original no-extension Lugaru big-endian binary joint positions/twists/ground flags/key speeds/weapon targets. Not GLB/BVH/BLEND. Reader and parsed inspection retained in ignored local QA; these original asset binaries are unchanged and not converted into game animations.",
+  "timing": "read_source.py follows the source per-key speed rule. Normal attacks scale by Person.speed; reverse/catch roles ignore Person.speed. Continuous raw span is not frame-quantized native gameplay duration and not a guarantee of entering at authored key0.",
+  "weapon_semantics": "Person.cpp identifies StaffHit/SpinWhack active staff frames and aligns staff direction from authored righthand to authored weapontarget. That target is an authored direction marker, not a captured 3D pole rig. Left-hand proximity varies and both hands are not constrained throughout.",
+  "files": [
+    {
+      "path": "StaffHit",
+      "url": "https://raw.githubusercontent.com/osslugaru/lugaru/master/Data/Animations/StaffHit",
+      "sha256": "9cbce69d0745a1f5bed79b55dea0394c044311feaf3149c0da4bab5fa84d1979",
+      "bytes": 4412
+    },
+    {
+      "path": "SpinWhack",
+      "url": "https://raw.githubusercontent.com/osslugaru/lugaru/master/Data/Animations/SpinWhack",
+      "sha256": "49185ab8cc0e87ee78707d543be7d287f9a800d2cc0a4059799d6b3eb3483d35",
+      "bytes": 4412
+    },
+    {
+      "path": "StaffHitCaught",
+      "url": "https://raw.githubusercontent.com/osslugaru/lugaru/master/Data/Animations/StaffHitCaught",
+      "sha256": "efe00586a110b56647edc9599197a5d7b1ad41e9b6732e4a13d28185c74d7699",
+      "bytes": 4412
+    },
+    {
+      "path": "StaffHitCatch",
+      "url": "https://raw.githubusercontent.com/osslugaru/lugaru/master/Data/Animations/StaffHitCatch",
+      "sha256": "e2f6f1b20ba9e8c388e1fdb0975c80993c79cdb4fad29c60b7ff9d23c3cc4821",
+      "bytes": 4412
+    },
+    {
+      "path": "SpinWhackCaught",
+      "url": "https://raw.githubusercontent.com/osslugaru/lugaru/master/Data/Animations/SpinWhackCaught",
+      "sha256": "e7b735696814bcc1ed77e8bf74830d9cbfec83e6f716dbd39f0fd14f7665641e",
+      "bytes": 4412
+    },
+    {
+      "path": "SpinWhackCatch",
+      "url": "https://raw.githubusercontent.com/osslugaru/lugaru/master/Data/Animations/SpinWhackCatch",
+      "sha256": "b5a306a9f7cb88892faf783318c758ff629f6af3e08fe91edc5de97e854f19aa",
+      "bytes": 4412
+    },
+    {
+      "path": "SwordSlashParried",
+      "url": "https://raw.githubusercontent.com/osslugaru/lugaru/master/Data/Animations/SwordSlashParried",
+      "sha256": "3c56407cb65f39003888396ebf768dc1be279b9ff4b8d599b53654ad84a7b8fd",
+      "bytes": 4412
+    },
+    {
+      "path": "BasicFigure",
+      "url": "https://raw.githubusercontent.com/osslugaru/lugaru/master/Data/Skeleton/BasicFigure",
+      "sha256": "9ac59d8ce39889ad8bb307dc09622ac4437a2b4cbd5a87edb92ae4ca354ddf42",
+      "bytes": 4405
+    },
+    {
+      "path": "CONTENT-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/osslugaru/lugaru/master/CONTENT-LICENSE.txt",
+      "sha256": "df020520630390de59394235a90a17c5d52d3b80ef76e2edf6d0690cd8b7fd7c",
+      "bytes": 1650
+    }
+  ],
+  "retrieved": "2026-10-30",
+  "status": "ORIGINAL STAFF SOURCE RESEARCH ONLY; NO SUITABLE ORDINARY GUARDBREAK ESTABLISHED"
+}

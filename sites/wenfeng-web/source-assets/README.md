@@ -13,6 +13,8 @@ animations/
   ual2/            免费Standard动画GLB、许可与SHA256；2026-10-24重新获取用于专属冲刀/架刀
   cmu-locomotion/  真人前跑09_01、正常倒走136_25，原始ASF/AMC、来源哈希与官方使用条款
   runtime-baselines/  追加真人步态前的赵云运行骨架与动画，供离线重建；保留用户模型原权属
+  oga-wizard-candidate/  CC BY3.0单剑源研究；不适合许褚重刀，未安装
+  lugaru-staff-candidates/  Wolfire CC BY-SA3.0原长棍二进制研究；非普通破防恢复，未安装
 originals/         吕布修复前的原件和修复记录
 glb-manifest.json  24 个保留 GLB 的路径、字节数与 SHA256
 ```

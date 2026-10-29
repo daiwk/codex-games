@@ -1,0 +1,24 @@
+{
+  "status": "FROZEN EXPERIMENT; NOT RELEASE ACCEPTED: INHERITED HILT/PAULDRON INTERSECTIONS",
+  "scope": "Only existing isolated Xu source-K profile, source time .075-.30 and exact imported right-branch match; one actual .266667s interruption recorded. Earlier blend, actual cut/recovery, Ready, NPC and other modes are not approved.",
+  "parent_game": "main5b7a3b plus separately frozen K-PROTOTYPE runtime using50eb/16ed resources; this is NOT the current canonical Zhao WIP",
+  "baseline_runtime": {
+    "scripts/duel_actor.gd": "3ebf027d661e44dfe70f225b40b8104ca811edaf5081eb7f04a9e708df7f8f00",
+    "scripts/xu_ual1_k.gd": "07290ac6c07d12d61075191bb6709bb3b2982e010a174b1fcf0ccf467708a34e",
+    "scripts/fighter.gd": "81299db898b720103c9940c5b202e49912d5c8de88d984ab2f43a59eb6b9d35f",
+    "scripts/main.gd": "b85437241774f00984442b0617ff18f2524a22678b43940e0e62f3611d61b5f1"
+  },
+  "prepared_runtime": {
+    "scripts/duel_actor.gd": "2779c41be4420ec8875c7c682685ed09e63d46adc1853e32eb26caca7c32295e",
+    "scripts/xu_ual1_k.gd": "22df495cc25c54d9f2a068f66ef5a2284c60b7df873e4c158c9a9c3374340821",
+    "scripts/xu_family_hit.gd": "ad53126df0e597d76056b6eafbaaeafb2c3fbcb320b5cd2d0abef97968ad5de2"
+  },
+  "assets": {
+    "assets/characters/xuchu.glb": "50ebed213d9f4d90e12935474d6b992ae75e9815774037a2b366134b78ff8a55",
+    "assets/motion/xuchu_ual1_k.glb": "16edc9f4b3a2e70e12040eaad2c0156078b097a373f8d6720b0ec338c3ddeb0d",
+    "assets/motion/xuchu_ual1_k.json": "06ce586f0e7fd713d07f7bc7c9ce83f999db4a699de15c601167adbef57ce1d8",
+    "assets/weapons/xuchu_saber.glb": "6af365cd91d73f7b18b93586abb4a7d59e00ce1191633283d5834511c7901ebf"
+  },
+  "source_no_changes": true,
+  "ground_and_collision_result": "In actual F729-755 full saber11189 vertices stays >=.71407m above ground. Main blade(localY>=30) has zero body surface crossings across all sampled F724-756; hilt(localY<30) has non-grip shoulder/chest intersections in prep and early reaction, so no release approval."
+}

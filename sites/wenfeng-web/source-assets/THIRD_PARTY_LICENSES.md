@@ -1,5 +1,12 @@
 # 素材来源
 
+## 尚未用于运行游戏的研究原件
+
+- `animations/oga-wizard-candidate/`：Wizard by AnthonyMyers，[作者页面](https://opengameart.org/content/wizard-4)，[CC BY3.0](https://creativecommons.org/licenses/by/3.0/)。原始Blender文件未改。完整源审看后认为不适合许褚重刀发力和进出招，未重定向或安装。
+- `animations/lugaru-staff-candidates/`：Wolfire Games原始Lugaru资产，[官方开源仓库](https://github.com/osslugaru/lugaru)，[CC BY-SA3.0](https://creativecommons.org/licenses/by-sa/3.0/)。原二进制未改，完整CONTENT-LICENSE及SHA附同目录。资产许可与引擎GPL源码不同；这些动作不声明为CC0。配对反制不能当普通破防恢复，当前未重定向或安装。
+
+两组都只作源表演研究，不随当前Godot游戏打包，不表示取得即已通过动作质量验收。
+
 ## CMU 真人移动动作
 
 赵云步战单挑的前跑与正常倒走来自 [CMU Graphics Lab Motion Capture Database](https://mocap.cs.cmu.edu/)，原始数据为09_01与136_25（Normal Walk Backwards）。原始ASF/AMC、官方使用条款页面、下载地址及SHA256在 `animations/cmu-locomotion/`；允许在游戏中使用、修改与再分发，禁止销售原始或转换后的动作数据本身，不声明为CC0。原用户角色模型的权属保持不变。
