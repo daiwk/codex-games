@@ -1,0 +1,359 @@
+--- a/godot/scripts/fighter.gd
++++ b/godot/scripts/fighter.gd
+@@ -800 +800 @@
+-		gain_energy(9.0)
++		gain_energy(float(data.get("evade_energy", 9.0)))
+@@ -833 +833 @@
+-		gain_energy(6.0)
++		gain_energy(float(data.get("block_defender_energy", 6.0)))
+@@ -835 +835 @@
+-			attacker.gain_energy(3.0)
++			attacker.gain_energy(float(data.get("block_attacker_energy", 3.0)))
+@@ -854 +854 @@
+-		velocity = -toward_attacker.normalized() * (2.2 if data.heavy else 0.8)
++		velocity = -toward_attacker.normalized() * float(data.get("block_knockback", 2.2 if data.heavy else 0.8))
+@@ -909,0 +910 @@
++	_advance_attack_animation(delta)
+@@ -932 +933 @@
+-				strike_requested.emit(self, attack)
++				_emit_attack_strike(attack)
+@@ -938 +939 @@
+-				if combo_buffered and combo < 2 and action_time >= maxf(window.y + 0.10, action_duration * 0.58):
++				if combo_buffered and combo < 2 and action_time >= combo_continue_at():
+@@ -942 +943 @@
+-					_idle()
++					_finish_attack()
+@@ -981,0 +983 @@
++	_after_attack_move()
+@@ -982,0 +985,15 @@
++
++func combo_continue_at() -> float:
++	return maxf(float(attack.active.y) + 0.10, action_duration * 0.58)
++
++func _finish_attack() -> void:
++	_idle()
++
++func _advance_attack_animation(_delta: float) -> void:
++	pass
++
++func _emit_attack_strike(profile: Dictionary) -> void:
++	strike_requested.emit(self, profile)
++
++func _after_attack_move() -> void:
++	pass
+--- a/godot/scripts/duel_actor.gd
++++ b/godot/scripts/duel_actor.gd
+@@ -8,0 +9,3 @@
++signal source_combo_event(row: Dictionary)
++const XuSource = preload("res://scripts/xu_source_combo.gd")
++var source_combo = XuSource.new()
+@@ -68,0 +72 @@
++	source_combo.setup(self)
+@@ -239,0 +244,9 @@
++	if source_combo.enabled:
++		if clip.begins_with("XuGameJ") or clip.begins_with("XuGameRecover"):
++			tempo_profile = {}
++			source_combo.begin_clip(clip)
++			return
++		if clip == "Idle" and not source_combo.ready_clip.is_empty():
++			source_combo.play_ready(0.0 if source_combo.stage != "" else blend)
++			return
++		source_combo.legacy_clip()
+@@ -286,0 +300 @@
++	if source_combo.enabled: return source_combo.light()
+@@ -290,0 +305 @@
++	if source_combo.enabled: source_combo.clear_late_intent("heavy_intent")
+@@ -295,0 +311 @@
++	if source_combo.enabled: source_combo.clear_late_intent("skill_intent")
+@@ -300,0 +317 @@
++	if source_combo.enabled: source_combo.clear_late_intent("ultimate_intent")
+@@ -318,0 +336,3 @@
++	if source_combo.owns_motion_tick():
++		source_combo.apply_motion(get_physics_process_delta_time())
++		return
+@@ -372,0 +393 @@
++	if source_combo.enabled: source_combo.reset()
+@@ -437,0 +459,3 @@
++	if source_combo.enabled and source_combo.active:
++		turn_speed=0.0
++		return
+@@ -491,0 +516 @@
++	if source_combo.enabled: source_combo.clear_late_intent("dodge_intent")
+@@ -496,0 +522,33 @@
++
++# Temporary source opt-in hooks; every other role/action uses the base path.
++func _light_attacks() -> Array:
++	if source_combo.enabled: return source_combo.profiles()
++	return super._light_attacks()
++
++func _weapon_adjusted_attack(profile: Dictionary) -> Dictionary:
++	var out=super._weapon_adjusted_attack(profile)
++	if profile.get("xu_source",false):
++		out.duration=profile.duration
++		out.active=profile.active
++		out.lunge=0.0
++	return out
++
++func combo_continue_at() -> float:
++	return action_duration if attack.get("xu_source",false) else super.combo_continue_at()
++
++func _finish_attack() -> void:
++	if source_combo.enabled and source_combo.active: source_combo.finish()
++	else: super._finish_attack()
++
++func _advance_attack_animation(delta: float) -> void:
++	if source_combo.enabled: source_combo.prepare_tick(delta)
++
++func _emit_attack_strike(profile: Dictionary) -> void:
++	if profile.get("xu_source",false): source_combo.queue_strike(profile)
++	else: super._emit_attack_strike(profile)
++
++func _after_attack_move() -> void:
++	if source_combo.enabled: source_combo.post_move()
++
++func source_combo_status() -> Dictionary:
++	return source_combo.status()
+--- a/godot/scripts/main.gd
++++ b/godot/scripts/main.gd
+@@ -563,0 +564,3 @@
++	var physical_blade = bool(data.get("physical_blade",false))
++	if physical_blade and contact > defender.thrust_body_radius() + 0.07:
++		return
+@@ -579 +582 @@
+-	if physical_thrust:
++	if physical_thrust or physical_blade:
+--- /dev/null
++++ b/godot/scripts/xu_source_combo.gd
+@@ -0,0 +1,232 @@
++extends RefCounted
++
++## Temporary opt-in source-family chain. Source pose and root use one clock.
++var fighter
++var enabled = false
++var data: Dictionary = {}
++var active = false
++var recovering = false
++var stage = ""
++var stage_index = 0
++var last_time = 0.0
++var carry = 0.0
++var basis = Basis.IDENTITY
++var pending_root = Vector3.ZERO
++var pending_strike: Dictionary = {}
++var restart_queued = false
++var late_remaining = 0.0
++var ready_clip = "XuGameReady"
++var beat_hits: Dictionary = {}
++var announced_beats: Dictionary = {}
++var current_beat = -1
++
++func setup(owner_fighter) -> void:
++	fighter = owner_fighter
++	enabled = not fighter.mounted and fighter.character_id == "xuchu" and fighter.weapon_id == "xuchu_saber" and fighter.animation_names.has("XuGameJ1")
++	if enabled:
++		data = JSON.parse_string(FileAccess.get_file_as_string("res://assets/motion/xuchu_source_combo.json"))
++		play_ready(0.12)
++
++func reset() -> void:
++	beat_hits.clear();announced_beats.clear();current_beat=-1
++	active=false;recovering=false;stage="";last_time=0.;carry=0.;pending_root=Vector3.ZERO;pending_strike.clear();restart_queued=false;late_remaining=0.;ready_clip="XuGameReady"
++
++func event(kind: String, extra: Dictionary = {}) -> void:
++	var row = {"kind":kind,"physics_tick":Engine.get_physics_frames(),"stage":stage,"recovering":recovering,
++		"combo":fighter.combo,"action_time":fighter.action_time,"clip":fighter.current_clip,"restart_queued":restart_queued,"late_remaining":late_remaining}
++	row.merge(extra)
++	fighter.emit_signal("source_combo_event",row)
++
++func profiles() -> Array:
++	var result: Array = []
++	for p in data.profiles:
++		var row: Dictionary = p.duplicate(true)
++		row["active"] = Vector2(p.active[0],p.active[1])
++		row.merge({"xu_source":true,"physical_blade":true,"min_dot":-1.0,"lunge":0.0,"heavy":false})
++		result.append(row)
++	return result
++
++func curve(alias: String, time: float) -> Vector3:
++	var clip: Dictionary = data.clips[alias]
++	var times: Array = clip.times
++	var values: Array = clip.root_delta_model
++	var f = clampf(time / maxf(clip.duration,0.0001),0.,1.) * (times.size()-1)
++	var i = mini(int(f),times.size()-1)
++	var j = mini(i+1,times.size()-1)
++	var a: Array = values[i];var b: Array = values[j]
++	return Vector3(a[0],0,a[2]).lerp(Vector3(b[0],0,b[2]),f-i)
++
++func sync_weapon() -> void:
++	fighter.skeleton.force_update_all_bone_transforms()
++	# BoneAttachment's renderer notification otherwise occurs after gameplay.
++	# This is the same source hand transform, not an IK or weapon-path edit.
++	var socket = fighter.grip.get_parent()
++	if socket is BoneAttachment3D:
++		var index = fighter.skeleton.find_bone(socket.bone_name)
++		if index >= 0: socket.transform = fighter.skeleton.get_bone_global_pose(index)
++
++func advance_to(time: float) -> void:
++	var t = clampf(time,0.,float(data.clips[stage].duration))
++	pending_root += curve(stage,t)-curve(stage,last_time)
++	fighter.animation_player.advance(maxf(0.,t-last_time))
++	last_time = t
++	sync_weapon()
++
++func clear_late_intent(reason: String) -> void:
++	if restart_queued:event("late_J_cleared",{"reason":reason})
++	restart_queued=false
++	late_remaining=0.0
++
++func prepare_tick(delta: float) -> void:
++	if not enabled or not active or fighter.state != "attack":return
++	if restart_queued:
++		late_remaining=maxf(0.0,late_remaining-delta)
++		if late_remaining<=0.0:
++			event("late_J_expired")
++			restart_queued=false
++	carry = maxf(0.,fighter.action_time-float(data.clips[stage].duration))
++	advance_to(fighter.action_time)
++	if fighter.attack.has("beats"):
++		current_beat=beat_at(last_time,fighter.attack.beats)
++		fighter.hit_landed=current_beat<0 or beat_hits.get(current_beat,[]).has(fighter.opponent.get_instance_id())
++		fighter.swing_announced=true
++		for i in fighter.attack.beats.size():
++			var beat: Dictionary=fighter.attack.beats[i]
++			if not announced_beats.has(i) and last_time>=float(beat.active[0])-.055 and last_time<=float(beat.active[1]):
++				announced_beats[i]=true
++				fighter.action_started.emit(fighter,"swing_light")
++				event("source_beat_swing",{"source_beat_id":beat.id,"source_time":last_time+float(data.clips[stage].source_start)})
++
++func beat_at(time: float,beats: Array) -> int:
++	for i in beats.size():
++		if time>=float(beats[i].active[0]) and time<=float(beats[i].active[1]):return i
++	return -1
++
++func begin_clip(alias: String) -> void:
++	var continuation = active
++	var remainder = carry if continuation else 0.0
++	if not continuation:
++		var next_basis = fighter.global_basis.orthonormalized()
++		# A queued new chain can start before this tick moves the old recovery
++		# endpoint. Transport that pending displacement; never discard it.
++		pending_root = next_basis.inverse() * basis * pending_root
++		basis = next_basis
++		restart_queued = false
++		late_remaining = 0.0
++	stage = alias
++	beat_hits.clear();announced_beats.clear();current_beat=-1
++	stage_index = fighter.combo
++	recovering = alias.begins_with("XuGameRecover")
++	active = true
++	last_time = 0.
++	carry = 0.
++	fighter.action_time = remainder
++	fighter.combat_motion.influence = 0.0
++	fighter.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
++	var key: String = fighter.animation_names[alias]
++	fighter.animation_player.play(key,0.0 if continuation else (0.13 if ready_clip == "XuGameReadyAfter3" else 0.075),1.0)
++	fighter.animation_player.seek(0.,true)
++	fighter.animation_player.advance(0.)
++	fighter.current_clip = alias
++	if fighter.attack.has("beats"):fighter.swing_announced=true
++	advance_to(remainder)
++	event("source_recovery" if recovering else ("source_continue" if continuation else "source_start"),{"overrun":remainder,"source_start":data.clips[alias].source_start})
++
++func light() -> bool:
++	if not fighter.enabled or fighter.hp<=0:return false
++	if active and fighter.state=="attack":
++		if recovering or stage_index>=2:
++			restart_queued=true
++			late_remaining=0.260
++			event("late_J_queued_new_chain",{"expires_after_source_seconds":late_remaining})
++			return true
++		fighter.combo_buffered=true
++		event("source_J_buffered")
++		return true
++	if fighter.state not in ["idle","move","block"]:return false
++	return fighter._begin_attack(0)
++
++func finish() -> void:
++	if not active:return
++	if not recovering and stage_index<2:
++		var alias="XuGameRecover%d"%(stage_index+1)
++		fighter.attack={"clip":alias,"duration":float(data.clips[alias].duration),"active":Vector2(999,999),"lunge":0.0,"heavy":false,"xu_source":true,"cost":0.,"reach":0.}
++		fighter.action_duration=float(data.clips[alias].duration)
++		fighter.combo_buffered=false
++		fighter.hit_landed=true
++		fighter.swing_announced=true
++		begin_clip(alias)
++		return
++	ready_clip="XuGameReadyAfter%d"%(stage_index+1)
++	var queued=restart_queued and late_remaining>0.0
++	active=false
++	recovering=false
++	restart_queued=false
++	late_remaining=0.0
++	fighter._idle()
++	event("source_complete",{"held_terminal_pose":ready_clip})
++	if queued:
++		if not fighter._begin_attack(0): event("queued_J_rejected_stamina")
++
++func play_ready(blend: float) -> void:
++	if ready_clip.is_empty():return
++	fighter.combat_motion.influence=1.0
++	fighter.animation_player.callback_mode_process=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
++	var key: String=fighter.animation_names[ready_clip]
++	fighter.animation_player.get_animation(key).loop_mode=Animation.LOOP_LINEAR
++	fighter.animation_player.play(key,blend,1.0)
++	fighter.current_clip="Idle"
++
++func legacy_clip() -> void:
++	if active:event("source_interrupted")
++	clear_late_intent("legacy_clip")
++	active=false;recovering=false;restart_queued=false;late_remaining=0.0;pending_root=Vector3.ZERO;pending_strike.clear();carry=0.
++	ready_clip=""
++	fighter.combat_motion.influence=1.0
++	fighter.animation_player.callback_mode_process=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
++
++func owns_motion_tick() -> bool:
++	return enabled and (active or pending_root.length_squared()>0.0000000001)
++
++func apply_motion(delta: float) -> void:
++	var world=basis*pending_root*float(data.actor_scale)
++	fighter.velocity.x=world.x/maxf(delta,0.00001)
++	fighter.velocity.z=world.z/maxf(delta,0.00001)
++	pending_root=Vector3.ZERO
++
++func queue_strike(profile: Dictionary) -> void:
++	pending_strike=profile.duplicate(true)
++	if profile.has("beats"):
++		var index=beat_at(last_time,profile.beats)
++		if index<0 or beat_hits.get(index,[]).has(fighter.opponent.get_instance_id()):
++			pending_strike.clear()
++			return
++		var beat: Dictionary=profile.beats[index]
++		pending_strike.erase("beats")
++		pending_strike.merge(beat,true)
++		pending_strike["active"]=Vector2(beat.active[0],beat.active[1])
++		pending_strike["damage"]=float(profile.damage)*float(beat.damage_base)/28.0
++		pending_strike["source_beat_index"]=index
++		pending_strike["source_beat_id"]=beat.id
++		pending_strike["source_stage_damage_total"]=float(profile.damage)
++	pending_strike["source_sample_time"]=last_time+float(data.clips[stage].source_start)
++	pending_strike["source_sample_tick"]=Engine.get_physics_frames()
++
++func post_move() -> void:
++	if pending_strike.is_empty():return
++	sync_weapon()
++	var profile=pending_strike.duplicate(true)
++	pending_strike.clear()
++	if fighter.state=="attack" and not fighter.hit_landed:
++		var target_id=fighter.opponent.get_instance_id()
++		fighter.strike_requested.emit(fighter,profile)
++		if profile.has("source_beat_index") and fighter.hit_landed:
++			var index=int(profile.source_beat_index)
++			var targets: Array=beat_hits.get(index,[])
++			if not targets.has(target_id):targets.append(target_id)
++			beat_hits[index]=targets
++			event("source_beat_contact",{"source_beat_id":profile.source_beat_id,"source_time":profile.source_sample_time,"target_id":target_id,"state_after":fighter.state})
++
++func status() -> Dictionary:
++	return {"enabled":enabled,"active":active,"recovering":recovering,"stage":stage,"time":last_time,
++		"source_time":last_time+float(data.clips[stage].source_start) if not stage.is_empty() else -1.,"ready_clip":ready_clip,"restart_queued":restart_queued,"late_remaining":late_remaining,"source_beat_index":current_beat,"beat_hits":beat_hits.duplicate(true)}

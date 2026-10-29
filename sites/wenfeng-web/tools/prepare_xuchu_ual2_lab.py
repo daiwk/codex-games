@@ -163,7 +163,9 @@ def main():
     project = prepare_engine_project(output, manifest)
     if args.godot:
         engine = str(args.godot.expanduser().resolve())
-        run_logged([engine, "--headless", "--editor", "--path", str(project), "--import", "--quit", "--log-file", str(output / "godot-import-engine.log")], output, "godot-import", env)
+        # --import waits for resource imports and then exits; --quit instead
+        # requests first-iteration shutdown. Do not combine those lifecycles.
+        run_logged([engine, "--headless", "--path", str(project), "--import", "--log-file", str(output / "godot-import-engine.log")], output, "godot-import", env)
         run_logged([engine, "--headless", "--path", str(project), "--script", "res://switch_probe.gd", "--log-file", str(output / "godot-switch-engine.log")], output, "godot-switch", env)
     artifacts = {name: {"sha256": sha(output / name), "reference_sha256": reference, "matches_reference": sha(output / name) == reference} for name, reference in REFERENCE_OUTPUTS.items()}
     if args.assert_reference_shas and not all(a["matches_reference"] for a in artifacts.values()):

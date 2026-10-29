@@ -1,0 +1,27 @@
+{
+  "baseline_commit": "b510af2a74b6c5a000cf683f383a2f5c06e8b662",
+  "baseline_files": {
+    "scripts/fighter.gd": "d8d878cee032b30529a140615472883962273a32bbcc148b74c6c49f5a85ae34",
+    "scripts/duel_actor.gd": "e7d823c32cc6abcce70a3ef388f6c87e760a9b67fcd9ff8d578dce1694d14245",
+    "scripts/main.gd": "19e8e1dad119c822f3600c7fd7f06fda990afea5488228c42b073a60cb8584b7",
+    "scripts/thrust_contact.gd": "34f114687df69c8487d56a211ba032590b0f5b8c839b9cc09f97a5482046061f",
+    "scripts/duel_motion_polish.gd": "759054e69b0383579a7a908cc34ca922a6c4ca7f5c95e180932e23809680451b",
+    "scripts/duel_attack_tempo.gd": "05f44b136b09b58bb78b7c4ba2dfdb9c98180fd9cec9fe88a1888de82515ed6b",
+    "scripts/roster.gd": "a9ec96bcc25d2f73fcf3c8fa62ee33259cb54459a80c7df53fa95885c88535e5",
+    "scripts/web_bridge.gd": "526eb8388df0290e295b72f0f97300e51d9797d23f952d87bbe3d56e3bce38f8",
+    "assets/characters/xuchu.glb": "89f369ccbfce8b5ecd4735ed5f4a18467d23ca4dfc9ec684f51b9c7c30dad43c",
+    "assets/characters/zhaoyun.glb": "23ba8aabd2bafa6d06ff9332008b1828fa27d1d56d9f1def85ea0acc3dfafe29",
+    "assets/characters/animation_manifest.json": "3182fe59c2175d820cacccfe70f97e6b0bb2bfbc170d0682011307d024eec6b0",
+    "assets/weapons/xuchu_saber.glb": "6af365cd91d73f7b18b93586abb4a7d59e00ce1191633283d5834511c7901ebf",
+    "project.godot": "31f4aacdabb855bc28b2ea43813ce33b33fc6512048afef8da169b483ad15bc1"
+  },
+  "rig_glb_sha256": "d940035cc72829f37b277dfdefef60e5a6c5d90513fa38ab39028e306d4b7e76",
+  "prepared_files": {
+    "scripts/fighter.gd": "392033e5488974eabb25984f19f6d3d91ed31d688d57f12b378c1c93f303d6ca",
+    "scripts/duel_actor.gd": "bb218050e1129910e9d66fe5544a8c5ef5c613ee62aa9ac5614a64e7c6d32ff9",
+    "scripts/main.gd": "757bb4655c67d5c131ad9029891bfbd3d2fe2ddcac73abb1c3a3a14f9f3cac3b",
+    "scripts/xu_source_combo.gd": "36916d0c34f2a9c033f65e70bed281dcc837650076983ee4e5eb4f88b249f6d5"
+  },
+  "prepared_model_sha256": "b5318e4987623aa6888938d6c5087b474241b539a689ff3eddcaf7ba6f87b58a",
+  "gltf_tools_sha256": "8eead357447e8e64ecb6ea77b20c6282af2cc1e9264bdcf2c659b06fd4c4fc68"
+}
