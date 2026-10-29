@@ -587,10 +587,12 @@ func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 	resolving_melee_before_hp = defender.hp
 	var hp_before = defender.hp
 	var outcome = defender.receive_strike(attacker, resolved)
+	if attacker.has_method("record_trial_contact_outcome"): attacker.call("record_trial_contact_outcome", outcome)
 	resolving_melee_before_hp = -1.0
 	last_melee_hit = {"attacker":attacker.character_id,"damage":hp_before-defender.hp,"outcome":outcome,
 		"mounted":attacker.mounted,"speed":attacker.mount_speed,"data":resolved.duplicate(true)}
-	if physical_thrust and outcome not in ["evade", "dead"]:
+	var flesh_passthrough = attacker.has_method("flesh_source_trial_active") and bool(attacker.call("flesh_source_trial_active")) and outcome in ["hit", "heavy_hit"]
+	if physical_thrust and outcome not in ["evade", "dead"] and not flesh_passthrough:
 		attacker.register_thrust_contact(resolved.contact_point)
 
 func _on_special_hit(attacker: DuelFighter, defender: DuelFighter, data: Dictionary, at: Vector3) -> void:

@@ -48,6 +48,9 @@ var _cavalry_intended_speed = 0.0
 var _cavalry_pose: SkeletonModifier3D
 var _cavalry_edge_side = Vector3.ZERO
 var _duel_actual_velocity = Vector3.ZERO
+var _source_clock = false
+var _source_clock_time = 0.0
+var _source_strike: Dictionary = {}
 var _recorded_gaits = false
 var _recorded_retreat_speed = 1.65
 var _recorded_step_intervals: Dictionary = {}
@@ -237,6 +240,10 @@ func prewarm_attack_animations() -> void:
 	attack_warmup_ms = float(Time.get_ticks_usec() - begin) / 1000.0
 
 func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
+	if _source_clock and state != "attack":
+		_source_clock = false
+		_source_strike.clear()
+		animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
 	if state != "attack" or duration <= 0.0 or not attack.has("active"):
 		super.play_clip(clip, blend, duration)
 		return
@@ -259,6 +266,14 @@ func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
 	current_clip = clip
 
 func _enter_attack() -> void:
+	_source_clock_time = 0.0
+	_source_strike.clear()
+	# Do not steal an unfinished legacy response from K/skill/previous hard J.
+	# Eligibility is captured once; an opted-out attack stays legacy throughout.
+	var inherited_legacy_recovery = is_instance_valid(thrust_contact) and (bool(thrust_contact.get("_was_constrained")) or bool(thrust_contact.get("_roll_recovering")) or bool(thrust_contact.get("_phrase_settling")))
+	_clear_trial_contact("new_attack")
+	trial_contact_serial += 1
+	trial_contact_scope = is_player and not mounted and character_id == "zhaoyun" and is_thrust_weapon() and not bool(attack.get("heavy", false)) and not inherited_legacy_recovery
 	if mounted:
 		_cavalry_selected_side = _cavalry_pending_side
 		_cavalry_side_manual = _cavalry_pending_side != 0
@@ -270,6 +285,8 @@ func _enter_attack() -> void:
 	_duel_step_basis = global_basis
 	_duel_step_velocity = Vector3(velocity.x, 0.0, velocity.z)
 	super._enter_attack()
+	_source_clock = flesh_source_trial_active() and state == "attack"
+	animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if _source_clock else AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
 
 func register_thrust_contact(at: Vector3) -> void:
 	if not is_physical_thrust(): return
@@ -370,6 +387,8 @@ func _cancel_skill(completion = "cancel") -> void:
 	super._cancel_skill(completion)
 
 func reset_fighter() -> void:
+	_clear_trial_contact("reset")
+	trial_contact_serial = 0
 	set_duel_weapon_thrown(false)
 	if _duel_air_active: floor_snap_length = _duel_floor_snap
 	_duel_air_active = false
@@ -494,3 +513,82 @@ func request_dodge(direction = Vector3.ZERO) -> bool:
 	var accepted = super.request_dodge(direction)
 	if accepted and not mounted: begin_duel_aerial(2.3)
 	return accepted
+
+# TMP: per-attack resolved response; original pre-hit guard prediction retained.
+var trial_contact_response = "pending"
+var trial_contact_outcome = ""
+var trial_contact_serial = 0
+var trial_contact_scope = false
+var trial_contact_clear_reason = "initial"
+
+func _clear_trial_contact(reason: String) -> void:
+	trial_contact_response = "pending"
+	trial_contact_outcome = ""
+	trial_contact_scope = false
+	trial_contact_clear_reason = reason
+
+func record_trial_contact_outcome(outcome: String) -> void:
+	if not trial_contact_scope or trial_contact_response != "pending": return
+	if outcome in ["hit", "heavy_hit"]:
+		trial_contact_response = "flesh"
+		trial_contact_outcome = outcome
+	elif outcome in ["block", "parry", "break"]:
+		trial_contact_response = "hard"
+		trial_contact_outcome = outcome
+
+func update_trial_contact_recovery() -> void:
+	if trial_contact_response != "hard" or state not in ["idle", "move", "block"]: return
+	if not is_instance_valid(thrust_contact): return
+	# Keep hard through the original modifier's own recovery/roll settling.
+	if bool(thrust_contact.get("_was_constrained")) or bool(thrust_contact.get("_roll_recovering")) or bool(thrust_contact.get("_phrase_settling")): return
+	_clear_trial_contact("legacy_recovery_finished")
+
+func flesh_source_trial_active() -> bool:
+	if not trial_contact_scope or state != "attack": return false
+	if mounted or not is_player or character_id != "zhaoyun" or not is_thrust_weapon(): return false
+	if state == "attack" and bool(attack.get("heavy", false)): return false
+	if trial_contact_response == "hard": return false
+	if trial_contact_response == "flesh": return true
+	if not is_instance_valid(opponent): return false
+	# Exactly the prior pending prediction; classification after a real result
+	# no longer depends on the defender's later guard/stagger state.
+	if opponent.state == "block": return false
+	if opponent.state == "skill":
+		var window: Vector2 = opponent.attack.get("guard_window", Vector2(-1.0,-1.0))
+		if opponent.action_time >= window.x and opponent.action_time <= window.y: return false
+	return true
+
+func receive_strike(attacker: DuelFighter, data: Dictionary) -> String:
+	var result = super.receive_strike(attacker, data)
+	if state in ["hit", "dead"]: _clear_trial_contact("received_" + state)
+	return result
+
+func _idle() -> void:
+	if trial_contact_response == "flesh": _clear_trial_contact("flesh_attack_exited")
+	super._idle()
+
+# Isolated source-only timing hypothesis, same actor ordering; no global defer.
+func _source_clock_sync() -> void:
+	skeleton.force_update_all_bone_transforms()
+	if is_instance_valid(thrust_contact) and flesh_source_trial_active(): thrust_contact._cache_final_pose()
+	_update_two_hand_grip(0.0, true)
+
+func _advance_attack_animation(_delta: float) -> void:
+	if not _source_clock or state != "attack": return
+	animation_player.advance(maxf(0.0, action_time - _source_clock_time))
+	_source_clock_time = action_time
+	_source_clock_sync()
+
+func _emit_attack_strike(profile: Dictionary) -> void:
+	if _source_clock:
+		_source_strike = profile.duplicate(true)
+	else:
+		super._emit_attack_strike(profile)
+
+func _after_attack_move() -> void:
+	if not _source_clock: return
+	_source_clock_sync()
+	var profile = _source_strike.duplicate(true)
+	_source_strike.clear()
+	if not profile.is_empty() and state == "attack" and not hit_landed:
+		strike_requested.emit(self, profile)

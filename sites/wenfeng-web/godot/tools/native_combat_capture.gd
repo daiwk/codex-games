@@ -25,6 +25,7 @@ var commands: Array = []
 var held: Dictionary = {}
 var side_look = Vector3.ZERO
 var output = ""
+var hardware_event_count = -1
 
 class InputDriver extends Node:
 	var game: Node
@@ -107,6 +108,15 @@ func release_inputs() -> void:
 func on_action(actor: Node, action: String) -> void:
 	events.append({"frame": frame_index, "stage": stage, "kind": "action", "actor": "player" if actor == game.player else "enemy",
 		"action": action, "combo": actor.combo, "state": actor.state, "action_time": actor.action_time})
+
+func on_strike(actor: Node, _data: Dictionary) -> void:
+	# Main is connected first. On an ordinary hit it does not move the attacker;
+	# defensive reactions can change that pose and must be interpreted separately.
+	events.append({"frame": frame_index, "stage": stage, "kind": "strike_request",
+		"actor": "player" if actor == game.player else "enemy",
+		"used_tip": p(actor.blade_tip()), "used_base": p(actor.blade_base()),
+		"action_time": actor.action_time, "animation_time": actor.animation_player.current_animation_position,
+		"sample_point": "synchronous strike listener after Main resolution"})
 
 func on_impact(actor: Node, result: String, _at: Vector3) -> void:
 	events.append({"frame": frame_index, "stage": stage, "kind": "impact", "actor": "player" if actor == game.player else "enemy",
@@ -239,7 +249,9 @@ func actor_row(actor: Node3D) -> Dictionary:
 		"source_grasp": grasp_row(actor, source_observers[actor.get_instance_id()]),
 		"final_grasp": grasp_row(actor, observer), "final_local_rotations": observer.rotations.duplicate(true), "bone_sample_physics_frame": observer.stamp,
 		"blade_base": p(actor.blade_base()), "blade_tip": p(actor.blade_tip()),
-		"contact_active": actor.contact_active, "contact_latched": actor.contact_latched}
+		"contact_active": actor.contact_active, "contact_latched": actor.contact_latched,
+		"source_thrust": {"active": actor.has_method("flesh_source_trial_active") and actor.call("flesh_source_trial_active"),
+			"scope": actor.get("trial_contact_scope"), "response": actor.get("trial_contact_response"), "clock": actor.get("_source_clock")}}
 
 func run() -> void:
 	Engine.physics_ticks_per_second = 60
@@ -254,6 +266,11 @@ func run() -> void:
 	driver = InputDriver.new()
 	viewport.add_child(driver)
 	game = load("res://main.tscn").instantiate()
+	if not game.has_method("select_character") or not game.has_method("_player_input"):
+		printerr("Capture aborted: the game script failed to load.")
+		game.free()
+		quit(2)
+		return
 	viewport.add_child(game)
 	driver.game = game
 	game.fx.muted = true
@@ -261,6 +278,11 @@ func run() -> void:
 	game.ai_enabled = false
 	game.select_character(role)
 	game.select_opponent("zhaoyun" if role != "zhaoyun" else "machao")
+	# Main._ready configures the physical bindings. Isolate only after setup;
+	# the named actions and production bridge still drive this fixture.
+	for action in InputMap.get_actions(): InputMap.action_erase_events(action)
+	hardware_event_count = 0
+	for action in InputMap.get_actions(): hardware_event_count += InputMap.action_get_events(action).size()
 	bridge = load("res://tools/native_capture_bridge.gd").new()
 	bridge.game = game
 	viewport.add_child(bridge)
@@ -284,6 +306,7 @@ func run() -> void:
 		actor.skeleton.add_child(observer)
 		observers[actor.get_instance_id()] = observer
 		actor.action_started.connect(on_action)
+		actor.strike_requested.connect(on_strike)
 		actor.impact_received.connect(on_impact)
 		actor.skill_triggered.connect(on_skill)
 	output = base.path_join(role + "-" + camera_kind + ("-" + suite if suite != "full" else "") + ("-" + tag if tag != "" else "") + "-" + str(seconds) + "s")
@@ -319,6 +342,8 @@ func run() -> void:
 		"resolution": [1280,800], "testing": true, "ai": false, "audio": "muted diagnostic",
 		"capture": "SubViewport UPDATE_ALWAYS; native --disable-render-loop; force_draw(false,1/60); per-frame JPG, renderer-drawn 16-bit index barcode",
 		"input": "production web_bridge dispatch and original main._player_input via QA input driver; no movement/combat functions replaced",
+		"physical_input": "QA clears InputMap hardware events; named action and bridge input remain active",
+		"physical_input_event_count_after_setup": hardware_event_count,
 		"fixture_resets": "Each labeled scenario resets positions/resources visibly; within-stage sequences are uncut. Not a proof of natural transitions between resets.",
 		"zhaoyun_glb_sha256": FileAccess.get_sha256("res://assets/characters/zhaoyun.glb"),
 		"role_glb_sha256": FileAccess.get_sha256("res://assets/characters/%s.glb" % role),

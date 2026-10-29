@@ -57,6 +57,22 @@ func _continuous_fit(target_result: Dictionary, delta: float) -> Dictionary:
 	return super._continuous_fit(target_result, delta)
 
 func _process_modification_with_delta(delta: float) -> void:
+	if is_instance_valid(fighter) and fighter.has_method("update_trial_contact_recovery"): fighter.call("update_trial_contact_recovery")
+	if is_instance_valid(fighter) and fighter.has_method("flesh_source_trial_active") and bool(fighter.call("flesh_source_trial_active")):
+		# No opponent-capsule retraction / sideguard / historical body rewind.
+		# The exact current AnimationPlayer output remains authoritative.
+		fighter._contact_backstep_requested = false
+		fighter.contact_active = false
+		fighter.contact_retraction = 0.0
+		_was_constrained = false
+		_roll_recovering = false
+		_grip_contact_session = false
+		_phrase_settling = false
+		_previous_body_rotations.clear()
+		_previous_hip_position = Vector3.ZERO
+		if fighter.state in ["idle", "move"]: _ready_rotations = _rotations()
+		_cache_final_pose()
+		return
 	var prior_rotations = _previous_rotations.duplicate()
 	var prior_frames = _previous_arm_frames.duplicate(true)
 	var prior_axis = _previous_shaft_axis
