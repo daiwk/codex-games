@@ -477,6 +477,10 @@ func _clear_combat_input() -> void:
 	pending_input_until = 0
 	captured_inputs.clear()
 	for action in COMBAT_INPUTS:
+		# Releasing does not clear this tick's just_pressed edge. Consume it
+		# so a resume click (or paused tap) cannot enter the next input poll.
+		if Input.is_action_just_pressed(action):
+			captured_inputs[action] = true
 		Input.action_release(action)
 	Input.action_release("cavalry_brake")
 	if is_instance_valid(player) and player.mounted and player.has_method("set_cavalry_input"):
@@ -559,8 +563,17 @@ func _resolve_strike(attacker: DuelFighter, data: Dictionary) -> void:
 	var contact = minf(blade[0].distance_to(blade[1]), sweep[0].distance_to(sweep[1]))
 	if physical_thrust and contact > defender.thrust_body_radius() + 0.07:
 		return
-	if not physical_thrust and data.get("shape", "") != "line" and not data.get("wave", false) and contact > 0.70 and offset.length() > 1.48:
-		return
+	if not physical_thrust and data.get("shape", "") != "line" and not data.get("wave", false) and contact > 0.70:
+		if offset.length() > 1.48:
+			return
+		if not data.get("radial", false):
+			# Close slashes retain their horizontal allowance, but a blade
+			# wholly above/below the body cannot cause a hit, block or parry.
+			var blade_min_y = minf(attacker.blade_base().y, minf(attacker.blade_tip().y, attacker.previous_tip.y))
+			var blade_max_y = maxf(attacker.blade_base().y, maxf(attacker.blade_tip().y, attacker.previous_tip.y))
+			var radius = defender.thrust_body_radius() + 0.07
+			if blade_min_y > high.y + radius or blade_max_y < low.y - radius:
+				return
 	attacker.hit_landed = true
 	var resolved = data.duplicate()
 	if physical_thrust:
@@ -734,8 +747,10 @@ func _update_camera(delta: float, instant = false) -> void:
 		fov = 35.0
 		if combat_mode == "mounted":
 			desired = Vector3(4.8, 3.45, 9.6)
-			target = Vector3(1.0, 1.65, 0.0)
-			fov = 44.0
+			# Frame the rider below the mode/horse controls while keeping
+			# the horse above the opponent-selection row.
+			target = Vector3(1.0, 2.2, 0.0)
+			fov = 48.0
 	else:
 		var axis = enemy.global_position - player.global_position
 		axis.y = 0.0

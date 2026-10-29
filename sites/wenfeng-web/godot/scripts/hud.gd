@@ -243,7 +243,9 @@ func _process(delta: float) -> void:
 		buttons.horse_white.set_pressed_no_signal(game.horse_color == "white")
 		buttons.enemy_horse_brown.set_pressed_no_signal(game.enemy_horse_color == "brown")
 		buttons.enemy_horse_white.set_pressed_no_signal(game.enemy_horse_color == "white")
-		menu_mode_hint.position.y = 365 if mounted else 307
+		# Mounted controls occupy the top of the preview; put the driving
+		# hint below the opponent choices instead of across the rider's face.
+		menu_mode_hint.position.y = 741 if mounted else 307
 		menu_mode_hint.text = "W/S 调速 · A/D 转马 · Space 催马 · V 跳跃" if mounted else "移动周旋 · 自动面向对手 · Space 闪避"
 		menu_move_hint.text = "W/S 调速  A/D 转马  X 刹车  Z/C 左右出招" if mounted else "WASD 移动  J / K 出招  Space 闪避  Tab 锁定"
 		for id in Roster.IDS:

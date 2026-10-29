@@ -26,6 +26,8 @@ python3 tools/fetch_web_resources.py
 
 当前六将技能使用 `godot/tools/role_identity_test.gd` 检查实际出招、逐击伤害、资源门槛及骨骼轨迹差异；`wrist_pose_test.gd` 检查最终持握与蒙皮，同时保留保守的转速诊断，`duel_lock_test.gd` 检查锁定输入与镜头。运行方式为 `Godot --headless --path godot --script res://tools/role_identity_test.gd -- --rpg-test`，替换脚本名即可运行其余检查。早期 `polearm_test.gd` 与内置 `--skills-test` 保留旧版技能断言，不能作为当前六将技能的验收结果。
 
+2026-10-29 遗留问题修复：暂停页点击“继续”与暂停内的按键不再泄漏为恢复后的攻击；贴身横斩仍保留横向容错，但兵刃和扫掠高度完全离开身体时不会造成伤害、格挡或招架；马战选将预览避开挡脸的模式/马色栏。专项回归为 `duel_pause_input_test.gd`（真实GUI、键鼠及触屏缓冲）与 `melee_height_test.gd`（地面六将轻重击、空中接触/落空、格挡及技能路径）。此次不改变已确认的赵云前后行走动作与速度。
+
 `godot/tools/` 保留游戏源码使用的回归和场景检查工具。生成的导入缓存与 `qa/` 输出均忽略，不进入仓库。
 
 ## 部署文件
