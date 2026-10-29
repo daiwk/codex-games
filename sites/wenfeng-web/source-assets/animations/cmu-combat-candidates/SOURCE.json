@@ -25,7 +25,36 @@
       "url": "https://mocap.cs.cmu.edu/subjects/02/02_09.amc",
       "bytes": 825503,
       "sha256": "a217c49c4d3e834b9a7da1ccaffb12f0b8aeed9b7c90c114b365e5f3d265a6df"
+    },
+    "02_09.c3d": {
+      "url": "https://mocap.cs.cmu.edu/subjects/02/02_09.c3d",
+      "bytes": 768480,
+      "sha256": "24b2c2cfc5f3e52ffe451c60fc5e137098a2ee18316240644edea070a6616611"
     }
   },
-  "runtime_status": "Not used in runtime. Original full takes retained for source review and a separate Xu Chu single-hand prototype. No commercial reference game animation extracted."
+  "runtime_status": "Not used in runtime. Original full takes retained for source review and a separate Xu Chu single-hand prototype. No commercial reference game animation extracted.",
+  "C3D": {
+    "units": "mm",
+    "rate_hz": 120,
+    "first_original_frame": 9,
+    "last_original_frame": 1041,
+    "stored_samples": 1033,
+    "AMC_alignment": "AMC sample1/source time0 corresponds first stored C3D frame9; fixed offsets were tested with limb marker/joint trajectories.",
+    "markers_of_interest": [
+      "LHEE",
+      "LTOE",
+      "LMT5",
+      "RHEE",
+      "RTOE",
+      "RMT5",
+      "WEP1",
+      "WEP2",
+      "WEP3",
+      "RFIN",
+      "RWRA",
+      "RWRB"
+    ],
+    "interpretation": "Physical foot and prop marker trajectories. A low/stable marker is a contact candidate, not literal sole height or force-plate-certified support. WEP marker names and longest pair are not documented blade tip/handle labels."
+  },
+  "prototype_note": "ASF/AMC-only frozen /tmp26fc GLB uses static target grip and foot references; it does not use the subsequently acquired C3D prop markers. Foot basis/marker geometry and target limb proportions are under diagnosis; no experimental foot/IK variant is approved."
 }
