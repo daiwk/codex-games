@@ -1,0 +1,17 @@
+{
+  "status": "REJECTED CONTROL / BACK-EDGE DOWNCUT AND ENTRY TRANSITIONS NOT ACCEPTED",
+  "baseline_commit": "3fd0a4c392d8ff493b46e19b0670547e30edfb86",
+  "baseline": {
+    "scripts/fighter.gd": "d8d878cee032b30529a140615472883962273a32bbcc148b74c6c49f5a85ae34",
+    "scripts/duel_actor.gd": "e7d823c32cc6abcce70a3ef388f6c87e760a9b67fcd9ff8d578dce1694d14245",
+    "scripts/main.gd": "19e8e1dad119c822f3600c7fd7f06fda990afea5488228c42b073a60cb8584b7",
+    "assets/characters/xuchu.glb": "89f369ccbfce8b5ecd4735ed5f4a18467d23ca4dfc9ec684f51b9c7c30dad43c",
+    "assets/characters/zhaoyun.glb": "23ba8aabd2bafa6d06ff9332008b1828fa27d1d56d9f1def85ea0acc3dfafe29"
+  },
+  "prepared_runtime": {
+    "scripts/fighter.gd": "81299db898b720103c9940c5b202e49912d5c8de88d984ab2f43a59eb6b9d35f",
+    "scripts/duel_actor.gd": "3ebf027d661e44dfe70f225b40b8104ca811edaf5081eb7f04a9e708df7f8f00",
+    "scripts/main.gd": "b85437241774f00984442b0617ff18f2524a22678b43940e0e62f3611d61b5f1",
+    "scripts/xu_ual1_k.gd": "07290ac6c07d12d61075191bb6709bb3b2982e010a174b1fcf0ccf467708a34e"
+  }
+}

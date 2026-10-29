@@ -1,0 +1,19 @@
+{
+  "inputs": {
+    "source_sha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997",
+    "baseline_sha256": "89f369ccbfce8b5ecd4735ed5f4a18467d23ca4dfc9ec684f51b9c7c30dad43c",
+    "manifest_sha256": "3182fe59c2175d820cacccfe70f97e6b0bb2bfbc170d0682011307d024eec6b0"
+  },
+  "helpers": {
+    "prepare_polearms.py": "5c6802555766b19df63da38d978ef12e2b2119da39dc4a08e6a6b5b0bd4d3891",
+    "gltf_tools.py": "8eead357447e8e64ecb6ea77b20c6282af2cc1e9264bdcf2c659b06fd4c4fc68"
+  },
+  "license_snapshots": {
+    "License.txt": "6d01f55c6e4c49a2c9963e147e561945ae2c83958c8ca667d90a6bffdbfac061",
+    "SOURCE.txt": "c4fc45ffe19ac43cc2819081b7f08493c4313395aa2d413419ccf96ecf6a313b"
+  },
+  "outputs": {
+    "xuchu-ual1-sword-raw.glb": "e19e3cbbf4c78146c6a34980189c40ef2e0c5445673612ae7a14401078179106",
+    "xuchu-ual1-support-art-trial.glb": "b3d35d9459e3f59820a4560e551fc7d8a6cfaa952d1a1632af72c7ebe4eef4e5"
+  }
+}

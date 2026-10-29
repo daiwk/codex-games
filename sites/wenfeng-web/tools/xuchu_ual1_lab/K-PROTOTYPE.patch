@@ -1,0 +1,300 @@
+--- a/scripts/fighter.gd
++++ b/scripts/fighter.gd
+@@ -907,6 +907,7 @@
+ 		return
+ 	_advance_jump(delta)
+ 	action_time += delta
++	_advance_attack_animation(delta)
+ 	if mounted:
+ 		mount_charge_time = maxf(0.0, mount_charge_time - delta)
+ 		mount_charge_cooldown = maxf(0.0, mount_charge_cooldown - delta)
+@@ -929,7 +930,7 @@
+ 				swing_announced = true
+ 				action_started.emit(self, "swing_heavy" if bool(attack.get("heavy", false)) else "swing_light")
+ 			if action_time >= window.x and action_time <= window.y and not hit_landed:
+-				strike_requested.emit(self, attack)
++				_emit_attack_strike(attack)
+ 			# A synchronous parry/counter can change our state during the signal.
+ 			if state == "attack":
+ 				var thrust = float(attack.lunge) if action_time < window.y and action_time > 0.06 else 0.0
+@@ -939,7 +940,7 @@
+ 					if not _begin_attack(combo + 1):
+ 						combo_buffered = false
+ 				elif action_time >= action_duration:
+-					_idle()
++					_finish_attack()
+ 		"dodge":
+ 			var speed = 7.4 * pow(maxf(0.0, 1.0 - action_time / 0.46), 0.6)
+ 			velocity.x = dodge_direction.x * speed
+@@ -979,7 +980,20 @@
+ 		# HUD speed and cavalry damage bonus, not just the physics body.
+ 		var travelled_speed = Vector2(position.x - before_move.x, position.z - before_move.z).length() / delta if state in ["skill", "ultimate"] else maxf(0.0, (position - before_move).dot(forward()) / delta)
+ 		mount_speed = minf(mount_speed, travelled_speed)
++	_after_attack_move()
+ 	previous_tip = blade_tip()
++
++func _advance_attack_animation(_delta: float) -> void:
++	pass
++
++func _emit_attack_strike(profile: Dictionary) -> void:
++	strike_requested.emit(self, profile)
++
++func _after_attack_move() -> void:
++	pass
++
++func _finish_attack() -> void:
++	_idle()
+ 
+ func _update_facing(delta: float) -> void:
+ 	if contact_latched:
+--- a/scripts/duel_actor.gd
++++ b/scripts/duel_actor.gd
+@@ -6,6 +6,8 @@
+ const CavalryPose = preload("res://scripts/duel_mounted_pose.gd")
+ const FootMotionPolish = preload("res://scripts/duel_motion_polish.gd")
+ signal duel_landed(at: Vector3)
++const XuUAL1K = preload("res://scripts/xu_ual1_k.gd")
++var source_k = XuUAL1K.new()
+ 
+ const DUEL_COMBO_CLIPS = {
+ 	"zhaoyun": {"Attack2": "DragonLow", "Attack3": "DragonHigh"},
+@@ -66,6 +68,7 @@
+ 
+ func _ready() -> void:
+ 	super._ready()
++	source_k.setup(self)
+ 	_setup_recorded_gaits()
+ 	if not mounted and character_id in ["zhaoyun", "machao"] and is_thrust_weapon():
+ 		# Keep the shared/RPG and mounted contact modifiers untouched.
+@@ -237,6 +240,14 @@
+ 	attack_warmup_ms = float(Time.get_ticks_usec() - begin) / 1000.0
+ 
+ func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
++	if source_k.enabled:
++		if state == "attack" and attack.get("xu_ual1_k", false):
++			source_k.begin()
++			return
++		if clip == "Idle" and source_k.ready:
++			source_k.play_ready()
++			return
++		source_k.legacy_clip()
+ 	if state != "attack" or duration <= 0.0 or not attack.has("active"):
+ 		super.play_clip(clip, blend, duration)
+ 		return
+@@ -288,6 +299,7 @@
+ 	return super.request_light()
+ 
+ func request_heavy() -> bool:
++	if source_k.active: return false
+ 	if _duel_weapon_thrown: return false
+ 	if enabled and hp > 0.0 and duel_can_cancel_normal_recovery() and stamina >= float(_heavy_attack_profile().cost): _idle()
+ 	return super.request_heavy()
+@@ -316,6 +328,9 @@
+ 	return _duel_step_basis.z * (advance + gather + settle)
+ 
+ func _limit_thrust_motion() -> void:
++	if source_k.enabled and (source_k.active or source_k.pending_root.length_squared() > 0.0):
++		source_k.apply_motion(get_physics_process_delta_time())
++		return
+ 	if not mounted and state == "attack":
+ 		var delta = get_physics_process_delta_time()
+ 		var desired = (_duel_step_offset(action_time) - _duel_step_offset(maxf(0.0, action_time - delta))) / maxf(delta, 0.001)
+@@ -370,6 +385,7 @@
+ 	super._cancel_skill(completion)
+ 
+ func reset_fighter() -> void:
++	if source_k.enabled: source_k.reset()
+ 	set_duel_weapon_thrown(false)
+ 	if _duel_air_active: floor_snap_length = _duel_floor_snap
+ 	_duel_air_active = false
+@@ -435,6 +451,7 @@
+ 		lock_forward_speed = _lock_move_velocity.dot(forward())
+ 
+ func _update_facing(delta: float) -> void:
++	if source_k.active: return
+ 	if mounted:
+ 		_update_mount_facing(delta)
+ 		_update_cavalry_aim(delta)
+@@ -494,3 +511,35 @@
+ 	var accepted = super.request_dodge(direction)
+ 	if accepted and not mounted: begin_duel_aerial(2.3)
+ 	return accepted
++
++# Temporary Xu ground K opt-in. Old J, mounted, RPG and other roles keep defaults.
++func _heavy_attack_profile() -> Dictionary:
++	var profile = super._heavy_attack_profile()
++	if source_k.enabled:
++		profile.merge({"clip": "XuUAL1GameK", "duration": float(source_k.data.duration), "active": Vector2(0.35, 0.55), "lunge": 0.0, "min_dot": -1.0, "xu_ual1_k": true, "physical_blade": true}, true)
++	return profile
++
++func _weapon_adjusted_attack(profile: Dictionary) -> Dictionary:
++	var result = super._weapon_adjusted_attack(profile)
++	if profile.get("xu_ual1_k", false):
++		result.duration = profile.duration
++		result.active = profile.active
++		result.lunge = 0.0
++	return result
++
++func _advance_attack_animation(_delta: float) -> void:
++	if source_k.enabled: source_k.prepare_tick()
++
++func _emit_attack_strike(profile: Dictionary) -> void:
++	if profile.get("xu_ual1_k", false): source_k.queue_strike(profile)
++	else: super._emit_attack_strike(profile)
++
++func _after_attack_move() -> void:
++	if source_k.enabled: source_k.post_move()
++
++func _finish_attack() -> void:
++	if source_k.active: source_k.finish()
++	else: super._finish_attack()
++
++func source_k_status() -> Dictionary:
++	return source_k.status()
+--- a/scripts/main.gd
++++ b/scripts/main.gd
+@@ -561,6 +561,9 @@
+ 	var blade = Geometry3D.get_closest_points_between_segments(attacker.blade_base(), attacker.blade_tip(), low, high)
+ 	var sweep = Geometry3D.get_closest_points_between_segments(attacker.previous_tip, attacker.blade_tip(), low, high)
+ 	var contact = minf(blade[0].distance_to(blade[1]), sweep[0].distance_to(sweep[1]))
++	var physical_blade = bool(data.get("physical_blade", false))
++	if physical_blade and contact > defender.thrust_body_radius() + 0.07:
++		return
+ 	if physical_thrust and contact > defender.thrust_body_radius() + 0.07:
+ 		return
+ 	if not physical_thrust and data.get("shape", "") != "line" and not data.get("wave", false) and contact > 0.70:
+@@ -576,7 +579,7 @@
+ 				return
+ 	attacker.hit_landed = true
+ 	var resolved = data.duplicate()
+-	if physical_thrust:
++	if physical_thrust or physical_blade:
+ 		var nearest = blade if blade[0].distance_to(blade[1]) <= sweep[0].distance_to(sweep[1]) else sweep
+ 		var normal = (nearest[0] - nearest[1]).normalized()
+ 		if normal.length_squared() < 0.01:
+--- /dev/null
++++ b/scripts/xu_ual1_k.gd
+@@ -0,0 +1,123 @@
++extends RefCounted
++
++# Temporary ground Xu K only. Source pose/root share action_time at 1x.
++var fighter
++var enabled = false
++var active = false
++var ready = false
++var data: Dictionary = {}
++var last_time = 0.0
++var start_basis = Basis.IDENTITY
++var pending_root = Vector3.ZERO
++var pending_strike: Dictionary = {}
++
++func setup(owner_fighter) -> void:
++	fighter = owner_fighter
++	enabled = not fighter.mounted and fighter.character_id == "xuchu" and fighter.weapon_id == "xuchu_saber"
++	if enabled:
++		data = JSON.parse_string(FileAccess.get_file_as_string("res://assets/motion/xuchu_ual1_k.json"))
++		# Load only new animation resources; original model/27 imported clips stay untouched.
++		var source = (load("res://assets/motion/xuchu_ual1_k.glb") as PackedScene).instantiate()
++		var player = fighter._find_node(source, "AnimationPlayer") as AnimationPlayer
++		var library = AnimationLibrary.new()
++		for alias in [data.clip, data.idle_clip]:
++			var key = ""
++			for candidate in player.get_animation_list():
++				if String(candidate).get_slice("/", String(candidate).get_slice_count("/") - 1) == alias: key = candidate
++			assert(not key.is_empty(), "Missing UAL1 source alias")
++			library.add_animation(alias, player.get_animation(key).duplicate(true))
++			fighter.animation_names[alias] = "XuUAL1K/" + alias
++		fighter.animation_player.add_animation_library("XuUAL1K", library)
++		source.free()
++
++func reset() -> void:
++	active = false
++	ready = false
++	last_time = 0.0
++	pending_root = Vector3.ZERO
++	pending_strike.clear()
++
++func curve(time: float) -> Vector3:
++	var f = clampf(time / float(data.duration), 0.0, 1.0) * (data.times.size() - 1)
++	var i = mini(int(f), data.times.size() - 1)
++	var j = mini(i + 1, data.times.size() - 1)
++	var a: Array = data.root_delta_model[i]
++	var b: Array = data.root_delta_model[j]
++	return Vector3(a[0], 0, a[2]).lerp(Vector3(b[0], 0, b[2]), f - i)
++
++func sync_weapon() -> void:
++	fighter.skeleton.force_update_all_bone_transforms()
++	var socket = fighter.grip.get_parent()
++	if socket is BoneAttachment3D:
++		var index = fighter.skeleton.find_bone(socket.bone_name)
++		if index >= 0:
++			socket.transform = fighter.skeleton.get_bone_global_pose(index)
++
++func begin() -> void:
++	active = true
++	ready = false
++	last_time = 0.0
++	pending_root = Vector3.ZERO
++	pending_strike.clear()
++	start_basis = fighter.global_basis
++	fighter.combat_motion.influence = 0.0
++	fighter.tempo_profile = {}
++	fighter.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
++	var key: String = fighter.animation_names[data.clip]
++	fighter.animation_player.get_animation(key).loop_mode = Animation.LOOP_NONE
++	fighter.animation_player.speed_scale = 1.0
++	fighter.animation_player.play(key, 0.075, 1.0)
++	fighter.animation_player.seek(0.0, true)
++	fighter.animation_player.advance(0.0)
++	fighter.current_clip = data.clip
++	sync_weapon()
++
++func prepare_tick() -> void:
++	if not active or fighter.state != "attack": return
++	var t = clampf(fighter.action_time, 0.0, float(data.duration))
++	pending_root += curve(t) - curve(last_time)
++	fighter.animation_player.advance(maxf(0.0, t - last_time))
++	last_time = t
++	sync_weapon()
++
++func apply_motion(delta: float) -> void:
++	var world = start_basis * pending_root * float(data.actor_scale)
++	fighter.velocity.x = world.x / maxf(delta, 0.00001)
++	fighter.velocity.z = world.z / maxf(delta, 0.00001)
++	pending_root = Vector3.ZERO
++
++func finish() -> void:
++	active = false
++	ready = true
++	pending_strike.clear()
++	fighter._idle()
++
++func play_ready() -> void:
++	fighter.combat_motion.influence = 0.0
++	fighter.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
++	var key: String = fighter.animation_names[data.idle_clip]
++	fighter.animation_player.get_animation(key).loop_mode = Animation.LOOP_LINEAR
++	fighter.animation_player.speed_scale = 1.0
++	fighter.animation_player.play(key, 0.075, 1.0)
++	fighter.current_clip = "Idle"
++
++func legacy_clip() -> void:
++	reset()
++	fighter.combat_motion.influence = 1.0
++	fighter.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
++
++func queue_strike(profile: Dictionary) -> void:
++	pending_strike = profile.duplicate(true)
++	pending_strike["source_sample_time"] = last_time
++	pending_strike["source_sample_tick"] = Engine.get_physics_frames()
++
++func post_move() -> void:
++	if pending_strike.is_empty(): return
++	sync_weapon()
++	var profile = pending_strike.duplicate(true)
++	pending_strike.clear()
++	if active and fighter.state == "attack" and not fighter.hit_landed:
++		fighter.strike_requested.emit(fighter, profile)
++
++func status() -> Dictionary:
++	return {"enabled": enabled, "active": active, "ready": ready, "time": last_time, "pending_root": pending_root, "queued_strike": not pending_strike.is_empty()}
