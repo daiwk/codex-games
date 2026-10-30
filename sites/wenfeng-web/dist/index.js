@@ -131,6 +131,8 @@ const Preloader = /** @constructor */ function () { // eslint-disable-line no-un
 			start: function (controller) {
 				onloadprogress(reader, controller).then(function () {
 					controller.close();
+				}).catch(function (error) {
+					controller.error(error);
 				});
 			},
 		}), { headers: response.headers });

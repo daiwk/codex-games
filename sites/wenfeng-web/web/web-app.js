@@ -126,33 +126,47 @@
       const key = url.pathname.split('/').pop();
       const asset = url.origin === location.origin ? manifest.assets[key] : null;
       if (!asset) return nativeFetch(input, init);
-      const chunks = asset.chunks || [{ file: asset.file }];
+      const chunks = asset.chunks || [{ file: asset.file, bytes: asset.download_bytes, sha256: asset.compressed_sha256 }];
       let index = 0;
-      let reader;
-      // One gzip stream split into hosting-sized files. Read sequentially so
-      // neither mobile browsers nor the local server need a second full copy.
+      const transfer = new AbortController();
+      if (init?.signal) {
+        if (init.signal.aborted) transfer.abort(init.signal.reason);
+        else init.signal.addEventListener('abort', () => transfer.abort(init.signal.reason), { once: true });
+      }
+      async function readChunk(chunk) {
+        const chunkUrl = new URL(chunk.file, url);
+        if (asset.sha256) chunkUrl.searchParams.set('v', asset.sha256);
+        for (let attempt = 0; attempt < 4; attempt++) {
+          try {
+            const response = await nativeFetch(chunkUrl, { ...init, cache: attempt ? 'reload' : init?.cache, signal: transfer.signal });
+            if (!response.ok) throw new Error('资源暂时不可用');
+            const bytes = await response.arrayBuffer();
+            if (chunk.bytes && bytes.byteLength !== chunk.bytes) throw new Error('资源未完整接收');
+            if (chunk.sha256 && crypto.subtle) {
+              const digest = await crypto.subtle.digest('SHA-256', bytes);
+              const hash = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, '0')).join('');
+              if (hash !== chunk.sha256) throw new Error('资源校验失败');
+            }
+            if (transfer.signal.aborted) throw transfer.signal.reason;
+            return new Uint8Array(bytes);
+          } catch (error) {
+            if (transfer.signal.aborted) throw error;
+            if (attempt === 3) throw new Error('游戏资源下载中断，请重试。');
+            status.textContent = '网络波动，正在继续载入…';
+            await new Promise(resolve => setTimeout(resolve, 500 * 2 ** attempt));
+          }
+        }
+      }
+      // Validate one hosting-sized piece before it enters the gzip stream.
+      // Retry that piece without replaying decoded data or copying the full pack.
       const compressed = new ReadableStream({
         async pull(controller) {
-          while (index < chunks.length) {
-            if (!reader) {
-              const chunkUrl = new URL(chunks[index].file, url);
-              // Changed game packages must not reuse a previous deployment's
-              // same-named chunk from the visitor's browser cache.
-              if (asset.sha256) chunkUrl.searchParams.set('v', asset.sha256);
-              const response = await nativeFetch(chunkUrl, init);
-              if (!response.ok || !response.body) throw new Error('游戏资源下载失败，请检查网络后重试。');
-              reader = response.body.getReader();
-            }
-            const { value, done } = await reader.read();
-            if (!done) { controller.enqueue(value); return; }
-            reader.releaseLock();
-            reader = undefined;
-            index++;
-          }
-          controller.close();
+          if (index >= chunks.length) { controller.close(); return; }
+          controller.enqueue(await readChunk(chunks[index]));
+          index++;
         },
-        async cancel(reason) { if (reader) await reader.cancel(reason); },
-      });
+        cancel(reason) { transfer.abort(reason); },
+      }, { highWaterMark: 0 });
       const decoded = compressed.pipeThrough(new DecompressionStream('gzip'));
       return new Response(decoded, {
         status: 200,
@@ -202,7 +216,10 @@
     stage = 'error';
     cover.hidden = false;
     $('load-progress').hidden = true;
-    $('error').textContent = error?.message || '暂时无法进入庭院，请刷新后重试。';
+    const message = error?.message || '';
+    $('error').textContent = /failed to fetch|network error/i.test(message)
+      ? '网络连接暂时不稳定，请重新载入。'
+      : message || '暂时无法进入庭院，请刷新后重试。';
     $('error').hidden = false;
     startButton.innerHTML = '重新载入 <span>↻</span>';
     startButton.hidden = false;

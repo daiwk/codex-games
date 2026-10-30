@@ -7,7 +7,8 @@
       "decoded_bytes": 39514754,
       "download_bytes": 10054758,
       "sha256": "fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0",
-      "file": "index.wasm.gz"
+      "file": "index.wasm.gz",
+      "compressed_sha256": "2862a06f11ad1579c4ceb764f724013c1e62f8916d5d8d237fe5ee209c76f56e"
     },
     "index.pck": {
       "type": "application/octet-stream",

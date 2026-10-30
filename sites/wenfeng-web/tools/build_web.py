@@ -34,6 +34,34 @@ def find_godot(requested):
     raise SystemExit("Godot 4.7.2 was not found. Pass --godot /path/to/Godot or set WENFENG_GODOT. Local play only needs: python3 play.py")
 
 
+def patch_engine_download_errors(path):
+    """Propagate Godot 4.7.2 tracked-stream errors to startGame/retry callers.
+
+    Keep the exported engine and its licenses byte-identical outside this
+    adapter. Fail loudly if an updated template changes the expected source.
+    """
+    anchor = (
+        b"\t\tconst reader = response.body.getReader();\n"
+        b"\t\treturn new Response(new ReadableStream({\n"
+        b"\t\t\tstart: function (controller) {\n"
+        b"\t\t\t\tonloadprogress(reader, controller).then(function () {\n"
+        b"\t\t\t\t\tcontroller.close();\n"
+        b"\t\t\t\t});\n"
+        b"\t\t\t},\n"
+        b"\t\t}), { headers: response.headers });\n"
+    )
+    data = path.read_bytes()
+    if data.count(anchor) != 1:
+        raise RuntimeError("Godot getTrackedResponse source anchor changed; inspect the exported engine before packaging")
+    patched = anchor.replace(
+        b"\t\t\t\t});\n",
+        b"\t\t\t\t}).catch(function (error) {\n"
+        b"\t\t\t\t\tcontroller.error(error);\n"
+        b"\t\t\t\t});\n",
+    )
+    path.write_bytes(data.replace(anchor, patched, 1))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--godot", default=os.environ.get("WENFENG_GODOT"), help="Godot 4.7.2 executable; also accepts WENFENG_GODOT")
@@ -53,6 +81,7 @@ def main():
         run([godot, "--headless", "--path", GAME, "--export-release", "Web", DIST / "index.html"])
     finally:
         preset.write_text(saved_preset)
+    patch_engine_download_errors(DIST / "index.js")
     for name in ["web.css", "web-app.js"]:
         shutil.copy2(ROOT / "web" / name, DIST / name)
     html = (DIST / "index.html").read_text()
@@ -101,6 +130,7 @@ def main():
             destination = DIST / (name + ".gz")
             destination.write_bytes(packed)
             asset["file"] = destination.name
+            asset["compressed_sha256"] = hashlib.sha256(packed).hexdigest()
         manifest["assets"][name] = asset
         path.unlink()
         print(f"{name}: {len(data)/1e6:.2f} MB decoded, {len(packed)/1e6:.2f} MB download", flush=True)
