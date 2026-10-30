@@ -20,6 +20,8 @@ The data used in this project was obtained from mocap.cs.cmu.edu. The database w
 
 当前素材准备使用 UAL1 手指握持姿势与 UAL2 免费 Standard 的 Sword_Dash / Sword_Block。UAL2在2026-10-24从官方匿名免费入口重新获取，原件、随包许可、SHA256和版本记录保存在 `source-assets/animations/ual2/`。没有采用付费 Source 版本。
 
+2026-10-30 另从同一归档 UAL2 Standard 提取 Sword_Regular_Combo、A/A_Rec、B/B_Rec、C、Sword_Block 和 OverhandThrow，用于许褚步战 J/Q/E/U；许可仍为该包 CC0。官方动画演示仅供静态刀面参考，不复制其演示人物或兵器。可复现工具及固定输入/输出SHA见 `tools/xuchu_blade_family/README.md`。
+
 ## KayKit 双手动作
 
 - 作者：Kay Lousberg。

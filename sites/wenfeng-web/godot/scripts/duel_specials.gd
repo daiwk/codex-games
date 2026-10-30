@@ -3,6 +3,17 @@ extends Node3D
 ## Duel-only physical special effects. Every projectile/front travels before
 ## asking the owning combat controller to resolve its real contact outcome.
 signal hit_requested(attacker: DuelFighter, defender: DuelFighter, data: Dictionary, point: Vector3)
+signal begin_blade_return(fighter: DuelFighter, context: Dictionary)
+signal complete_blade_catch(fighter: DuelFighter, context: Dictionary)
+signal blade_released(fighter: DuelFighter, context: Dictionary)
+signal blade_cast_cancelled(fighter: DuelFighter, context: Dictionary)
+
+const HandPose = preload("res://scripts/blade_hand_pose.gd")
+var _hand_observers: Dictionary={}
+var _hand_poses: Dictionary={}
+var _pending_hand_casts: Dictionary={}
+var _held_shapes: Dictionary={}
+var _handoff_events: Array=[]
 
 const Roster = preload("res://scripts/roster.gd")
 const CAVALRY_MESH = preload("res://assets/vfx/duel/cavalry_mesh.res")
@@ -115,6 +126,8 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 		return
 	if stage == "start":
 		_cast_keys.erase(owner)
+		var upcoming=fighter.skill_profile(skill).get("special",{})
+		if upcoming is Dictionary and _uses_hand(upcoming):prepare_blade_handoff(fighter)
 	if stage == "complete":
 		_cast_keys.erase(owner)
 		return
@@ -125,9 +138,13 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 	var trigger: String = special.get("trigger", "release")
 	if stage != trigger or _cast_keys.get(owner, "") == skill: return
 	_cast_keys[owner] = skill
-	spawn(fighter, special, profile, skill)
+	if _uses_hand(special):
+		prepare_blade_handoff(fighter)
+		_pending_hand_casts[owner]={"fighter":weakref(fighter),"configuration":special.duplicate(true),"profile":profile.duplicate(true),"skill":skill,"requested_frame":Engine.get_physics_frames()}
+	else:
+		spawn(fighter, special, profile, skill)
 
-func spawn(fighter: DuelFighter, configuration: Dictionary, profile: Dictionary = {}, skill = "special") -> int:
+func spawn(fighter: DuelFighter, configuration: Dictionary, profile: Dictionary = {}, skill = "special", hand_snapshot: Dictionary={}) -> int:
 	if not is_inside_tree() or not is_instance_valid(fighter) or fighter.hp <= 0.0: return -1
 	var target: DuelFighter = fighter.opponent
 	if not is_instance_valid(target) or target.hp <= 0.0: return -1
@@ -179,7 +196,15 @@ func spawn(fighter: DuelFighter, configuration: Dictionary, profile: Dictionary 
 			# Generic fixture/future callers may use another equipped weapon;
 			# the three playable Xu choices above never enter this slow path.
 			_mesh_cache[mesh_key] = _weapon_mesh(Roster.WEAPONS[weapon_id].path, 1.40)
-		mm.mesh = CAVALRY_MESH if type == "cavalry" else _mesh_cache[mesh_key]
+		if _is_returning(group):
+			prepare_blade_handoff(fighter)
+			group["blade_handoff"]=true
+			group["shape"]=_held_shape(fighter)
+			group["hand_pose"]=hand_snapshot if not hand_snapshot.is_empty() else {"pose":_current_grip(fighter),"frame":Engine.get_physics_frames(),"omega":Vector3.ZERO}
+			group["last_hand_frame"]=int(group.hand_pose.frame)
+			mm.mesh=group.shape.mesh
+		else:
+			mm.mesh = CAVALRY_MESH if type == "cavalry" else _mesh_cache[mesh_key]
 		mm.instance_count = count
 		var visual = MultiMeshInstance3D.new()
 		visual.multimesh = mm
@@ -196,6 +221,18 @@ func spawn(fighter: DuelFighter, configuration: Dictionary, profile: Dictionary 
 		node.add_child(visual)
 		group.visual = visual
 		group.material = material
+		if group.get("blade_handoff",false):
+			# The body is the original opaque/PBR equipment, including UVs and
+			# active surface materials. The legacy ghost MM stays non-rendering.
+			visual.visible=false
+			group["blade_visuals"]=[]
+			for i in count:
+				var blade=MeshInstance3D.new()
+				blade.name="PhysicalReturningBlade_"+str(i)
+				blade.mesh=group.shape.mesh
+				blade.visible=false
+				node.add_child(blade)
+				group.blade_visuals.append(blade)
 		var trail = MeshInstance3D.new()
 		trail.mesh = ImmediateMesh.new()
 		trail.material_override = _trail_material
@@ -219,7 +256,24 @@ func spawn(fighter: DuelFighter, configuration: Dictionary, profile: Dictionary 
 				delay = float(i / 3) * 0.10
 			var heading = (_target_point(target) - launch).normalized() if type != "cavalry" else direction
 			group.entities.append({"index": i, "position": launch, "previous": launch, "heading": heading, "origin": launch, "distance": 0.0, "delay": delay, "done": false, "returning": false, "hit_set": {}, "history": []})
-		if _is_returning(group): _set_weapon_thrown(fighter, true)
+		if _is_returning(group):
+			var all_blocked=not group.entities.is_empty()
+			for entity in group.entities:all_blocked=all_blocked and bool(entity.done)
+			if all_blocked:
+				# The cast never left the palm. Reject before release callbacks,
+				# held visibility changes or insertion in the live group registry.
+				node.visible=false
+				node.queue_free()
+				_count_event(type+":blocked")
+				var context={"kind":"cast_cancelled","reason":"environment_blocked","volley_id":id,"skill":skill,"frame":int(group.hand_pose.frame)}
+				_handoff_events.append(context)
+				blade_cast_cancelled.emit(fighter,context)
+				return -1
+			for entity in group.entities:
+				entity["launched"]=false
+				entity["flight_basis"]=Transform3D(group.hand_pose.pose).basis.orthonormalized()
+				if float(entity.delay)<=0.0:_launch_hand_blade(group,entity,fighter)
+			_set_weapon_thrown(fighter, true)
 		if type == "cavalry": _add_cavalry_details(group)
 	else:
 		var visual = MeshInstance3D.new()
@@ -365,28 +419,35 @@ func _set_weapon_thrown(fighter: DuelFighter, value: bool) -> void:
 
 func _physics_process(delta: float) -> void:
 	for id in groups.keys():
-		var group: Dictionary = groups[id]
-		var caster: DuelFighter = group.caster.get_ref()
-		var target: DuelFighter = group.target.get_ref()
-		if not is_instance_valid(caster) or caster.hp <= 0.0 or caster.state == "dead":
-			_finish_group(id)
-			continue
-		group.age += delta
-		if group.type in ["shockwave", "roar", "air_slam"]:
-			_step_wave(group, caster, target, delta)
-		else:
-			_step_projectiles(group, caster, target, delta)
-		if not groups.has(id): continue
-		if group.type in PROJECTILE_TYPES:
-			for entity in group.entities:
-				for sample in entity.history: sample.age += delta
-				while entity.history.size() > 8 or (not entity.history.is_empty() and entity.history[0].age > 0.15): entity.history.pop_front()
-		_update_visuals(group)
-		if _is_returning(group): _refresh_throw_visibility(caster)
-		var alive = false
-		for entity in group.entities: alive = alive or not entity.done
-		if not alive and not group.has("finish_after"): group["finish_after"] = group.age + 0.15
-		if (group.has("finish_after") and group.age >= group.finish_after) or group.age > 4.5: _finish_group(id)
+		if not groups.has(id):continue
+		var group: Dictionary=groups[id]
+		if group.get("blade_handoff",false):
+			var caster: DuelFighter=group.caster.get_ref()
+			if not is_instance_valid(caster) or caster.hp<=0.0 or caster.state=="dead":_finish_group(id)
+			continue # live groups advance from this tick's final hand pose
+		_advance_group(id,delta)
+
+func _advance_group(id: int, delta: float) -> void:
+	if not groups.has(id):return
+	var group: Dictionary=groups[id]
+	var caster: DuelFighter=group.caster.get_ref()
+	var target: DuelFighter=group.target.get_ref()
+	if not is_instance_valid(caster) or caster.hp<=0.0 or caster.state=="dead":
+		_finish_group(id);return
+	group.age+=delta
+	if group.type in ["shockwave","roar","air_slam"]:_step_wave(group,caster,target,delta)
+	else:_step_projectiles(group,caster,target,delta)
+	if not groups.has(id):return
+	if group.type in PROJECTILE_TYPES:
+		for entity in group.entities:
+			for sample in entity.history:sample.age+=delta
+			while entity.history.size()>8 or (not entity.history.is_empty() and entity.history[0].age>0.15):entity.history.pop_front()
+	_update_visuals(group)
+	if _is_returning(group):_refresh_throw_visibility(caster)
+	var alive=false
+	for entity in group.entities:alive=alive or not entity.done
+	if not alive and not group.has("finish_after"):group["finish_after"]=group.age+0.15
+	if (group.has("finish_after") and group.age>=group.finish_after) or (group.age>4.5 and not group.get("blade_handoff",false)):_finish_group(id)
 
 func _step_projectiles(group: Dictionary, caster: DuelFighter, target: DuelFighter, delta: float) -> void:
 	var config: Dictionary = group.config
@@ -394,16 +455,25 @@ func _step_projectiles(group: Dictionary, caster: DuelFighter, target: DuelFight
 	var maximum = float(config.get("max_distance", 16.0 if group.type == "cavalry" else 14.0))
 	for entity in group.entities:
 		if entity.done or group.age < entity.delay: continue
+		if group.get("blade_handoff",false) and not entity.launched:
+			_launch_hand_blade(group,entity,caster)
+			continue # first drawn frame is the actual current grip, as on blade0
 		entity.previous = entity.position
+		var previous_basis: Basis=entity.get("flight_basis",Basis.IDENTITY)
+		var hand_motion=false
 		if _is_returning(group) and (entity.returning or entity.distance >= minf(maximum * 0.55, 6.0) or float(group.age) - float(entity.delay) > float(config.get("return_after", 0.60))):
 			entity.returning = true
-			var hand = _throw_hand_position(caster)
-			entity.heading = (hand - entity.position).normalized()
-			if entity.position.distance_to(hand) < speed * 1.35 * delta + 0.18:
-				entity.done = true
-				_refresh_throw_visibility(caster)
-				_count_event("returning_blade:return")
-				continue
+			if group.get("blade_handoff",false):
+				hand_motion=true
+				if _advance_hand_return(group,entity,caster,delta,speed*1.35):continue
+			else:
+				var hand = _throw_hand_position(caster)
+				entity.heading = (hand - entity.position).normalized()
+				if entity.position.distance_to(hand) < speed * 1.35 * delta + 0.18:
+					entity.done = true
+					_refresh_throw_visibility(caster)
+					_count_event("returning_blade:return")
+					continue
 		elif group.type == "flying_blades" and is_instance_valid(target) and target.hp > 0.0:
 			var toward = (_target_point(target) - entity.position).normalized()
 			# Target identity is fixed on release. Limited steering still leaves
@@ -411,13 +481,34 @@ func _step_projectiles(group: Dictionary, caster: DuelFighter, target: DuelFight
 			var angle = entity.heading.angle_to(toward)
 			if angle > 0.0001:
 				entity.heading = entity.heading.slerp(toward, minf(1.0, float(config.get("homing", 0.8)) * delta / angle)).normalized()
-		entity.position += entity.heading * speed * (1.35 if entity.returning else 1.0) * delta
+		if not hand_motion:
+			entity.position += entity.heading * speed * (1.35 if entity.returning else 1.0) * delta
+			if group.get("blade_handoff",false):entity.flight_basis=Basis(entity.release_basis)*Basis(Vector3(0,0,1),_blade_spin(group)*(float(group.age)-float(entity.launch_age)))
 		entity.distance += entity.position.distance_to(entity.previous)
+		if group.get("blade_handoff",false) and not entity.returning:
+			var pivot=Vector3(entity.position)-Basis(entity.flight_basis)*Vector3(group.shape.center)
+			if _blade_min_y(group,entity.flight_basis,pivot)<_return_floor(caster)+0.06:
+				# The whole real blade meets the floor before its centre ray.
+				# Keep the previous clear pose and begin a physical return;
+				# never let a low delayed throw tunnel through the platform.
+				entity.position=entity.previous
+				entity.flight_basis=previous_basis
+				entity.returning=true
+				continue
 		if not _is_returning(group) and entity.distance > maximum:
 			entity.done = true
 		var environment = PhysicsRayQueryParameters3D.create(entity.previous + Vector3.UP * (1.0 if group.type == "cavalry" else 0.0), entity.position + Vector3.UP * (1.0 if group.type == "cavalry" else 0.0), 1)
 		var wall = get_world_3d().direct_space_state.intersect_ray(environment)
 		if not wall.is_empty():
+			if group.get("blade_handoff",false) and entity.returning:
+				# A blocked return is still an outstanding physical weapon. Hold
+				# its last clear entity pose and try the safe staging route next
+				# tick; environment contact is never an implicit palm catch.
+				entity.position=entity.previous
+				entity.flight_basis=previous_basis
+				entity["catching"]=false
+				entity["return_blocked"]=true
+				continue
 			entity.position = wall.position - Vector3.UP * (1.0 if group.type == "cavalry" else 0.0) - entity.heading * 0.04
 			if _is_returning(group) and not entity.returning: entity.returning = true
 			else: entity.done = true
@@ -512,7 +603,10 @@ func _update_visuals(group: Dictionary) -> void:
 		var up = Vector3.UP if absf(heading.dot(Vector3.UP)) < 0.95 else Vector3.RIGHT
 		var basis = Basis.looking_at(heading, up, true)
 		var point: Vector3 = entity.position
-		if group.type == "cavalry":
+		if group.get("blade_handoff",false):
+			basis=entity.flight_basis
+			point=Vector3(entity.position)-basis*Vector3(group.shape.center)
+		elif group.type == "cavalry":
 			basis = Basis(Vector3.UP, atan2(heading.x, heading.z)).scaled(Vector3.ONE * 0.80)
 		elif group.type == "weapon_array":
 			if group.formation == "diagonal_cleave":
@@ -533,8 +627,13 @@ func _update_visuals(group: Dictionary) -> void:
 		var fade = 0.0 if entity.done else smoothstep(entity.delay, entity.delay + 0.12, float(group.age))
 		if group.type == "weapon_array" and not entity.done and float(group.age) < float(entity.delay):
 			fade = 0.25 + 0.38 * smoothstep(0.0, maxf(0.1, float(entity.delay)), float(group.age))
+		if group.get("blade_handoff",false):fade=1.0 if entity.get("launched",false) and not entity.done else 0.0
 		mm.set_instance_custom_data(i, Color(float(i) * 0.173, 0.0, 0.0, fade))
 		entity["visual_opacity"] = fade
+		if group.get("blade_handoff",false):
+			var blade: MeshInstance3D=group.blade_visuals[i]
+			blade.global_transform=Transform3D(basis,point)
+			blade.visible=entity.get("launched",false) and not entity.done
 	_update_trails(group)
 	if group.type == "cavalry": _update_cavalry_details(group)
 
@@ -558,6 +657,7 @@ func _update_trails(group: Dictionary) -> void:
 	mesh.surface_end()
 
 func cancel_owner(owner_id: int) -> void:
+	_pending_hand_casts.erase(owner_id)
 	for id in groups.keys():
 		if int(groups[id].owner) == owner_id: _finish_group(id)
 
@@ -574,6 +674,8 @@ func _finish_group(id: int) -> void:
 	_count_event(group.type + ":finish")
 
 func clear() -> void:
+	_pending_hand_casts.clear()
+	_handoff_events.clear()
 	for id in groups.keys(): _finish_group(id)
 	_cast_keys.clear()
 	_events.clear()
@@ -588,9 +690,9 @@ func debug_state() -> Dictionary:
 	for group in groups.values():
 		var entities: Array = []
 		for entity in group.entities:
-			entities.append({"index": entity.index, "position": [entity.position.x, entity.position.y, entity.position.z], "done": entity.done, "delay": entity.get("delay", 0.0), "heading": [entity.get("heading", Vector3.ZERO).x, entity.get("heading", Vector3.ZERO).y, entity.get("heading", Vector3.ZERO).z], "contacts": entity.hit_set.size()})
+			entities.append({"index": entity.index, "position": [entity.position.x, entity.position.y, entity.position.z], "done": entity.done, "delay": entity.get("delay", 0.0), "heading": [entity.get("heading", Vector3.ZERO).x, entity.get("heading", Vector3.ZERO).y, entity.get("heading", Vector3.ZERO).z], "contacts": entity.hit_set.size(), "returning":entity.returning, "handoff":_handoff_json(entity.get("handoff_debug",{})), "launched":entity.get("launched",true)})
 		records.append({"type": group.type, "formation": group.formation, "weapon_id": group.weapon_id, "weapon_length": group.weapon_length, "release_height": group.origin.y, "owner": group.owner, "volley_id": group.id, "age": group.age, "entities": entities})
-	return {"groups": records, "entities": entity_count(), "events": _events.duplicate(), "max_entities": MAX_ENTITIES, "cavalry_triangles_per_rider": CAVALRY_MESH.surface_get_array_len(0) / 3}
+	return {"handoff_events":_handoff_json(_handoff_events),"groups": records, "entities": entity_count(), "events": _events.duplicate(), "max_entities": MAX_ENTITIES, "cavalry_triangles_per_rider": CAVALRY_MESH.surface_get_array_len(0) / 3}
 
 func _exit_tree() -> void:
 	clear()
@@ -756,3 +858,231 @@ func _wave_mesh(type: String, _color: Color) -> ArrayMesh:
 	var mesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
+
+
+# Actual equipment remains in its calibrated +Y mesh space. World scale is
+# baked once into immutable vertices; every flight frame is a proper rotation.
+func _uses_hand(configuration: Dictionary) -> bool:
+	return configuration.get("type","")=="returning_blade" or (configuration.get("type","")=="weapon_array" and configuration.get("formation","")=="returning_fan")
+
+func _current_grip(fighter: DuelFighter) -> Transform3D:
+	for bone in fighter.skeleton.get_bone_count():
+		if fighter.skeleton.get_bone_name(bone).ends_with("RightHand"):
+			return fighter.skeleton.global_transform*fighter.skeleton.get_bone_global_pose(bone)*fighter.grip.transform
+	return fighter.grip.global_transform
+
+func prepare_blade_handoff(fighter: DuelFighter) -> void:
+	var owner=fighter.get_instance_id()
+	if not _hand_observers.has(owner) or not is_instance_valid(_hand_observers[owner]):
+		var observer=HandPose.new()
+		observer.setup(fighter,self)
+		_hand_observers[owner]=observer
+	_held_shape(fighter)
+
+func _collect_held(node: Node, inverse_grip: Transform3D, scale: Vector3, mesh: ArrayMesh, points: PackedVector3Array, materials: Array) -> void:
+	if node is MeshInstance3D and node.mesh is ArrayMesh:
+		var local=inverse_grip*node.global_transform
+		var normal_basis=local.basis.inverse().transposed()
+		for surface in node.mesh.get_surface_count():
+			var arrays=node.mesh.surface_get_arrays(surface).duplicate(true)
+			var vertices: PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+			for i in vertices.size():
+				vertices[i]=(local*vertices[i])*scale
+				points.append(vertices[i])
+			arrays[Mesh.ARRAY_VERTEX]=vertices
+			var normals: PackedVector3Array=arrays[Mesh.ARRAY_NORMAL]
+			for i in normals.size():normals[i]=((normal_basis*normals[i])/scale).normalized()
+			arrays[Mesh.ARRAY_NORMAL]=normals
+			var tangents: PackedFloat32Array=arrays[Mesh.ARRAY_TANGENT] if arrays[Mesh.ARRAY_TANGENT]!=null else PackedFloat32Array()
+			for i in tangents.size()/4:
+				var t=(local.basis*Vector3(tangents[i*4],tangents[i*4+1],tangents[i*4+2])*scale).normalized()
+				tangents[i*4]=t.x;tangents[i*4+1]=t.y;tangents[i*4+2]=t.z
+				tangents[i*4+3]*=signf(local.basis.determinant())
+			arrays[Mesh.ARRAY_TANGENT]=tangents
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+			var material=node.get_active_material(surface)
+			if material!=null:mesh.surface_set_material(mesh.get_surface_count()-1,material.duplicate())
+			materials.append({"class":material.get_class() if material!=null else "none","source_node":str(node.get_path()),"surface":surface,"uv_count":arrays[Mesh.ARRAY_TEX_UV].size() if arrays[Mesh.ARRAY_TEX_UV]!=null else 0})
+	for child in node.get_children():_collect_held(child,inverse_grip,scale,mesh,points,materials)
+
+func _held_shape(fighter: DuelFighter) -> Dictionary:
+	var scale=fighter.grip.global_basis.get_scale()
+	var key=str(fighter.weapon_mesh.get_instance_id())+":"+str(scale)
+	if _held_shapes.has(key):return _held_shapes[key]
+	var points=PackedVector3Array();var materials: Array=[]
+	var mesh=ArrayMesh.new()
+	_collect_held(fighter.weapon_mesh,fighter.grip.global_transform.affine_inverse(),scale,mesh,points,materials)
+	assert(not points.is_empty(),"Returning blade needs the actual held mesh")
+	var bounds=AABB(points[0],Vector3.ZERO)
+	for point in points:bounds=bounds.expand(point)
+	var shape={"mesh":mesh,"center":bounds.get_center(),"length":bounds.size[bounds.size.max_axis_index()],"scale":scale,"vertices":points.size(),"bounds":bounds,"radius":Vector3(maxf(absf(bounds.position.x),absf(bounds.end.x)),maxf(absf(bounds.position.y),absf(bounds.end.y)),maxf(absf(bounds.position.z),absf(bounds.end.z))).length(),"materials":materials}
+	_held_shapes[key]=shape
+	return shape
+
+func _rotation_vector(q: Quaternion) -> Vector3:
+	var value=q.normalized()
+	if value.w<0:value=-value
+	var v=Vector3(value.x,value.y,value.z)
+	return Vector3.ZERO if v.length()<0.000001 else v.normalized()*2.0*atan2(v.length(),value.w)
+
+func capture_blade_hand_pose(fighter: DuelFighter, pose: Transform3D, frame: int, delta: float) -> void:
+	var owner=fighter.get_instance_id()
+	var omega=Vector3.ZERO
+	if _hand_poses.has(owner):
+		var previous: Dictionary=_hand_poses[owner]
+		if int(previous.frame)<frame:omega=_rotation_vector(pose.basis.orthonormalized().get_rotation_quaternion()*Transform3D(previous.pose).basis.orthonormalized().get_rotation_quaternion().inverse())/maxf(delta,0.0001)
+	_hand_poses[owner]={"fighter":weakref(fighter),"pose":pose,"frame":frame,"delta":delta,"omega":omega}
+	call_deferred("_commit_blade_hand_pose",owner,frame)
+
+func _commit_blade_hand_pose(owner: int, frame: int) -> void:
+	if not _hand_poses.has(owner):return
+	var snapshot: Dictionary=_hand_poses[owner]
+	if int(snapshot.frame)!=frame or int(snapshot.get("committed",-1))==frame:return
+	snapshot["committed"]=frame
+	var fighter: DuelFighter=snapshot.fighter.get_ref()
+	if not is_instance_valid(fighter) or fighter.hp<=0:
+		_pending_hand_casts.erase(owner)
+		return
+	if _pending_hand_casts.has(owner):
+		var pending: Dictionary=_pending_hand_casts[owner]
+		_pending_hand_casts.erase(owner)
+		spawn(fighter,pending.configuration,pending.profile,pending.skill,snapshot)
+	for id in groups.keys():
+		if not groups.has(id):continue
+		var group: Dictionary=groups[id]
+		if int(group.owner)!=owner or not group.get("blade_handoff",false) or int(group.last_hand_frame)>=frame:continue
+		group.last_hand_frame=frame
+		group.hand_pose=snapshot
+		_advance_group(id,float(snapshot.delta))
+
+func _blade_spin(group: Dictionary) -> float:
+	return 19.0 if group.type=="returning_blade" else 16.0
+
+func _launch_hand_blade(group: Dictionary, entity: Dictionary, fighter: DuelFighter) -> void:
+	var pose: Transform3D=group.hand_pose.pose
+	var basis=pose.basis.orthonormalized()
+	entity["release_basis"]=basis
+	entity["flight_basis"]=basis
+	entity["launch_age"]=float(group.age)
+	entity["launched"]=true
+	entity.position=pose.origin+basis*Vector3(group.shape.center)
+	entity.previous=entity.position;entity.origin=entity.position
+	var context={"kind":"released","volley_id":group.id,"index":entity.index,"frame":int(group.hand_pose.frame),"grip_world":pose.origin,"basis":basis,"shape_length":group.shape.length,"determinant":basis.determinant(),"grip_error_m":0.0}
+	_handoff_events.append(context)
+	blade_released.emit(fighter,context)
+
+func _blade_min_y(group: Dictionary, basis: Basis, grip: Vector3) -> float:
+	# Conservative support of the real mesh's grip-space bounds. The eight
+	# corners include every actual vertex; no nominal blade length is used.
+	var bounds: AABB=group.shape.bounds
+	var result=INF
+	for x in [bounds.position.x,bounds.end.x]:
+		for y in [bounds.position.y,bounds.end.y]:
+			for z in [bounds.position.z,bounds.end.z]:result=minf(result,(grip+basis*Vector3(x,y,z)).y)
+	return result
+
+func _return_floor(fighter: DuelFighter) -> float:
+	var start=fighter.global_position+Vector3.UP*3.0
+	var hit=get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(start,start-Vector3.UP*16.0,1))
+	return float(hit.position.y) if not hit.is_empty() else 0.0
+
+func _advance_hand_return(group: Dictionary, entity: Dictionary, fighter: DuelFighter, delta: float, speed: float) -> bool:
+	var pose: Transform3D=group.hand_pose.pose
+	var basis: Basis=entity.flight_basis
+	var center: Vector3=group.shape.center
+	var grip=Vector3(entity.position)-basis*center
+	var floor_y=_return_floor(fighter)
+	var clearance=floor_y+0.06
+	var requested=true
+	if fighter.has_method("blade_reception_ready"):requested=bool(fighter.call("blade_reception_ready"))
+	var palm_clear=_blade_min_y(group,pose.basis.orthonormalized(),pose.origin)>=clearance
+	var lane=float(entity.index)-float(group.entities.size()-1)*0.5
+	var waypoint=pose.origin+fighter.forward()*0.85+fighter.global_basis.x.normalized()*lane*0.32
+	waypoint.y=maxf(pose.origin.y,floor_y+float(group.shape.radius)+0.20)
+	var receiver_free=true
+	for other in group.entities:
+		if int(other.index)<int(entity.index) and not other.done:receiver_free=false;break
+	if not entity.get("return_announced",false):
+		entity["return_announced"]=true
+		var context={"kind":"return_begin","volley_id":group.id,"index":entity.index,"frame":int(group.hand_pose.frame),"distance_to_hand":grip.distance_to(pose.origin),"estimated_arrival":grip.distance_to(waypoint)/speed}
+		_handoff_events.append(context);begin_blade_return.emit(fighter,context)
+	if not requested or not palm_clear or not receiver_free:entity["catching"]=false
+	var goal=pose.basis.orthonormalized().get_rotation_quaternion()
+	var q=basis.get_rotation_quaternion()
+	var start_q=q
+	var initial_angle=_rotation_vector(goal*q.inverse()).length()
+	if not entity.get("catching",false) and requested and palm_clear and receiver_free and grip.distance_to(waypoint)<0.12 and initial_angle<deg_to_rad(12.0):entity["catching"]=true
+	var target=pose.origin if entity.get("catching",false) else waypoint
+	if not entity.get("approaching",false) and grip.distance_to(target)<maxf(1.5,speed*0.20+float(group.shape.length)*0.5):
+		entity["approaching"]=true
+		entity["omega"]=basis.z*_blade_spin(group)
+	var angular_budget=0.0
+	if entity.get("approaching",false):
+		var error=_rotation_vector(goal*q.inverse())
+		var desired: Vector3=Vector3(group.hand_pose.omega)+error*24.0
+		var limit=maxf(_blade_spin(group),Vector3(group.hand_pose.omega).length()+4.0)
+		desired=desired.limit_length(limit)
+		var omega=Vector3(entity.omega).move_toward(desired,_blade_spin(group)*10.0*delta)
+		entity.omega=omega
+		if omega.length()>0.000001:q=(Quaternion(omega.normalized(),omega.length()*delta)*q).normalized()
+		angular_budget=minf(limit,Vector3(entity.omega).length()+_blade_spin(group)*10.0*delta)*delta
+	else:
+		q=(Basis(entity.release_basis)*Basis(Vector3(0,0,1),_blade_spin(group)*(float(group.age)-float(entity.launch_age)))).get_rotation_quaternion()
+	var distance=grip.distance_to(target)
+	var remaining_angle=_rotation_vector(goal*q.inverse()).length()
+	var approach=(target-grip).normalized()
+	var stand_off=minf(0.35,float(group.shape.length)*0.30*remaining_angle/PI) if entity.get("catching",false) else 0.0
+	var next_grip=grip.move_toward(target-approach*stand_off,speed*delta)
+	if entity.get("catching",false) and distance<=speed*delta and initial_angle<=angular_budget:
+		q=goal;next_grip=pose.origin
+	var next_basis=Basis(q)
+	# A low follow-through hand cannot pull the physical blade under the
+	# arena. Stage above the ground before lowering it into a ready palm.
+	if _blade_min_y(group,next_basis,next_grip)<clearance:
+		entity["catching"]=false
+		if _blade_min_y(group,basis,next_grip)>=clearance:
+			var lo=0.0;var hi=1.0
+			for iteration in 10:
+				var mid=(lo+hi)*0.5
+				if _blade_min_y(group,Basis(start_q.slerp(q,mid)),next_grip)>=clearance:lo=mid
+				else:hi=mid
+			q=start_q.slerp(q,lo);next_basis=Basis(q)
+		else:
+			var lift=maxf(0.0,clearance-_blade_min_y(group,basis,grip))
+			next_grip=grip+Vector3.UP*minf(speed*delta,maxf(lift,0.08))
+			q=start_q;next_basis=basis
+		entity["omega"]=_rotation_vector(q*start_q.inverse())/maxf(delta,0.0001)
+	entity.flight_basis=next_basis
+	entity.position=next_grip+next_basis*center
+	entity.heading=(Vector3(entity.position)-Vector3(entity.previous)).normalized()
+	var angle=_rotation_vector(goal*q.inverse()).length()
+	entity["handoff_debug"]={"grip_world":next_grip,"target_grip":pose.origin,"waypoint":waypoint,"grip_error_m":next_grip.distance_to(pose.origin),"basis_error_deg":rad_to_deg(angle),"basis_det":next_basis.determinant(),"frame":group.hand_pose.frame,"angular_step_deg":rad_to_deg(_rotation_vector(q*start_q.inverse()).length()),"angular_budget_deg":rad_to_deg(angular_budget),"reception_requested":requested,"receiver_free":receiver_free,"palm_geometry_clear":palm_clear,"catching":entity.get("catching",false),"minimum_blade_y":_blade_min_y(group,next_basis,next_grip),"floor_y":floor_y}
+	if entity.get("catching",false) and next_grip.distance_to(pose.origin)<=0.001 and angle<=deg_to_rad(0.25):
+		entity.flight_basis=pose.basis.orthonormalized()
+		entity.position=pose.origin+entity.flight_basis*center
+		entity.done=true
+		var context={"kind":"caught","volley_id":group.id,"index":entity.index,"frame":int(group.hand_pose.frame),"grip_world":pose.origin,"basis":entity.flight_basis,"grip_error_m":0.0,"basis_error_deg":0.0,"pre_snap_basis_deg":rad_to_deg(angle),"final_step_deg":rad_to_deg(_rotation_vector(goal*start_q.inverse()).length()),"angular_budget_deg":rad_to_deg(angular_budget),"shape_length":group.shape.length,"last":not _has_outstanding_blade(fighter.get_instance_id())}
+		_handoff_events.append(context);complete_blade_catch.emit(fighter,context)
+		_count_event("returning_blade:return")
+		return true
+	return false
+
+func _has_outstanding_blade(owner: int) -> bool:
+	for active in groups.values():
+		if int(active.owner)!=owner or not _is_returning(active):continue
+		for entity in active.entities:
+			if not entity.done:return true
+	return false
+
+func _handoff_json(value):
+	if value is Vector3:return [value.x,value.y,value.z]
+	if value is Basis:return [value.x.x,value.x.y,value.x.z,value.y.x,value.y.y,value.y.z,value.z.x,value.z.y,value.z.z]
+	if value is Dictionary:
+		var result={}
+		for key in value:result[key]=_handoff_json(value[key])
+		return result
+	if value is Array:
+		var result=[]
+		for item in value:result.append(_handoff_json(item))
+		return result
+	return value

@@ -936,7 +936,7 @@ func _physics_process(delta: float) -> void:
 				var thrust = float(attack.lunge) if action_time < window.y and action_time > 0.06 else 0.0
 				velocity.x = forward().x * thrust
 				velocity.z = forward().z * thrust
-				if combo_buffered and combo < 2 and action_time >= maxf(window.y + 0.10, action_duration * 0.58):
+				if combo_buffered and combo < 2 and _can_chain_attack():
 					if not _begin_attack(combo + 1):
 						combo_buffered = false
 				elif action_time >= action_duration:
@@ -994,6 +994,9 @@ func _after_attack_move() -> void:
 
 func _finish_attack() -> void:
 	_idle()
+
+func _can_chain_attack() -> bool:
+	return action_time >= maxf(float(attack.active.y) + 0.10, action_duration * 0.58)
 
 func _update_facing(delta: float) -> void:
 	if contact_latched:

@@ -22,6 +22,8 @@
 
 当前素材准备使用 UAL1 的手指握持姿势，并在2026-10-24补入 UAL2 免费 Standard 的 Sword_Dash / Sword_Block 作为许褚专属冲刀、架刀动作来源。对应原件、许可和SHA256保存在 `source-assets/animations/ual1/` 与 `source-assets/animations/ual2/`。腰肩与兵器路径的独立编排由项目离线烘焙工具生成。没有采用付费 Source 版本。
 
+2026-10-30 的许褚步战 J/Q/E/U 使用同一归档 CC0 UAL2 Standard 的 Sword_Regular_Combo、A/A_Rec、B/B_Rec、C、Sword_Block 与 OverhandThrow。工具保留解剖重定向后的上身源动作，按原骨长适配双腿；官方公开演示的静态剑挂点只用于推导装备朝向，没有将演示人物或剑模型加入游戏。输入/输出锁定及可复现生成流程见 `tools/xuchu_blade_family/README.md`。
+
 ## KayKit 双手动作
 
 - 作者：Kay Lousberg。

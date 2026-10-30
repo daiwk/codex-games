@@ -8,6 +8,8 @@ const FootMotionPolish = preload("res://scripts/duel_motion_polish.gd")
 signal duel_landed(at: Vector3)
 const XuUAL1K = preload("res://scripts/xu_ual1_k.gd")
 var source_k = XuUAL1K.new()
+const XuBladeFamily = preload("res://scripts/xu_blade_family.gd")
+var blade_family = XuBladeFamily.new()
 
 const DUEL_COMBO_CLIPS = {
 	"zhaoyun": {"Attack2": "DragonLow", "Attack3": "DragonHigh"},
@@ -64,11 +66,24 @@ func guard_facing() -> Vector3:
 func skill_profile(id: String) -> Dictionary:
 	var fallback = super.skill_profile(id)
 	if mounted: fallback = Cavalry.profile(character_id, id, fallback)
-	return DuelSkills.for_skill(character_id, id, fallback, mounted)
+	var profile = DuelSkills.for_skill(character_id, id, fallback, mounted)
+	if not blade_family.enabled: return profile
+	profile["xu_blade_family"] = true
+	if id == "rush":
+		profile.merge({"clip":"XuBladeThrow","duration":4.0/3.0,"active":Vector2(11.0/30.0, 0.48),"motion":[]}, true)
+		profile.erase("stages")
+	elif id == "counter":
+		profile.merge({"clip":"XuBladeGuardEnter","duration":1.96,"active":Vector2(0.56+26.0/120.0, 0.56+33.0/120.0),"guard_window":Vector2(0.04, 0.52),"physical_blade":true,"motion":[],"lunge":0.0,"min_dot":-1.0}, true)
+		profile.erase("stages")
+	elif id == "ultimate":
+		profile.merge({"description":"三刃扇射 · 逐刃回手 · 离手可策马","charge_clip":"XuBladeThrowWindup","duration":0.55+29.0/30.0,"hits":[],"motion":[]}, true)
+		profile.special["interval"] = 0.0
+	return profile
 
 func _ready() -> void:
 	super._ready()
 	source_k.setup(self)
+	blade_family.setup(self)
 	_setup_recorded_gaits()
 	if not mounted and character_id in ["zhaoyun", "machao"] and is_thrust_weapon():
 		# Keep the shared/RPG and mounted contact modifiers untouched.
@@ -240,11 +255,25 @@ func prewarm_attack_animations() -> void:
 	attack_warmup_ms = float(Time.get_ticks_usec() - begin) / 1000.0
 
 func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
+	if blade_family.enabled:
+		if state == "attack" and blade_family.owns_profile(attack):
+			source_k.legacy_clip()
+			blade_family.begin("light")
+			return
+		if clip.begins_with("XuBlade") and state in ["skill", "ultimate"]:
+			source_k.legacy_clip()
+			blade_family.begin("volley" if state == "ultimate" else ("throw" if skill_id == "rush" else "counter"))
+			return
+		if clip == "Idle" and not source_k.ready:
+			blade_family.play_ready(blend)
+			return
+		blade_family.legacy_clip()
 	if source_k.enabled:
 		if clip == "Hit" and state == "hit" and source_k.can_play_family_hit():
 			source_k.play_family_hit(duration)
 			return
 		if state == "attack" and attack.get("xu_ual1_k", false):
+			blade_family.use_original_grip()
 			source_k.begin()
 			return
 		if clip == "Idle" and source_k.ready:
@@ -299,6 +328,12 @@ func duel_can_cancel_normal_recovery() -> bool:
 
 func request_light() -> bool:
 	if _duel_weapon_thrown: return false
+	if blade_family.action_active and blade_family.mode == "light" and state == "attack":
+		if combo < 2 and action_time <= float(attack.combo_at) + 0.00001:
+			combo_buffered = true
+		else:
+			blade_family.repeat_requested = true
+		return true
 	return super.request_light()
 
 func request_heavy() -> bool:
@@ -333,6 +368,9 @@ func _duel_step_offset(time: float) -> Vector3:
 	return _duel_step_basis.z * (advance + gather + settle)
 
 func _limit_thrust_motion() -> void:
+	if blade_family.enabled and (blade_family.action_active or not blade_family.pending_root.is_zero_approx()):
+		blade_family.apply_motion(get_physics_process_delta_time())
+		return
 	if source_k.enabled and (source_k.active or source_k.pending_root.length_squared() > 0.0):
 		source_k.apply_motion(get_physics_process_delta_time())
 		return
@@ -387,10 +425,12 @@ func duel_weapon_is_thrown() -> bool:
 
 func _cancel_skill(completion = "cancel") -> void:
 	if completion != "complete" and skill_id != "": set_duel_weapon_thrown(false)
+	if completion != "complete" and skill_id != "" and blade_family.enabled: blade_family.reset()
 	super._cancel_skill(completion)
 
 func reset_fighter() -> void:
 	if source_k.enabled: source_k.reset()
+	if blade_family.enabled: blade_family.reset()
 	set_duel_weapon_thrown(false)
 	if _duel_air_active: floor_snap_length = _duel_floor_snap
 	_duel_air_active = false
@@ -406,6 +446,7 @@ func reset_fighter() -> void:
 	_cavalry_edge_side = Vector3.ZERO
 	_duel_actual_velocity = Vector3.ZERO
 	super.reset_fighter()
+	if blade_family.enabled: blade_family.use_anatomical_grip(0.0)
 	_lock_move_velocity = Vector3.ZERO
 	_lock_motion_active = false
 	lock_forward_speed = 0.0
@@ -415,6 +456,7 @@ func _has_lock_target() -> bool:
 
 func _physics_process(delta: float) -> void:
 	if hp <= 0.0 and _duel_weapon_thrown: set_duel_weapon_thrown(false)
+	if hp <= 0.0 and blade_family.enabled: blade_family.reset()
 	if _duel_air_active: _duel_air_elapsed += delta
 	if not enabled and _duel_air_active:
 		# Round presentation can disable combat while a real jump is airborne.
@@ -456,6 +498,7 @@ func _physics_process(delta: float) -> void:
 		lock_forward_speed = _lock_move_velocity.dot(forward())
 
 func _update_facing(delta: float) -> void:
+	if blade_family.action_active: return
 	if source_k.active: return
 	if mounted:
 		_update_mount_facing(delta)
@@ -531,21 +574,85 @@ func _weapon_adjusted_attack(profile: Dictionary) -> Dictionary:
 		result.duration = profile.duration
 		result.active = profile.active
 		result.lunge = 0.0
+	if profile.get("xu_blade_family", false):
+		# Preserve the complete source clock, including authored combo joins.
+		result.duration = profile.duration
+		result.active = profile.active
+		result.lunge = 0.0
 	return result
 
-func _advance_attack_animation(_delta: float) -> void:
+func _advance_attack_animation(delta: float) -> void:
 	if source_k.enabled: source_k.prepare_tick()
+	if blade_family.enabled: blade_family.prepare_tick(delta)
 
 func _emit_attack_strike(profile: Dictionary) -> void:
-	if profile.get("xu_ual1_k", false): source_k.queue_strike(profile)
+	if profile.get("xu_blade_family", false): blade_family.queue_strike(profile)
+	elif profile.get("xu_ual1_k", false): source_k.queue_strike(profile)
 	else: super._emit_attack_strike(profile)
 
 func _after_attack_move() -> void:
 	if source_k.enabled: source_k.post_move()
+	if blade_family.enabled: blade_family.post_move()
 
 func _finish_attack() -> void:
-	if source_k.active: source_k.finish()
+	if blade_family.action_active: blade_family.finish()
+	elif source_k.active: source_k.finish()
 	else: super._finish_attack()
+
+func _light_attacks() -> Array:
+	var profiles = super._light_attacks()
+	if not blade_family.enabled: return profiles
+	var lengths = [1.4, 1.6, 2.0]
+	var windows = [Vector2(26.0/120.0, 33.0/120.0), Vector2(31.0/120.0, 40.0/120.0), Vector2(64.0/120.0, 76.0/120.0)]
+	var entry = 0.18 if not blade_family.stance_ready and not (blade_family.action_active and blade_family.mode == "light") else 0.0
+	for index in profiles.size():
+		profiles[index] = profiles[index].duplicate(true)
+		var prefix = entry if index == 0 else 0.0
+		profiles[index].merge({"clip":"XuBladeJ%d" % (index+1),"duration":lengths[index]+prefix,"active":windows[index]+Vector2.ONE*prefix,"combo_at":[13.0/30.0,17.0/30.0,2.0][index]+prefix,"family_entry":prefix,"lunge":0.0,"min_dot":-1.0,"physical_blade":true,"xu_blade_family":true}, true)
+	return profiles
+
+func _can_chain_attack() -> bool:
+	if blade_family.owns_profile(attack): return action_time + 0.000001 >= float(attack.combo_at)
+	return super._can_chain_attack()
+
+func _update_skill(delta: float) -> void:
+	if not blade_family.owns_profile(attack):
+		super._update_skill(delta)
+		return
+	var window: Vector2 = attack.active
+	if not skill_strike_announced and action_time + 0.000001 >= window.x:
+		skill_strike_announced = true
+		skill_stage = "active"
+		skill_triggered.emit(self, skill_id, "release")
+	if skill_id == "counter" and action_time >= window.x and action_time <= window.y and not hit_landed:
+		var payload = attack.duplicate(true)
+		if skill_counter_primed:
+			payload.damage *= float(attack.get("counter_bonus", 1.0))
+			payload["guard_cost"] = float(payload.get("guard_cost", 36.0)) * 1.25
+			payload["counter_confirmed"] = true
+		blade_family.queue_strike(payload)
+	if action_time > window.y: skill_stage = "recovery"
+	if action_time + 0.000001 >= action_duration:
+		_cancel_skill("complete")
+		blade_family.finish()
+
+func _update_ultimate() -> void:
+	var profile = skill_profile("ultimate")
+	if not blade_family.owns_profile(profile):
+		super._update_ultimate()
+		return
+	if skill_stage == "windup" and action_time + 0.000001 >= float(profile.windup):
+		skill_stage = "active"
+		skill_triggered.emit(self, "ultimate", "release")
+	if action_time + 0.000001 >= action_duration:
+		_cancel_skill("complete")
+		blade_family.finish()
+
+func blade_family_status() -> Dictionary:
+	return blade_family.status()
+
+func blade_reception_ready() -> bool:
+	return blade_family.reception_ready() if blade_family.enabled else true
 
 func source_k_status() -> Dictionary:
 	return source_k.status()

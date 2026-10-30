@@ -6,6 +6,8 @@
 
 在仓库根目录运行 `python3 play.py`，或双击 `play.command`（macOS）/ `play.bat`（Windows）。只需要 Python 3.9+ 和支持 WebGL 2 / DecompressionStream 的浏览器。`dist/` 已包含游戏、字体、图像和许可，完整下载后无需联网。
 
+2026-10-30：许褚步战 J/Q/E/U 改用完整 UAL2 单手刀动作，肩肘腕保留同一源动作关系；刀面按官方静态剑挂点校准。J 使用连续原生连招和配套收势，E 从架刀直接接全身反切。Q/U 使用当前实际装备的不透明模型，离手后隐藏手持，刀柄真正回掌才恢复握刀；U 同手势三刃扇射、逐刃回手。重建及来源见 [动作库说明](tools/xuchu_blade_family/README.md)。原许褚地面 K 和已验收的赵云行走资源保留。
+
 ## 修改和重建
 
 只有修改游戏源码或重新导出才需要安装 **Godot 4.7.2**。构建脚本使用 Python 标准库；首次下载导出模板时需要 `curl`，只下载官方模板中的单线程 Web release 模板，并校验固定 SHA256。字体子集和优化后的模型已随源码提供，无需 Pillow、fontTools 或旧桌面工程。

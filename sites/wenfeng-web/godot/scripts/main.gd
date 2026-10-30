@@ -93,6 +93,14 @@ func _ready() -> void:
 	specials = Specials.new()
 	add_child(specials)
 	specials.hit_requested.connect(_on_special_hit)
+	specials.blade_released.connect(func(fighter, context):
+		if fighter.get("blade_family") != null and fighter.blade_family.enabled: fighter.blade_family.on_release(context))
+	specials.begin_blade_return.connect(func(fighter, context):
+		if fighter.get("blade_family") != null and fighter.blade_family.enabled: fighter.blade_family.on_return(context))
+	specials.complete_blade_catch.connect(func(fighter, context):
+		if fighter.get("blade_family") != null and fighter.blade_family.enabled: fighter.blade_family.on_catch(context))
+	specials.blade_cast_cancelled.connect(func(fighter, context):
+		if fighter.get("blade_family") != null and fighter.blade_family.enabled: fighter.blade_family.on_cast_cancelled(context))
 	camera = Camera3D.new()
 	camera.near = 0.08
 	camera.far = 120
@@ -851,6 +859,7 @@ func _exit_tree() -> void:
 func snapshot() -> Dictionary:
 	return {"last_melee_hit": last_melee_hit.duplicate(true), "specials": specials.debug_state() if is_instance_valid(specials) else {}, "special_hits": special_hit_counts.duplicate(), "last_special_hit": last_special_hit.duplicate(), "boss_phase": duel_director.phase, "boss_intent": cavalry_director.phase if combat_mode == "mounted" else duel_director.decision, "lock_on": {"active": lock_active(), "available": _lock_available() and not paused, "target": enemy.character_id if lock_active() else "", "position": [enemy.position.x, enemy.position.y, enemy.position.z] if lock_active() else []}, "phase": phase, "paused": paused, "combat_mode": combat_mode, "horse_color": horse_color, "enemy_horse_color": enemy_horse_color, "scores": scores.duplicate(), "seconds": round_time,
 		"player": {"instance_id": player.get_instance_id(), "character": player.character_id, "weapon": player.weapon_id, "hp": player.hp,
+			"blade_family": player.call("blade_family_status") if player.has_method("blade_family_status") else {},
 			"jump": player.jump_status(), "cavalry": player.call("cavalry_status") if player.mounted and player.has_method("cavalry_status") else {}, "airborne": player.call("duel_is_airborne"), "weapon_thrown": player.call("duel_weapon_is_thrown"),
 			"mounted": player.mounted, "mount_speed": player.mount_speed, "mount_charge_cooldown": player.mount_charge_cooldown, "heading": player.rotation.y,
 			"contact_active": player.contact_active, "contact_latched": player.contact_latched, "contact_retraction": player.contact_retraction,
@@ -858,6 +867,7 @@ func snapshot() -> Dictionary:
 			"stamina": player.stamina, "energy": player.energy, "cooldowns": player.cooldowns.duplicate(),
 			"clip": player.current_clip, "skill_hit_index": player.skill_hit_index, "skill": player.skill_id, "skill_stage": player.skill_stage, "state": player.state, "action_time": player.action_time, "combo": player.combo, "position": [player.position.x, player.position.y, player.position.z]},
 		"enemy": {"instance_id": enemy.get_instance_id(), "character": enemy.character_id, "weapon": enemy.weapon_id, "hp": enemy.hp,
+			"blade_family": enemy.call("blade_family_status") if enemy.has_method("blade_family_status") else {},
 			"jump": enemy.jump_status(), "cavalry": enemy.call("cavalry_status") if enemy.mounted and enemy.has_method("cavalry_status") else {}, "airborne": enemy.call("duel_is_airborne"), "weapon_thrown": enemy.call("duel_weapon_is_thrown"),
 			"mounted": enemy.mounted, "mount_speed": enemy.mount_speed, "mount_charge_cooldown": enemy.mount_charge_cooldown, "heading": enemy.rotation.y,
 			"contact_active": enemy.contact_active, "contact_latched": enemy.contact_latched, "contact_retraction": enemy.contact_retraction,
