@@ -44,6 +44,8 @@ python3 tools/fetch_web_resources.py
 
 现有 Sites 身份记录在 `.openai/hosting.json`。仓库根 Git 统一用于 GitHub，不再包含嵌套 Git 仓库。更新 Sites 时保留该项目 ID，并使用 Sites 的源码同步与部署流程。
 
+Sites v22（2026-10-30）的启动包约13MB。完整约147MB发布包在文件上传环节两次触发300秒超时，因此站点清单的八段PCK地址固定到公开GitHub提交 `2db3e4028f4419ba675a2f6c23ac08e0b2b74b2a`；游戏内容SHA256仍为 `8c860cf1f6c402521fab8fadd7a896979d9664d59cbef6419549bb2424d276c6`。GitHub与本地`dist/`继续保留完整离线文件和相对路径。后续发布应先推送完整新游戏包，再将Sites源码中的清单固定到该新提交并核对全部八段资源；保留原项目与访问范围。原站链接会转到当前工作区域名。
+
 ## 重新烘焙双手动作（可选）
 
 本目录的 `source-assets/` 保留六位武将及武器的原始 GLB、KayKit 免费动作、UAL1 手指姿势、马匹参考动作与原始许可；无需依赖目录外的旧游戏工程。素材分类、校验清单和重建命令见 [原始素材说明](source-assets/README.md)。安装 `numpy scipy Pillow` 后，在本目录运行 `python3 tools/prepare_polearms.py`，再执行 Web 构建。吕布原模型的两个灰色翎尾片面通过 `tools/repair_lubu.py` 删除，原版保存在 `source-assets/originals/`；修复脚本可重复运行。烘焙工具只读取模型，通过 T-pose 重定向、保留骨长的双臂 IK、闭合手指和地面校正生成 `godot/assets/` 下的网页副本；普通本地游玩和 Web 重建均不需要这些库。
