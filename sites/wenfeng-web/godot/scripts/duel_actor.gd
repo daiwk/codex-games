@@ -71,6 +71,9 @@ func skill_profile(id: String) -> Dictionary:
 	if crescent_motion.enabled and not fallback.is_empty(): return DuelSkills.guan_foot_skill(id, fallback)
 	if mounted: fallback = Cavalry.profile(character_id, id, fallback)
 	var profile = DuelSkills.for_skill(character_id, id, fallback, mounted)
+	if id == "rush" and not mounted and is_thrust_weapon():
+		var gap := global_position.distance_to(opponent.global_position) if is_instance_valid(opponent) else INF
+		profile = DuelSkills.thunder_rush(character_id, profile, animation_names, gap)
 	if not blade_family.enabled: return profile
 	profile["xu_blade_family"] = true
 	if id == "rush":

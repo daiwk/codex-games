@@ -1988,7 +1988,7 @@
       "axis_sign": -1.0,
       "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
     },
-    "runtime_sha256": "23ba8aabd2bafa6d06ff9332008b1828fa27d1d56d9f1def85ea0acc3dfafe29",
+    "runtime_sha256": "03496b6e76651de2d7fc79cd28433aa9b523843d28ecab85eb69c4cd1add3904",
     "duel_foot_polish": {
       "existing_animation_count": 42,
       "existing_binary_bytes_retained": 4887644,
@@ -2002,6 +2002,40 @@
       },
       "source": "CMU 09_01 + 136_25; see source-assets/animations/cmu-locomotion/SOURCE.json",
       "processing": "Fixed anatomical/foot reference retarget; original source rotation curves; uniform time scale and one constant whole-body height per clip."
+    },
+    "duel_thunder_spear": {
+      "scope": "ground-duel spear Q",
+      "sample_hz": 60,
+      "clips": {
+        "DuelThunderDragonSnap": {
+          "seconds": 0.38,
+          "samples": 24,
+          "validation": {
+            "wrist_max_deg": 31.444475720307025,
+            "grip_error_m": 3.8469227803261673e-16,
+            "plant_error_m": 0.0,
+            "torso_clearance_m": -0.007882475620636913,
+            "weapon_floor_clearance_m": 0.4650769042250311,
+            "active_axis_forward": 0.9826037214888647,
+            "active_tip_lateral_m": 0.10159960302178822,
+            "forward_tip_travel_m": 0.8648335243595024
+          }
+        },
+        "DuelThunderDragonDrive": {
+          "seconds": 0.44,
+          "samples": 27,
+          "validation": {
+            "wrist_max_deg": 40.55431759853345,
+            "grip_error_m": 3.2973623831367146e-16,
+            "plant_error_m": 0.0,
+            "torso_clearance_m": -0.006992120143180841,
+            "weapon_floor_clearance_m": 0.4650769042250311,
+            "active_axis_forward": 0.9863705682784156,
+            "active_tip_lateral_m": 0.11115812877929104,
+            "forward_tip_travel_m": 0.6569295031469472
+          }
+        }
+      }
     }
   },
   "machao": {
@@ -3293,16 +3327,36 @@
       "axis_sign": -1.0,
       "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
     },
-    "runtime_sha256": "4ff56eb249f275a76d2790bc792fa088aab392d4a4433c4c29ef1b8cf5693ad8",
+    "runtime_sha256": "51dc918b0c1842f4be8eb6ec0e99f17df9911afd593a092beb2ba2eb21633f0e",
     "duel_foot_polish": {
       "existing_animation_count": 28,
       "existing_binary_bytes_retained": 3978648,
       "mode": "append_only"
+    },
+    "duel_thunder_spear": {
+      "scope": "ground-duel spear Q",
+      "sample_hz": 60,
+      "clips": {
+        "DuelThunderTigerDrive": {
+          "seconds": 1.05,
+          "samples": 64,
+          "validation": {
+            "wrist_max_deg": 30.96379533281711,
+            "grip_error_m": 3.2973623831367146e-16,
+            "plant_error_m": 0.0,
+            "torso_clearance_m": -0.002400826101448753,
+            "weapon_floor_clearance_m": 0.41374833918158854,
+            "active_axis_forward": 0.9730048235747382,
+            "active_tip_lateral_m": 0.147955148036721,
+            "forward_tip_travel_m": 1.017925017580783
+          }
+        }
+      }
     }
   },
   "guanyu": {
     "source": {
-      "file": "characters/\u5173\u7fbd.glb",
+      "file": "characters/关羽.glb",
       "sha256": "8a3eec371c6b959e5a92b2d4eb0a25ca83d5bf4e9e3d4dee6651c89521c16310"
     },
     "clips": {
@@ -4091,7 +4145,7 @@
   },
   "zhangfei": {
     "source": {
-      "file": "characters/\u5f20\u98de.glb",
+      "file": "characters/张飞.glb",
       "sha256": "60fe6eab6dce29d8df4b2214d6643322c14f3f107da54a6825dd52210d42f975"
     },
     "clips": {
@@ -4772,11 +4826,42 @@
       "axis_sign": -1.0,
       "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
     },
-    "runtime_sha256": "16cf6bf1a6483f6471a754c088d2992c29e8a74578ac89471883f17e2acf7d1f"
+    "runtime_sha256": "94f15d7730661a58b980dc7b183c373e6e5e2ba1f1f7c57f87281726d547bcdb",
+    "duel_thunder_spear": {
+      "scope": "ground-duel spear Q",
+      "sample_hz": 60,
+      "clips": {
+        "DuelThunderSerpentBrace": {
+          "seconds": 0.52,
+          "samples": 32,
+          "validation": {
+            "wrist_max_deg": 13.57457302120373,
+            "grip_error_m": 4.39648317751562e-16,
+            "plant_error_m": 0.0,
+            "torso_clearance_m": 0.03234379892598039,
+            "weapon_floor_clearance_m": 0.3849983924544364
+          }
+        },
+        "DuelThunderSerpentDrive": {
+          "seconds": 0.9,
+          "samples": 55,
+          "validation": {
+            "wrist_max_deg": 35.753561638311744,
+            "grip_error_m": 3.2973623831367146e-16,
+            "plant_error_m": 0.0,
+            "torso_clearance_m": -0.008508800161450872,
+            "weapon_floor_clearance_m": 0.47921577297857293,
+            "active_axis_forward": 0.9799207400116469,
+            "active_tip_lateral_m": 0.1362873958397746,
+            "forward_tip_travel_m": 0.9020963596216716
+          }
+        }
+      }
+    }
   },
   "lubu": {
     "source": {
-      "file": "characters/\u5415\u5e03.glb",
+      "file": "characters/吕布.glb",
       "sha256": "f52a3bbdca491a9b92861e1c3d31f8bfbe4fe97489eaee577d5d18ec35e2582e"
     },
     "clips": {
@@ -5435,7 +5520,7 @@
   },
   "xuchu": {
     "source": {
-      "file": "characters/\u8bb8\u891a.glb",
+      "file": "characters/许褚.glb",
       "sha256": "b0e17f2b5d4870ad873ad38ef722dcd7b27a09725508733484df42f0a2eb78a0"
     },
     "clips": {
@@ -6152,7 +6237,7 @@
   "bandit": {
     "source": {
       "site": "changban-rpg",
-      "file": "source-assets/characters/\u5c71\u8d3c.glb",
+      "file": "source-assets/characters/山贼.glb",
       "sha256": "097023c37f5e2dacc7dc13f5c3d389240eaca8e0a39781a8da9de72d9c33cd4c"
     },
     "clips": {

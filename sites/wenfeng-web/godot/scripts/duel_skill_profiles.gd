@@ -1,5 +1,37 @@
 extends RefCounted
 
+const THUNDER_RUSH = {
+	"zhaoyun": {"clips": ["DuelThunderDragonSnap", "DuelThunderDragonDrive"], "description": "轻点收枪 · 换脚双刺", "short_range": 1.35},
+	"machao": {"clips": ["DuelThunderTigerDrive"], "description": "沉肩压枪 · 踏步贯刺", "short_range": 1.60},
+	"zhangfei": {"clips": ["DuelThunderSerpentBrace", "DuelThunderSerpentDrive"], "description": "扎根架矛 · 挡击后反刺更强", "short_range": 1.35},
+}
+
+# Keep guard, travel and damage on the original profiles. The fighter copies
+# the selected pose at input time, so crossing this distance mid-skill is safe.
+static func thunder_rush(role: String, profile: Dictionary, animation_names: Dictionary, gap: float) -> Dictionary:
+	if not THUNDER_RUSH.has(role):
+		return profile
+	var plan: Dictionary = THUNDER_RUSH[role]
+	var clips: Array = plan.clips
+	for clip in clips:
+		if not animation_names.has(clip):
+			return profile
+	profile["description"] = plan.description
+	profile["thunder_spear"] = true
+	# Keep the shorter chamber when there is no room to drive the full shaft.
+	if gap <= float(plan.short_range):
+		return profile
+	profile["clip"] = clips[0]
+	for index in profile.get("stages", []).size():
+		profile.stages[index]["clip"] = clips[index]
+	for index in profile.get("hits", []).size():
+		profile.hits[index]["clip"] = clips[index]
+	if role == "zhaoyun":
+		# Strike resolution sees the previous drawn tip. Include the tick that
+		# consumes the first phrase's last extended pose.
+		profile.hits[0]["active"] = Vector2(profile.hits[0].active.x, 0.17)
+	return profile
+
 # Duel-only spells use the wielder's actual equipment. Traveling entities own
 # contact; the animation envelope cannot deal a duplicate invisible melee hit.
 static func for_skill(role: String, id: String, fallback: Dictionary, mounted: bool) -> Dictionary:

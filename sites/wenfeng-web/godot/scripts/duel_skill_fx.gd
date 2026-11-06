@@ -1,6 +1,7 @@
 extends "res://scripts/skill_fx.gd"
 
 const GuanBladeFX = preload("res://scripts/guan_blade_fx.gd")
+const ThunderSpearFX = preload("res://scripts/thunder_spear_fx.gd")
 const GUAN_CONTACT = [Color("92d2b9"), Color("e3fff3"), Color("3b534b")]
 const GUAN_STEEL = [Color("d6a269"), Color("fff0c9"), Color("54483a")]
 
@@ -61,7 +62,7 @@ func action(fighter: DuelFighter, name: String) -> void:
 		_event(name)
 		return
 	if name in ["swing_light", "swing_heavy"]:
-		if GuanBladeFX.eligible(fighter) and fighter.attack.get("guan_blade", false):
+		if (GuanBladeFX.eligible(fighter) and fighter.attack.get("guan_blade", false)) or ThunderSpearFX.active(fighter):
 			_event(name)
 			return
 		var heavy = name == "swing_heavy"
@@ -116,6 +117,12 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 		elif stage == "start" and skill in ["rush", "ultimate"]:
 			_spawn(fighter, "stance_scuff", DUEL_PALETTES.guanyu, 0.34, 0.0, Vector3.ONE * 0.50, Vector3.ONE * 0.82)
 		_event("guandao:" + skill + ":" + stage)
+		return
+	if ThunderSpearFX.eligible(fighter) and profile.get("thunder_spear", false):
+		if stage == "start":
+			_remove_followers(fighter.get_instance_id())
+			_spawn(fighter, "stance_scuff", _palette(fighter.character_id), 0.30, 0.0, Vector3.ONE * 0.36, Vector3.ONE * 0.65)
+		_event("thunder_spear:" + skill + ":" + stage)
 		return
 	var special: Variant = profile.get("special", {})
 	if special is String: special = {"type": special}

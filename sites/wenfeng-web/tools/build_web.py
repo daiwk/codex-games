@@ -109,6 +109,7 @@ def main():
     text += "\nParticle textures: Kenney Particle Pack, CC0 1.0.\nhttps://kenney.nl/assets/particle-pack\nSee licenses/Kenney-Particle-Pack-CC0.txt\n"
     text += "\n单挑特殊招式（2026-10-26）：免费既有 KayKit / Quaternius 动作的角色序列重编，配合程序长矛、刀戟阵列、三刃回旋、冲击前沿和扬尘；未新增动捕或提取商业参考游戏素材。\n七曜龙矛：七支实际长矛、三轮齐射；西凉铁骑：六骑、三路两排；马战青龙刀阵：三刀错峰；蛇矛破军：五矛两翼收束；无双方天阵：六戟预示后包夹；虎啸回刃：三把当前刀剑扇形抛回。每实体实际接触后才结算伤害，足骑采用不同生成高度。\n骑兵轮廓使用用户提供的马匹、马超与兵器运行副本，四姿态奔跑来自已有 Quaternius CC0 Gallop；每骑4,894三角形，共用网格与姿态纹理；旗帜为程序生成，蹄尘使用既有Kenney CC0纹理。用户提供的模型不声明为CC0。\n派生资源来源与SHA256：Godot源码 assets/vfx/duel/SOURCE.json；详细说明：source-assets/vfx/duel/README.md。\n"
     text += "\n关羽步战刀法：按项目现有骨架制作的双手长刀动作、刀路轨迹与实时特效。公开招式参考：S-GAME《影之刃零》预购预告与正式版玩家演示。\nhttps://www.bilibili.com/video/BV1Hmuv68EWW/?t=438\nhttps://www.youtube.com/watch?v=bOFZcTxv4hg&t=420s\n"
+    text += "\n步战长枪与蛇矛 Q：按项目现有骨架制作踏步、收枪与双手发力，电弧取样实际枪尖。公开招式参考：《影之刃零》雷霆枪正式版玩家实机。\nhttps://www.bilibili.com/video/BV1y5xW63EW9/?t=1022\n"
     (DIST / "credits.txt").write_text(text)
     manifest = {"engine": "Godot 4.7.2", "threaded": False, "assets": {}}
     for name, mime in [("index.wasm", "application/wasm"), ("index.pck", "application/octet-stream")]:

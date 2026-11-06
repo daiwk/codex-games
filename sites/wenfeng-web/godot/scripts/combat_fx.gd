@@ -4,6 +4,7 @@ class_name DuelFX
 const TRAIL_MASK = preload("res://assets/vfx/kenney/trace_06.png")
 const TRAIL_LIFETIME = 0.11
 const GuanBladeFX = preload("res://scripts/guan_blade_fx.gd")
+const ThunderSpearFX = preload("res://scripts/thunder_spear_fx.gd")
 
 signal guan_tear_released(at: Vector3, direction: Vector3)
 
@@ -15,6 +16,7 @@ var muted = false:
 				player.stop()
 var legacy_contact_sparks = true
 var guan_effects_enabled = false
+var thunder_effects_enabled = false
 var sounds: Dictionary = {}
 var audio_pool: Array[AudioStreamPlayer] = []
 var trails: Dictionary = {}
@@ -74,7 +76,13 @@ func register_fighter(fighter: DuelFighter) -> void:
 		tracked.attach(fighter)
 		tracked.tear_released.connect(guan_tear_released.emit)
 		add_child(tracked)
-	trails[fighter.get_instance_id()] = {"fighter": weakref(fighter), "node": node, "points": [], "color": palette[0], "tracked": tracked}
+	var thunder: ThunderSpearFX
+	if thunder_effects_enabled and ThunderSpearFX.eligible(fighter):
+		thunder = ThunderSpearFX.new()
+		thunder.name = "ThunderSpearFX"
+		thunder.attach(fighter)
+		add_child(thunder)
+	trails[fighter.get_instance_id()] = {"fighter": weakref(fighter), "node": node, "points": [], "color": palette[0], "tracked": tracked, "thunder": thunder}
 
 func clear_fighters() -> void:
 	for trail in trails.values():
@@ -82,12 +90,31 @@ func clear_fighters() -> void:
 		if is_instance_valid(trail.tracked):
 			trail.tracked.hide()
 			trail.tracked.queue_free()
+		if is_instance_valid(trail.thunder):
+			trail.thunder.hide()
+			trail.thunder.queue_free()
 	trails.clear()
 
 func clear_guan() -> void:
 	for trail in trails.values():
 		if is_instance_valid(trail.tracked):
 			trail.tracked.clear()
+
+func clear_thunder() -> void:
+	for trail in trails.values():
+		if is_instance_valid(trail.thunder):
+			trail.thunder.clear()
+
+func thunder_impact(attacker: DuelFighter, at: Vector3, outcome: String, direction: Vector3) -> bool:
+	if not thunder_effects_enabled or not ThunderSpearFX.active(attacker) or outcome in ["evade", "dead"]:
+		return false
+	var trail: Dictionary = trails.get(attacker.get_instance_id(), {})
+	var thunder := trail.get("thunder") as ThunderSpearFX
+	if not is_instance_valid(thunder):
+		return false
+	var axis := (attacker.blade_tip() - attacker.blade_base()).normalized()
+	thunder.impact(at, direction if axis.is_zero_approx() else axis, maxi(attacker.skill_hit_index, 0))
+	return outcome not in ["block", "parry", "counter"]
 
 func _process(delta: float) -> void:
 	for trail in trails.values():
@@ -99,7 +126,8 @@ func _process(delta: float) -> void:
 			point.age += delta
 		while not points.is_empty() and points[0].age > TRAIL_LIFETIME:
 			points.pop_front()
-		var tracked = is_instance_valid(trail.tracked) and fighter.attack.get("guan_blade", false)
+		var tracked = (is_instance_valid(trail.tracked) and fighter.attack.get("guan_blade", false)) \
+			or (is_instance_valid(trail.thunder) and ThunderSpearFX.active(fighter))
 		if not tracked and fighter.state in ["attack", "skill", "ultimate"] and fighter.enabled and fighter.attack.has("active"):
 			var window: Vector2 = fighter.attack.active
 			if fighter.action_time > window.x - 0.025 and fighter.action_time < window.y + 0.06:

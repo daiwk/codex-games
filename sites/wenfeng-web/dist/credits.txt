@@ -41,3 +41,6 @@ See licenses/Kenney-Particle-Pack-CC0.txt
 关羽步战刀法：按项目现有骨架制作的双手长刀动作、刀路轨迹与实时特效。公开招式参考：S-GAME《影之刃零》预购预告与正式版玩家演示。
 https://www.bilibili.com/video/BV1Hmuv68EWW/?t=438
 https://www.youtube.com/watch?v=bOFZcTxv4hg&t=420s
+
+步战长枪与蛇矛 Q：按项目现有骨架制作踏步、收枪与双手发力，电弧取样实际枪尖。公开招式参考：《影之刃零》雷霆枪正式版玩家实机。
+https://www.bilibili.com/video/BV1y5xW63EW9/?t=1022

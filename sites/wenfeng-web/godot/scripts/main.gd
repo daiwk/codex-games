@@ -91,6 +91,7 @@ func _ready() -> void:
 	# DuelSkillFX owns the contact sparks; retain this host's audio and text.
 	fx.legacy_contact_sparks = false
 	fx.guan_effects_enabled = true
+	fx.thunder_effects_enabled = true
 	add_child(fx)
 	skill_fx = SkillEffects.new()
 	add_child(skill_fx)
@@ -280,6 +281,7 @@ func start_match() -> void:
 func _new_round() -> void:
 	skill_fx.clear()
 	fx.clear_guan()
+	fx.clear_thunder()
 	cleave_age = 1.0
 	specials.clear()
 	duel_director.reset()
@@ -323,6 +325,7 @@ func return_to_menu() -> void:
 		player.set("lock_facing", false)
 	skill_fx.clear()
 	fx.clear_guan()
+	fx.clear_thunder()
 	cleave_age = 1.0
 	_reset_hit_feedback()
 	camera_axis_ready = false
@@ -669,8 +672,12 @@ func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 	fx.burst(at, outcome, damage)
 	if outcome != "evade":
 		var heavy = outcome in ["heavy_hit", "parry", "counter", "break"]
-		if not resolving_special.is_empty() or not skill_fx.guan_impact(fighter.opponent, at, outcome):
-			skill_fx.impact(at, outcome, -fighter.forward(), 1.35 if heavy else 0.8)
+		var direction = -fighter.forward()
+		var custom_impact = false
+		if resolving_special.is_empty():
+			custom_impact = skill_fx.guan_impact(fighter.opponent, at, outcome) or fx.thunder_impact(fighter.opponent, at, outcome, direction)
+		if not custom_impact:
+			skill_fx.impact(at, outcome, direction, 1.35 if heavy else 0.8)
 		# Directional recoil reads as contact; only hard contacts add a small
 		# tremor, rather than vibrating through every ordinary thrust.
 		shake = maxf(shake, 0.032 if heavy else 0.008)
