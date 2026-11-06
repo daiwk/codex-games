@@ -175,9 +175,10 @@ func guan_impact(attacker: DuelFighter, at: Vector3, outcome: String) -> bool:
 	return true
 
 func guan_tear(at: Vector3, direction: Vector3) -> void:
-	_world_effect(at, direction, "tex_contact_dust", GUAN_CONTACT, 0.54, Vector3(1.38, 0.34, 1.72))
-	_world_effect(at + direction * 0.62, direction, "tex_step_dust", GUAN_CONTACT, 0.45, Vector3(1.38, 0.32, 1.95))
-	_world_effect(at, direction, "contact_chips", GUAN_CONTACT, 0.43, Vector3(0.95, 0.52, 1.15))
+	_world_effect(at, direction, "tex_contact_dust", GUAN_CONTACT, 0.64, Vector3(1.55, 0.38, 1.86))
+	_world_effect(at + direction * 0.86, direction, "tex_step_dust", GUAN_CONTACT, 0.55, Vector3(1.52, 0.30, 2.25))
+	_world_effect(at, direction, "slam_debris", GUAN_CONTACT, 0.49, Vector3(0.42, 0.66, 0.79))
+	_world_effect(at + Vector3.UP * 0.12, direction, "rpg_impact_sparks", GUAN_STEEL, 0.24, Vector3.ONE * 0.55)
 	_event("guandao:vertical_tear")
 
 func impact(at: Vector3, outcome: String, direction = Vector3.FORWARD, strength = 1.0) -> void:

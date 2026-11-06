@@ -67,7 +67,8 @@ static func guan_foot_skill(id: String, fallback: Dictionary) -> Dictionary:
 		"ultimate":
 			profile.merge({"name": "青龙裂空", "description": "踏步举刀 · 一劈裂空", "charge_clip": "GuanCrescentUCharge",
 				"windup": 0.76, "duration": 2.11, "radius": 0.0, "guan_fx": "dragon", "hits": [
-					{"start": 0.76, "clip": "GuanCrescentU", "clip_duration": 1.35, "active": Vector2(1.23, 1.39),
+					{"start": 0.76, "clip": "GuanCrescentU", "clip_duration": 1.35, "active": Vector2(1.23, 1.42),
+						"guan_ground_beat": 1.40,
 						"damage": 58.0, "guard_cost": 76.0, "knockback": 4.4, "hit_stun": 0.58,
 						"shape": "sector", "min_dot": -1.0, "guan_blade": true, "physical_blade": true, "guan_fx": "dragon"}
 				]}, true)

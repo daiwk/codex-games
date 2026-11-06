@@ -5,7 +5,10 @@ extends Node3D
 const CutShader = preload("res://assets/vfx/duel/guan_blade.gdshader")
 const MAX_SAMPLES = 19
 const ROTARY_LIFE = 0.21
-const TEAR_LIFE = 0.39
+const TEAR_LIFE = 0.77
+const TEAR_LENGTH = 5.55
+const TEAR_HEIGHT = 4.55
+const TEAR_ADVANCE = 2.75
 
 signal tear_released(at: Vector3, direction: Vector3)
 
@@ -85,8 +88,8 @@ func _ready() -> void:
 	_light = OmniLight3D.new()
 	_light.name = "GuandaoJadeFlash"
 	_light.light_color = Color("a9ffe0")
-	_light.omni_range = 4.4
-	_light.omni_attenuation = 1.85
+	_light.omni_range = 5.1
+	_light.omni_attenuation = 1.7
 	_light.hide()
 	add_child(_light)
 
@@ -176,12 +179,15 @@ func _sample_tear(fighter: DuelFighter, base: Vector3, tip: Vector3) -> void:
 	if _did_tear or fighter.attack.get("guan_fx", "") != "dragon":
 		return
 	var window: Vector2 = fighter.attack.active
-	# Use the authored cut clock, even when the browser draws no intermediate
-	# frames. A finishing contact can end the round on the next physics tick.
-	var finished_target = fighter.hit_landed and is_instance_valid(fighter.opponent) and fighter.opponent.hp <= 0.0
-	if clock >= (window.x + window.y) * 0.5 or finished_target:
+	# Sample the planted finish in physics even when the browser skips drawing
+	# it. Older profiles without that marker still fire on a lethal contact.
+	var ground_beat = float(fighter.attack.get("guan_ground_beat", (window.x + window.y) * 0.5))
+	var early_finish = not fighter.attack.has("guan_ground_beat") and fighter.hit_landed \
+		and is_instance_valid(fighter.opponent) and fighter.opponent.hp <= 0.0
+	if clock + 0.0001 >= ground_beat or early_finish:
 		_did_tear = true
-		_release_tear(base.lerp(tip, 0.27), fighter.forward(), movement)
+		var contact = tip.lerp(base, 0.12) if tip.y <= base.y else base.lerp(tip, 0.15)
+		_release_tear(contact, fighter.forward(), movement)
 
 func _push_sample(base: Vector3, tip: Vector3, style: String, strength: float, connected: bool) -> void:
 	var point = BladeSample.new()
@@ -237,12 +243,11 @@ func _release_tear(blade_contact: Vector3, forward: Vector3, velocity: Vector3) 
 	_tear.global_transform = Transform3D(frame, _tear_origin)
 	_floor.global_transform = _tear.global_transform
 	_wake.global_transform = _tear.global_transform
-	_light.global_position = _tear_origin + _tear_heading * 0.7 + Vector3.UP * 0.8
-	_light.light_energy = 1.05
 	_tear.show()
 	_floor.show()
 	_wake.show()
 	_light.show()
+	_update_tear(0.0)
 	tear_released.emit(_tear_origin, _tear_heading)
 
 func _update_tear(delta: float) -> void:
@@ -255,11 +260,19 @@ func _update_tear(delta: float) -> void:
 		return
 	_tear_material.set_shader_parameter("effect_age", age)
 	_wake_material.set_shader_parameter("effect_age", age)
-	_light.light_energy = 1.05 * pow(1.0 - age, 4.1)
-	_tear.global_position = _tear_origin + _tear_heading * (1.10 * (1.0 - pow(1.0 - age, 2.5)))
-	_tear.scale = Vector3(1.0, lerpf(0.83, 1.06, smoothstep(0.0, 0.27, age)), lerpf(0.58, 1.0, smoothstep(0.0, 0.42, age)))
-	_wake.scale = Vector3(0.72 + age * 0.88, 0.90 + age * 0.45, 0.76 + age * 0.58)
-	_floor_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0 - smoothstep(0.36, 0.98, age))
+	# The lip travels in world space. Its body opens quickly down the same
+	# heading, while dust trails back toward the original floor contact.
+	var advance = TEAR_ADVANCE * (1.0 - pow(1.0 - age, 1.72))
+	var opening = smoothstep(0.0, 0.23, age)
+	var front = _tear_origin + _tear_heading * advance
+	_tear.global_position = front
+	_tear.scale = Vector3(1.0, lerpf(0.62, 1.0, opening), lerpf(0.34, 1.0, opening))
+	_wake.global_position = _tear_origin + _tear_heading * advance * 0.58
+	_wake.scale = Vector3(0.62 + age * 0.91, 0.94 + age * 0.90, 0.53 + opening * 0.62)
+	_floor.scale.z = 0.52 + opening * 0.48
+	_floor_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0 - smoothstep(0.52, 0.99, age))
+	_light.global_position = front + _tear_heading * 0.55 + Vector3.UP * 0.84
+	_light.light_energy = 1.50 * (1.0 - smoothstep(0.10, 0.82, age))
 
 func _hide_tear() -> void:
 	_tear.hide()
@@ -270,17 +283,19 @@ func _hide_tear() -> void:
 func _tear_mesh() -> ArrayMesh:
 	var mesh = SurfaceTool.new()
 	mesh.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for row in 16:
-		for column in 5:
-			var from = Vector2(float(column) / 5.0, float(row) / 16.0)
-			var to = from + Vector2(0.2, 0.0625)
+	for row in 18:
+		for column in 12:
+			var from = Vector2(float(column) / 12.0, float(row) / 18.0)
+			var to = from + Vector2(1.0 / 12.0, 1.0 / 18.0)
 			for uv: Vector2 in [from, Vector2(to.x, from.y), to, from, to, Vector2(from.x, to.y)]:
-				var y = uv.y
-				var forward = y * 0.72 - sin(y * PI) * 0.35 + sin(y * 18.0) * 0.04
-				var depth = 3.7 * (0.60 + sin(y * PI * 0.93) * 0.40)
-				var curl = sin(y * PI) * 0.16 + pow(uv.x, 1.45) * sin(y * 2.2 + 0.4) * 1.02
+				var h = uv.y
+				var d = uv.x
+				var forward = h * 0.44 - sin(h * PI) * 0.19
+				var depth = TEAR_LENGTH * (0.72 + sin(h * PI * 0.79) * 0.28)
+				var height = h * TEAR_HEIGHT * (1.0 - 0.25 * d * d) + 0.025 * d
+				var curl = h * 0.19 - sin(h * PI) * 0.13 + d * d * sin(h * 2.7 + 0.38) * 0.66
 				mesh.set_uv(uv)
-				mesh.add_vertex(Vector3(curl, y * 4.3, forward + uv.x * depth))
+				mesh.add_vertex(Vector3(curl, height, forward + d * depth))
 	return mesh.commit()
 
 func _wake_mesh() -> ArrayMesh:
@@ -288,10 +303,10 @@ func _wake_mesh() -> ArrayMesh:
 	mesh.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for strip in 3:
 		for uv: Vector2 in [Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, Vector2.ZERO, Vector2.ONE, Vector2.DOWN]:
-			var spread = (uv.x - 0.5) * 4.1
-			var height = 0.10 + uv.y * float(strip) * 0.15
+			var spread = (uv.x - 0.5) * (3.7 + strip * 0.28)
+			var height = 0.055 + uv.y * float(strip) * 0.16
 			mesh.set_uv(uv)
-			mesh.add_vertex(Vector3(spread, height, (uv.y - 0.24) * (3.1 + strip * 0.16)))
+			mesh.add_vertex(Vector3(spread, height, (uv.y - 0.18) * (5.05 + strip * 0.36)))
 	return mesh.commit()
 
 func _fracture_mesh() -> ArrayMesh:
@@ -302,7 +317,7 @@ func _fracture_mesh() -> ArrayMesh:
 	for line in 9:
 		var branch = float(line - 4)
 		var origin = Vector3(0.0, 0.0, -0.52 + absf(branch) * 0.18)
-		var target = Vector3(branch * rng.randf_range(0.25, 0.42), 0.0, rng.randf_range(1.2, 3.15) - absf(branch) * 0.24)
+		var target = Vector3(branch * rng.randf_range(0.25, 0.42), 0.0, rng.randf_range(2.6, 4.3) - absf(branch) * 0.42)
 		var previous = origin
 		for segment in range(1, 7):
 			var t = float(segment) / 6.0

@@ -19,33 +19,70 @@ float grain(vec2 p) {
 		mix(hash21(cell + vec2(0, 1)), hash21(cell + vec2(1)), f.x), f.y);
 }
 
+float ridge(float coord, float center, float width) {
+	float d = (coord - center) * width;
+	return exp(-d * d);
+}
+
+void vertex() {
+	if (vertical_tear) {
+		// The lip follows the cut plane. Only the distant fabric billows.
+		float flutter = sin(UV.x * 5.2 + UV.y * 9.1 - effect_age * 8.5);
+		VERTEX.x += flutter * UV.x * UV.x * 0.12;
+	}
+}
+
 void fragment() {
 	vec3 ink = vec3(0.10, 0.25, 0.22);
 	vec3 jade = vec3(0.31, 0.82, 0.72);
 	vec3 pale = vec3(0.83, 1.0, 0.96);
 	if (ground_wake) {
 		float t = clamp(effect_age, 0.0, 1.0);
-		float cloud = grain(vec2(UV.x * 8.0 - t * 3.0, UV.y * 5.0 + UV.x * 3.0));
-		float outer = pow(max(0.0, sin(UV.x * 3.141593) * sin(UV.y * 3.141593)), 0.8);
-		ALBEDO = mix(vec3(0.27, 0.33, 0.29), vec3(0.66, 0.81, 0.73), cloud);
-		ALPHA = smoothstep(0.0, 0.15, t) * pow(1.0 - t, 1.2) * outer * cloud * 0.45;
+		float cloud = grain(vec2(UV.x * 9.0 - t * 3.0, UV.y * 6.0 + UV.x * 3.0));
+		float wisps = grain(vec2(UV.x * 17.0 + t * 2.0, UV.y * 8.0 - t * 3.1));
+		float outer = pow(max(0.0, sin(UV.x * 3.141593) * sin(UV.y * 3.141593)), 0.68);
+		ALBEDO = mix(vec3(0.20, 0.35, 0.30), vec3(0.56, 0.84, 0.76), cloud);
+		ALPHA = smoothstep(0.0, 0.15, t) * (1.0 - smoothstep(0.35, 1.0, t))
+			* outer * (cloud * 0.37 + wisps * 0.21);
 	} else if (vertical_tear) {
 		float age = clamp(effect_age, 0.0, 1.0);
-		float edge = smoothstep(0.0, 0.016, UV.x);
-		float height = smoothstep(0.0, 0.09, UV.y) * (1.0 - smoothstep(0.73, 1.0, UV.y));
-		float flow = UV.y * 16.0 + UV.x * 5.0 + pow(UV.x, 1.8) * 6.0;
-		float cloud = grain(vec2(UV.x * 5.6 - age * 5.0, flow));
-		float filaments = pow(grain(vec2(UV.x * 2.6 - age * 3.1, flow * 2.4)), 2.2);
-		float threads = exp(-pow((fract(flow * 0.71 + cloud * 0.23) - 0.5) * 9.0, 2.0));
-		float mist = pow(1.0 - UV.x, 0.79) * (cloud * 0.43 + filaments * 0.56 + threads * 0.17);
-		float seam = exp(-pow((UV.x - 0.030) * 34.0, 2.0)) * (0.82 + cloud * 0.18);
-		float flare = exp(-pow((UV.y - 0.23 + UV.x * 0.19) * 8.0, 2.0)) * filaments;
-		float life = smoothstep(0.0, 0.10, age) * pow(1.0 - age, 1.48);
-		ALBEDO = mix(mix(ink, jade, 0.42 + cloud * 0.58), pale, clamp(seam + flare * 0.8, 0.0, 1.0));
-		EMISSION = pale * (seam * 0.46 + flare * 0.20) * life;
-		ALPHA = edge * height * clamp(mist + seam + flare * 0.43, 0.0, 1.0) * life;
+		float u = UV.x;
+		float v = UV.y;
+		// The broad film is continuously filled. Long wind lanes converge
+		// downrange and wash over it without punching holes in the silhouette.
+		float center = 0.23 - u * 0.11 + u * u * 0.06;
+		float fan = (v - center) / mix(1.0, 0.62, u);
+		fan += sin(u * 6.5 - age * 5.1) * (0.012 + u * 0.025);
+		float mist = grain(vec2(u * 4.1 - age * 4.8, fan * 9.0));
+		float stream = grain(vec2(u * 2.6 - age * 7.1, fan * 21.0 + mist * 0.76));
+		float bands = ridge(fan, -0.09, 20.0) * 0.63;
+		bands += ridge(fan, 0.12, 12.0) * 0.87;
+		bands += ridge(fan, 0.34, 14.5) * 0.66;
+		bands += ridge(fan, 0.55, 12.5) * 0.77;
+		bands += ridge(fan, 0.73, 18.0) * 0.43;
+		float filament = pow(max(0.0, stream), 3.2);
+		float core = (ridge(fan, 0.117, 41.0) + ridge(fan, 0.548, 45.0)) * (0.11 + mist * 0.17);
+		float energy = clamp(bands * (0.46 + 0.44 * mist) + filament * 0.30 + core, 0.0, 1.0);
+		float leading = ridge(u, 0.013, 66.0);
+		float edge_glow = exp(-u * 17.0) * 0.36;
+		float floor_glow = exp(-v * 10.0) * (1.0 - u) * 0.30;
+		float edge_mask = smoothstep(0.0, 0.008, u);
+		float whisker = smoothstep(0.48, 0.89, stream);
+		float far_mask = 1.0 - smoothstep(0.83 + whisker * 0.09, 1.0, u + (mist - 0.5) * 0.073);
+		float height_mask = smoothstep(0.0, 0.029, v) * (1.0 - smoothstep(0.90, 1.0, v));
+		float ignition = smoothstep(0.0, 0.08, age);
+		float film_life = ignition * (1.0 - smoothstep(0.52, 0.96, age));
+		float lip_life = ignition * (1.0 - smoothstep(0.66, 1.0, age));
+		vec3 film = mix(vec3(0.035, 0.40, 0.36), vec3(0.21, 0.90, 0.80), 0.25 + mist * 0.60);
+		vec3 streak = vec3(0.77, 1.0, 0.96);
+		float light = clamp(leading + edge_glow + energy + floor_glow, 0.0, 1.0);
+		ALBEDO = mix(film, streak, light);
+		EMISSION = vec3(0.15, 0.86, 0.75) * (energy * 0.29 + floor_glow) * film_life
+			+ streak * (leading * 0.84 + edge_glow * 0.22) * lip_life;
+		float coverage = far_mask * (0.55 + mist * 0.14 + energy * 0.28);
+		ALPHA = edge_mask * height_mask * clamp(coverage * film_life + leading * lip_life, 0.0, 1.0);
 	} else {
-		float edge = exp(-pow((UV.x - 0.91) * 19.0, 2.0));
+		float edge = ridge(UV.x, 0.91, 19.0);
 		float body = smoothstep(0.03, 0.72, UV.x) * (1.0 - smoothstep(0.92, 1.0, UV.x));
 		float mist = grain(vec2(UV.y * 10.0 + UV.x * 1.7, UV.x * 6.0));
 		ALBEDO = mix(mix(ink, jade, COLOR.r), pale, edge * mix(0.45, 0.94, COLOR.r));

@@ -4070,7 +4070,7 @@
       "axis_sign": -1.0,
       "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
     },
-    "runtime_sha256": "7f391fa790ee8a150d1fa662c1a7e8d66048ea2837182f793d3c3ce6c96ceb0b",
+    "runtime_sha256": "339242a368a54c6595ec1a7e05ae3b699948509e319fd4aea2f1591a80c351d0",
     "duel_crescent": {
       "author": "Wenfeng project",
       "scope": "foot duel",

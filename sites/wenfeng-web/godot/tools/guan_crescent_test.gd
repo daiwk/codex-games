@@ -87,7 +87,8 @@ func request(id: String) -> bool:
 
 func observe_action() -> Dictionary:
 	var result = {"peak_entities": 0, "held": true, "ribbon_samples": 0, "retreat": 0.0, "advance": 0.0,
-		"shaft_sample_count": 0, "shaft_max_error": 0.0, "edge_sample_error": 0.0}
+		"shaft_sample_count": 0, "shaft_max_error": 0.0, "edge_sample_error": 0.0,
+		"tear_frames": 0, "tear_travel": 0.0, "tear_height": 0.0, "tear_length": 0.0}
 	var actor: DuelFighter = game.player
 	var origin = actor.position
 	var forward = actor.forward()
@@ -113,6 +114,14 @@ func observe_action() -> Dictionary:
 				result.ribbon_samples += 1
 				var error = maxf(sample.base.distance_to(actor.blade_base()), sample.tip.distance_to(actor.blade_tip()))
 				result.edge_sample_error = maxf(result.edge_sample_error, error)
+		if is_instance_valid(tracked) and tracked._tear.visible and not tear_events.is_empty():
+			var surface: MeshInstance3D = tracked._tear
+			var extent = surface.get_aabb().size * surface.scale
+			var origin_on_blade: Vector3 = tear_events[0].at
+			result.tear_frames += 1
+			result.tear_travel = maxf(result.tear_travel, surface.global_position.distance_to(origin_on_blade))
+			result.tear_height = maxf(result.tear_height, extent.y)
+			result.tear_length = maxf(result.tear_length, extent.z)
 	result["hits"] = contacts.duplicate(true)
 	result["tear"] = tear_events.duplicate(true)
 	result["hp_loss"] = 120.0 - game.enemy.hp
@@ -209,8 +218,31 @@ func action_case(id: String, gap: float, expected_hits: int, live_target = false
 		verify(label + " produces exactly one vertical tear on its actual blade line", data.tear.size() == 1
 			and data.tear[0].clip == "GuanCrescentU" and data.tear[0].time >= 1.20 and data.tear[0].time <= 1.45
 			and data.tear[0].edge_distance < 0.09 and data.tear[0].aim_dot > 0.8, data.tear)
+		verify(label + " opens and carries a broad upright sheet through the scene",
+			data.tear_frames >= 33 and data.tear_travel >= 2.0 and data.tear_height >= 4.0 and data.tear_length >= 4.5,
+			{"frames": data.tear_frames, "travel": data.tear_travel, "height": data.tear_height, "length": data.tear_length})
 	else:
 		verify(label + " has no ultimate tear", data.tear.is_empty())
+
+func lethal_cleave() -> void:
+	await setup(2.1)
+	var actor: DuelFighter = game.player
+	var ground_beat = float(actor.skill_profile("ultimate").hits[0].guan_ground_beat)
+	game.enemy.hp = 35.0
+	verify("lethal U starts", request("ultimate"))
+	var finish_clock = 0.0
+	for frame in 160:
+		await end_of_frame.sampled
+		if game.phase != "fight":
+			break
+		if game.enemy.hp <= 0.0:
+			finish_clock = actor.action_time
+	verify("lethal U plants and starts the sheet on the authored beat",
+		tear_events.size() == 1 and absf(float(tear_events[0].time) - ground_beat) <= 0.018,
+		tear_events)
+	verify("lethal U visibly settles before awarding the round",
+		game.phase == "round_end" and game.scores[0] == 1 and finish_clock >= ground_beat + 0.20,
+		{"phase": game.phase, "finish_clock": finish_clock})
 
 func compatibility() -> void:
 	await setup(6.0, "mounted")
@@ -243,6 +275,7 @@ func run() -> void:
 		await action_case(entry[0], entry[1], entry[2])
 	# Real body collision and recoil at close range exposed a blind spot in U.
 	await action_case("ultimate", 1.4, 1, true)
+	await lethal_cleave()
 	await compatibility()
 	FileAccess.open(report_path, FileAccess.WRITE).store_string(JSON.stringify(
 		{"checks": checks, "failures": failures, "cases": report}, "\t"))

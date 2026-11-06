@@ -62,6 +62,9 @@ var camera_axis_yaw = 0.0
 var camera_axis_ready = false
 var camera_look_position = Vector3.ZERO
 var camera_look_ready = false
+var cleave_age = 1.0
+var cleave_origin = Vector3.ZERO
+var cleave_heading = Vector3.FORWARD
 var testing = false
 var elapsed = 0.0
 var screenshot_pending = false
@@ -92,6 +95,7 @@ func _ready() -> void:
 	skill_fx = SkillEffects.new()
 	add_child(skill_fx)
 	fx.guan_tear_released.connect(skill_fx.guan_tear)
+	fx.guan_tear_released.connect(_on_guan_cleave_ground)
 	specials = Specials.new()
 	add_child(specials)
 	specials.hit_requested.connect(_on_special_hit)
@@ -276,6 +280,7 @@ func start_match() -> void:
 func _new_round() -> void:
 	skill_fx.clear()
 	fx.clear_guan()
+	cleave_age = 1.0
 	specials.clear()
 	duel_director.reset()
 	cavalry_director.reset()
@@ -318,6 +323,7 @@ func return_to_menu() -> void:
 		player.set("lock_facing", false)
 	skill_fx.clear()
 	fx.clear_guan()
+	cleave_age = 1.0
 	_reset_hit_feedback()
 	camera_axis_ready = false
 	camera_look_ready = false
@@ -423,7 +429,14 @@ func _physics_process(delta: float) -> void:
 		"fight":
 			round_time = maxf(0.0, round_time - delta)
 			if player.hp <= 0.0 or enemy.hp <= 0.0:
-				_end_round(0 if enemy.hp <= 0.0 else 1)
+				var winner = 0 if enemy.hp <= 0.0 else 1
+				var victor = player if winner == 0 else enemy
+				var plant = float(victor.attack.get("guan_ground_beat", -1.0))
+				# Complete the planted follow-through on a lethal cleave.
+				# Input and AI stay gated here while the dead fighter settles.
+				if plant >= 0.0 and victor.state == "ultimate" and victor.hit_landed and victor.action_time < plant + 0.23:
+					return
+				_end_round(winner)
 				return
 			if round_time <= 0.0:
 				if absf(player.hp - enemy.hp) < 0.01:
@@ -673,6 +686,16 @@ func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 		toast = "防御崩解 · 拉开距离" if fighter.is_player else "对手破防 · 进攻时机"
 		toast_time = 1.5
 
+func _on_guan_cleave_ground(at: Vector3, direction: Vector3) -> void:
+	cleave_age = 0.0
+	cleave_origin = at
+	cleave_heading = direction
+	# Plant feedback is separate from the earlier metal hit and also reads
+	# on a whiff, when the blade still completes its downward follow-through.
+	fx.sound("step", -13.0, 0.58)
+	shake = maxf(shake, 0.026)
+	camera_motion.kick(Vector3.DOWN - direction * 0.32, true)
+
 func _on_action(fighter: DuelFighter, action: String) -> void:
 	skill_fx.action(fighter, action)
 	match action:
@@ -746,6 +769,7 @@ func _process(delta: float) -> void:
 	if paused:
 		return
 	elapsed += delta
+	cleave_age = minf(1.0, cleave_age + delta)
 	shake = move_toward(shake, 0.0, real_delta * 0.75)
 	impact_zoom = move_toward(impact_zoom, 0.0, real_delta * 12.0)
 	camera_motion.update(real_delta)
@@ -808,15 +832,22 @@ func _update_camera(delta: float, instant = false) -> void:
 			fov = 52.0 + wide_special * 2.5
 		if phase == "fight":
 			fov -= maxf(CombatCamera.anticipation(player), CombatCamera.anticipation(enemy))
-			var cleaver = player if player.state == "ultimate" else enemy
-			if cleaver.state == "ultimate" and cleaver.current_clip.begins_with("GuanCrescentU"):
-				# Ease sideways so the vertical cut reads as a plane and both
-				# hands remain visible as the long shaft rises above the head.
-				var clock: float = cleaver.action_time
-				var reveal = smoothstep(0.30, 0.85, clock) * (1.0 - smoothstep(1.53, 1.98, clock))
-				desired += (side * 0.92 + Vector3.UP * 0.16) * reveal
-				target += Vector3.UP * 0.36 * reveal
-				fov += 3.5 * reveal
+		var cleaver = player if player.current_clip.begins_with("GuanCrescentU") else enemy
+		var raising = 0.0
+		if cleaver.state == "ultimate" and cleaver.current_clip.begins_with("GuanCrescentU"):
+			raising = smoothstep(0.22, 0.98, cleaver.action_time) * (1.0 - smoothstep(1.65, 2.06, cleaver.action_time))
+		var launched = 1.0 - smoothstep(0.56, 0.90, cleave_age)
+		var reveal = maxf(raising, launched)
+		if reveal > 0.0:
+			# See the surface at an oblique angle and hold the composition
+			# through its travel, even if the strike has ended the round.
+			desired += (side * 2.75 + Vector3.UP * 0.36) * reveal
+			target += Vector3.UP * 0.40 * reveal
+			fov += 5.5 * reveal
+			if launched > 0.0:
+				var wake_center = cleave_origin + cleave_heading * (2.35 + cleave_age * 1.35) + Vector3.UP * 1.80
+				var drift = (wake_center - target).limit_length(3.3)
+				target += drift * (0.50 * smoothstep(0.0, 0.22, cleave_age) * launched)
 	if combat_mode == "mounted" and phase != "menu":
 		# The horse keeps its own heading. Marking an enemy only biases the
 		# rider's view a little; a passed foe cannot spin the camera backwards.

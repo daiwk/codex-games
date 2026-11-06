@@ -62,7 +62,7 @@ READY = (0, 0, 0, 0, .514, .003, .591, .185, 55.2, 22.0, -165.5)
 J1_JOIN = (.60, -37, -18, 11, .489, -.035, .560, .191, -109, -14, -173)
 J2_JOIN = (.65, 43, 19, -7, .521, .040, .661, .185, 133, 37, -298)
 J3_JOIN = (.74, -47, -15, 19, .457, -.035, .475, .204, -120, -20, -176)
-U_DRAW = (.76, 31, 17, -8, .501, .054, .752, .167, 61, 56, -114)
+U_DRAW = (.76, 37, 18, -11, .504, .050, .758, .158, 60, 57, -114)
 
 PHRASES = {
     "J1": [
@@ -105,16 +105,21 @@ PHRASES = {
         (1.45, *READY[1:]),
     ],
     "Q": [
-        READY, (.20, -28, -20, 13, .485, -.035, .561, .163, -102, -2, -320),
-        (.38, -13, -12, 12, .470, -.021, .562, .210, -70, -4, -351),
-        (.525, 7, 8, 10, .478, .096, .568, .194, -7, -3, -355),
-        (.65, 57, 18, 12, .479, .031, .554, .190, 139, 1, -353),
-        (.80, 141, 16, 15, .470, .042, .508, .191, 227, -18, -352),
-        (.94, 234, 20, 17, .455, .030, .474, .195, 285, -21, -343),
-        (1.09, 297, 20, 11, .469, .018, .511, .219, 335, -15, -337),
-        (1.185, 347, 7, 5, .480, .104, .575, .192, 354, -5, -331),
-        (1.29, 390, 11, -3, .493, .020, .639, .211, 425, 18, -316),
-        (1.46, 382, 12, 4, .496, .031, .610, .183, 440, 25, -355),
+        # Sit into the rear boot, unwind the hips, and let the loaded blade
+        # catch up to the torso. The rising back of the turn redirects its
+        # momentum into a lower second cut after the cross-step plants.
+        READY, (.16, -20, -16, 10, .490, -.034, .560, .164, -68, -7, -269),
+        (.245, -31, -15, 15, .465, -.035, .551, .165, -99, -10, -326),
+        (.38, -2, -25, 14, .464, -.030, .561, .201, -67, -7, -352),
+        (.515, 23, -16, 10, .467, .099, .564, .199, -9, -3, -355),
+        (.585, 42, -11, 8, .478, .064, .556, .200, 57, 1, -354),
+        (.69, 99, -26, 8, .496, .034, .624, .185, 145, 22, -350),
+        (.82, 172, -23, 12, .489, .023, .618, .190, 231, 18, -348),
+        (.95, 250, -23, 18, .467, .015, .519, .195, 285, -12, -352),
+        (1.09, 320, -24, 18, .453, .021, .499, .204, 337, -16, -346),
+        (1.18, 358, -19, 18, .461, .111, .552, .190, 358, -8, -342),
+        (1.29, 393, -9, 4, .477, .020, .623, .201, 425, 16, -379),
+        (1.46, 380, 2, 5, .488, .031, .604, .182, 438, 25, -456),
         (1.78, 360, *READY[2:8], 415.2, 22, -525.5),
     ],
     "E": [
@@ -128,19 +133,23 @@ PHRASES = {
         (1.31, *READY[1:]),
     ],
     "UCharge": [
-        READY, (.24, 25, 15, 15, .461, .033, .479, .175, 125, -25, -134),
-        (.42, 40, 12, 12, .476, .041, .550, .195, 120, 9, -124),
-        (.60, 32, 16, -7, .500, .053, .725, .180, 75, 54, -113),
+        READY, (.17, 15, 12, 16, .467, .025, .497, .172, 107, -16, -143),
+        (.30, 30, 16, 19, .456, .039, .466, .177, 135, -24, -131),
+        (.43, 44, 12, 9, .482, .038, .564, .193, 118, 17, -124),
+        (.60, 43, 14, -8, .510, .053, .724, .177, 79, 50, -116),
         U_DRAW,
     ],
     "U": [
-        (0, *U_DRAW[1:]), (.22, 28, 18, -10, .510, .064, .808, .158, 53, 70, -100),
-        (.40, 20, 14, -5, .504, .060, .835, .189, 31, 73, -96),
-        (.49, 9, 8, 7, .484, .034, .797, .223, 13, 53, -93),
-        (.555, 1, 3, 15, .464, .115, .699, .209, -7, 14, -94),
-        (.625, -4, -2, 24, .442, .112, .565, .207, -9, -37, -94),
-        (.80, -8, -5, 20, .453, .086, .546, .213, -13, -33, -102),
-        (1.03, -4, -3, 10, .471, -.020, .547, .191, 10, -9, -114),
+        (0, *U_DRAW[1:]), (.18, 40, 17, -16, .517, .058, .817, .146, 48, 72, -104),
+        (.29, 33, 22, -14, .512, .060, .834, .156, 37, 76, -98),
+        (.39, 17, 21, -6, .503, .051, .828, .181, 28, 74, -96),
+        (.46, 6, 17, 5, .479, .045, .801, .207, 17, 61, -93),
+        (.53, -2, 11, 23, .435, .102, .740, .214, 1, 32, -94),
+        (.57, -9, 4, 25, .408, .110, .632, .180, -8, 1, -96),
+        (.63, -14, 1, 29, .388, .086, .535, .146, -9, -40, -99),
+        (.69, -15, 0, 42, .397, .081, .520, .170, -11, -35, -103),
+        (.86, -12, -2, 27, .422, .077, .530, .216, -9, -24, -107),
+        (1.04, -5, -4, 14, .468, -.012, .552, .193, 13, -8, -119),
         (1.35, *READY[1:]),
     ],
 }
@@ -153,10 +162,11 @@ TRAVEL = {
     "J3": [(0, 0), (.19, -.02), (.46, .23), (.74, .27), (1.05, .27)],
     "J4": [(0, 0), (.30, -.04), (.57, .40), (.82, .44), (1.25, .44)],
     "K": [(0, 0), (.43, -.08), (.74, .45), (.96, .52), (1.45, .52)],
-    "Q": [(0, 0), (.20, -.02), (.55, .14), (1.20, .55), (1.78, .60)],
+    "Q": [(0, 0), (.23, -.035), (.44, .10), (.61, .19), (.88, .32),
+          (1.10, .44), (1.23, .56), (1.46, .60), (1.78, .60)],
     "E": [(0, 0), (.14, -.06), (.42, -.64), (.53, -.68), (.79, -.21), (1.31, -.19)],
     "UCharge": [(0, 0), (.26, .07), (.52, .36), (.76, .47)],
-    "U": [(0, 0), (.33, .08), (.58, .54), (.80, .62), (1.35, .62)],
+    "U": [(0, 0), (.24, .015), (.36, .12), (.46, .31), (.55, .53), (.64, .62), (.80, .64), (1.35, .64)],
 }
 
 # Left/right boot swing intervals and maximum ankle lift in rig metres.
@@ -167,15 +177,53 @@ STEPS = {
     "J3": {"Left": [(.76, .88, .037)], "Right": [(.20, .41, .052), (.85, 1.05, .021)]},
     "J4": {"Left": [(.34, .55, .064), (.97, 1.25, .031)], "Right": [(.73, .98, .045)]},
     "K": {"Left": [(.56, .69, .057), (1.19, 1.45, .024)], "Right": [(.82, 1.11, .042)]},
-    "Q": {"Left": [(.25, .47, .05), (.65, .79, .049), (.98, 1.13, .049), (1.45, 1.72, .036)],
-          "Right": [(.50, .66, .045), (.80, .98, .047), (1.13, 1.30, .05), (1.61, 1.78, .028)]},
+    "Q": {"Left": [(.21, .40, .044), (.675, .815, .059), (.997, 1.130, .054), (1.46, 1.61, .030)],
+          "Right": [(.51, .665, .053), (.831, .987, .056), (1.15, 1.31, .049), (1.625, 1.78, .026)]},
     "E": {"Left": [(.10, .31, .055), (.57, .76, .056), (1.07, 1.31, .026)],
           "Right": [(.30, .48, .049), (.83, 1.03, .043)]},
     "UCharge": {"Left": [(.33, .56, .045)], "Right": [(.09, .28, .044), (.56, .76, .034)]},
-    "U": {"Left": [(.36, .54, .065), (1.10, 1.35, .032)], "Right": [(.72, .99, .050)]},
+    "U": {"Left": [(.27, .46, .064), (1.10, 1.35, .034)], "Right": [(.77, 1.06, .048)]},
+}
+
+# The cleave shifts over its rear boot before the front boot takes the cut.
+# Each row is (time, lateral pelvis offset in rig metres, torso roll in degrees).
+CLEAVE_WEIGHT = {
+    "UCharge": [(0, 0, 0), (.17, -.035, 7), (.31, -.060, 11),
+                (.48, -.035, 6), (.60, .026, -4), (.76, -.019, 3)],
+    "U": [(0, -.019, 3), (.23, -.065, 11), (.35, -.053, 10), (.46, .011, 1),
+          (.55, .048, -6), (.64, .064, -9), (.78, .057, -7),
+          (1.00, .022, -2), (1.35, 0, 0)],
+}
+
+# Selected planting targets receive a local X/Z extension in gameplay metres.
+# The rear boot stays at its end-of-charge anchor until the blade settles.
+CLEAVE_PLANTS = {
+    ("UCharge", "Left", .56): (-.050, .13),
+    ("UCharge", "Right", .76): (.062, -.06),
+    ("U", "Left", .46): (-.104, .48),
+    ("U", "Right", 1.06): (.035, -.04),
 }
 
 JOINS = {"J2": ("J1", .60), "J3": ("J2", .65), "J4": ("J3", .74), "U": ("UCharge", .76)}
+
+# The support boot turns around its toe while the other foot moves. Each
+# entry is start, end, world yaw in the clip, and maximum heel rock in degrees.
+Q_PIVOTS = {
+    "Left": [(.435, .595, 50, 11), (.836, .973, 206, 14), (1.159, 1.272, 355, 10)],
+    "Right": [(.237, .382, -20, 9), (.689, .795, 151, 14), (1.014, 1.118, 330, 12),
+              (1.478, 1.588, 365, 8)],
+}
+
+# Left-foot weight share, torso bank, and head lead through the two sweeps.
+Q_WEIGHT = np.array([
+    (0, .50, 0, 0), (.22, .17, -5, 3), (.38, .20, -8, 6),
+    (.49, .81, 5, 10), (.64, .82, 8, 14), (.72, .19, -7, 18),
+    (.81, .23, -5, 21), (.87, .79, 7, 18), (.98, .78, 9, 21),
+    (1.04, .19, -6, 18), (1.13, .35, -7, 9), (1.20, .80, 6, 7),
+    (1.35, .67, 5, -10), (1.50, .32, -3, -10),
+    (1.64, .68, 3, -5), (1.78, .50, 0, 0),
+])
+Q_WEIGHT_CURVE = PchipInterpolator(Q_WEIGHT[:, 0], Q_WEIGHT[:, 1:], axis=0)
 
 
 class Rig:
@@ -227,19 +275,54 @@ class Rig:
         return distance - reach
 
 
+
+def q_boot_anchor(rig, side, t, curve, travel, start):
+    foot, toe = rig.legs[side][-1], rig.id(side + "ToeBase")
+    base = rig.world[foot][0]
+    toe_offset = rig.world[toe][0] - base
+    toe_forward = normalize(toe_offset - UP * np.dot(toe_offset, UP))
+    heel_axis = np.cross(UP, toe_forward)
+    old, old_yaw = start
+    steps = STEPS["Q"][side]
+    events = [(begin, end, None, lift) for begin, end, lift in steps] + Q_PIVOTS[side]
+    for begin, end, heading, amount in sorted(events):
+        if t < begin:
+            break
+        u = np.clip((t - begin) / (end - begin), 0.0, 1.0)
+        weight = smoothstep(u)
+        swing = heading is None
+        if swing:
+            heading = 360. if end == steps[-1][1] else float(curve(min(end + .047, 1.78))[0])
+        heading_now = old_yaw + weight * ((heading - old_yaw + 180) % 360 - 180)
+        rotate = yaw(heading_now)
+        if swing:
+            target = rig.rest_hip + yaw(heading).apply(base - rig.rest_hip) + FORWARD * float(travel(end)) / SCALE
+            outward = rotate.apply([.028 if side == "Left" else -.028, 0.0, 0.0])
+            ankle = old * (1. - weight) + target * weight + (UP * amount + outward) * np.sin(np.pi * u) ** 2
+            heel = Rotation.identity()
+        else:
+            # Anchor the actual ToeBase and rock the heel off the floor
+            # during the pivot. The opposite boot can pass the support leg.
+            heel = Rotation.from_rotvec(heel_axis * np.deg2rad(amount) * np.sin(np.pi * u) ** 2)
+            toe_world = old + yaw(old_yaw).apply(toe_offset)
+            ankle = toe_world - rotate.apply(heel.apply(toe_offset))
+        if t < end:
+            return ankle, rotate * heel
+        old, old_yaw = ankle, heading
+    return old, yaw(old_yaw)
+
 def boot_anchors(rig, alias, side, t, curve, travel, start):
     i = rig.legs[side][-1]
     base, base_rot = rig.world[i]
     old, old_yaw = start
     for begin, end, lift in STEPS[alias][side]:
         heading = float(curve(end)[0])
-        if alias == "Q":
-            # The ankle turns as it leaves the ground. A step reaches toward
-            # the next torso orientation, rather than behind the planted boot.
-            heading = float(curve(min(end + .04, PHRASES[alias][-1][0]))[0])
         if end == STEPS[alias][side][-1][1] and alias != "UCharge":
             heading = float(curve(PHRASES[alias][-1][0])[0])
         target = rig.rest_hip + yaw(heading).apply(base - rig.rest_hip) + FORWARD * float(travel(end)) / SCALE
+        extension = CLEAVE_PLANTS.get((alias, side, end))
+        if extension is not None:
+            target += np.array([extension[0], 0.0, extension[1]]) / SCALE
         if t < begin:
             break
         if t < end:
@@ -266,6 +349,10 @@ def bake(rig, alias, previous):
     ticks = np.linspace(0.0, duration, round(duration * HZ) + 1)
     samples, edges, report = [], [], []
     stance = start_anchors(rig, previous)
+    cleave_weight = None
+    if alias in CLEAVE_WEIGHT:
+        weights = np.asarray(CLEAVE_WEIGHT[alias])
+        cleave_weight = PchipInterpolator(weights[:, 0], weights[:, 1:], axis=0)
     target = rig.glb
     last = previous["pose"] if previous is not None else rig.rest
     last_world = target.world(last)
@@ -277,13 +364,23 @@ def bake(rig, alias, previous):
             history[side + "_" + name] = Rotation.from_quat(last[i][1])
             if name != "hand":
                 history[side + "_" + name + "_world"] = last_world[i][1]
+    is_rotary = alias == "Q"
+    neutral_foot_center = sum(rig.world[rig.legs[side][-1]][0] for side in SIDES) / 2.
     for time in ticks:
         pelvis, chest, lean, height, cx, cy, cz, blade_yaw, elevation, edge_roll = curve(time)
+        weight, bank, gaze = Q_WEIGHT_CURVE(time) if is_rotary else (.50, 0., 0.)
         hip_turn, body = yaw(pelvis), yaw(pelvis + chest)
         pose = deepcopy(rig.rest)
         pose[rig.hip][0][1] = height
+        torso_tilt = Rotation.from_euler("x", lean, degrees=True)
+        if cleave_weight is not None:
+            lateral, roll = cleave_weight(time)
+            pose[rig.hip][0][0] += lateral
+            torso_tilt = Rotation.from_euler("z", roll, degrees=True) * torso_tilt
         pose[rig.hip][1] = (hip_turn * rig.rest_hip_rotation).as_quat()
-        torso = yaw(pelvis + chest) * Rotation.from_euler("x", lean, degrees=True) * yaw(-pelvis)
+        torso = yaw(pelvis + chest) * torso_tilt * yaw(-pelvis)
+        if is_rotary:
+            torso = yaw(pelvis + chest) * Rotation.from_euler("xz", [lean, bank], degrees=True) * yaw(-pelvis)
         for name, amount in (("Spine", .24), ("Spine1", .33), ("Spine2", .43)):
             bone = rig.id(name)
             world = target.world(pose)
@@ -291,10 +388,16 @@ def bake(rig, alias, previous):
         # Face the opponent through the windup, then let the gaze lead the
         # planted turn and return to the blade line before the second pass.
         head = rig.id("Head")
-        head_adjust = -np.clip(chest * .45, -13, 13) + (10 * np.sin(np.pi * time / duration) if alias == "Q" else 0)
+        head_adjust = -np.clip(chest * .45, -13, 13) + gaze
         rig.set_world_rotation(pose, head, yaw(head_adjust) * target.world(pose)[head][1])
-        anchor_states = {side: boot_anchors(rig, alias, side, time, curve, travel, stance[side]) for side in SIDES}
         offset = FORWARD * float(travel(time)) / SCALE
+        if is_rotary:
+            anchor_states = {side: q_boot_anchor(rig, side, time, curve, travel, stance[side]) for side in SIDES}
+            left, right = [anchor_states[side][0] for side in SIDES]
+            load = left * weight + right * (1. - weight) - offset - neutral_foot_center
+            pose[rig.hip][0][[0, 2]] += load[[0, 2]] * .60
+        else:
+            anchor_states = {side: boot_anchors(rig, alias, side, time, curve, travel, stance[side]) for side in SIDES}
         hip_y = pose[rig.hip][0][1]
         world = target.world(pose)
         for side, (ankle, _) in anchor_states.items():
@@ -312,12 +415,15 @@ def bake(rig, alias, previous):
         errors = []
         for side, (ankle, heading) in anchor_states.items():
             foot = rig.legs[side][-1]
+            foot_turn = heading if is_rotary else yaw(heading)
             errors.append(rig.solve_leg(pose, side, ankle - offset + UP * hop,
-                                        yaw(heading) * rig.world[foot][1], hip_turn))
+                                        foot_turn * rig.world[foot][1], hip_turn))
         frame = shaft_frame(blade_yaw, elevation)
         axis = frame.apply(FORWARD)
         edge = frame.apply([np.cos(np.deg2rad(edge_roll)), np.sin(np.deg2rad(edge_roll)), 0.0])
         center = body.apply([cx, 0.0, cz]) + np.array([0.0, cy + hip_y - height + hop, 0.0])
+        if is_rotary:
+            center[[0, 2]] += load[[0, 2]] * .60
         body_pose = target.world(pose)
         history["_upper_guides"] = {side: body_pose[arm[0]][1] for side, arm in rig.arms.items()}
         hand_rotations = {side: frame * rig.neutral_shaft.inv() * rig.world[arm[-1]][1] for side, arm in rig.arms.items()}
