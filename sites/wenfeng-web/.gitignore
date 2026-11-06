@@ -1,4 +1,5 @@
-# These motion imports require the authored 120 Hz tracks, including constants.
+# These motion imports preserve the authored track rates and constants.
+!godot/assets/characters/guanyu.glb.import
 !godot/assets/characters/xuchu.glb.import
 !godot/assets/motion/xuchu_ual1_k.glb.import
 !godot/assets/motion/xuchu_blade_family.glb.import

@@ -506,7 +506,7 @@ func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
 		return
 	var key: String = animation_names[clip]
 	tempo_profile = {}
-	if state == "attack" and duration > 0.0 and attack.has("active"):
+	if state == "attack" and duration > 0.0 and attack.has("active") and not attack.get("guan_blade", false):
 		# Rephrase only the pose before/after contact. Gameplay, skill clips,
 		# action duration and the authored active interval keep their old timing.
 		var weighted = AttackTempo.variant(animation_player.get_animation(key), duration, attack.active, bool(attack.get("heavy", false)))
@@ -535,7 +535,7 @@ func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
 func request_light() -> bool:
 	if not enabled or hp <= 0.0:
 		return false
-	if state == "attack" and not attack.get("heavy", false) and combo < 2:
+	if state == "attack" and not attack.get("heavy", false) and combo < int(attack.get("combo_end", 2)):
 		combo_buffered = true
 		return true
 	if state not in ["idle", "move", "block"]:
@@ -634,7 +634,7 @@ func request_skill(id: String) -> bool:
 	if profile.kind == "evade":
 		dodge_direction = input_move.normalized() if input_move.length() > 0.1 else (global_basis.x * float(profile.get("dodge_side", 0.0)) if profile.has("dodge_side") else -forward())
 		dodge_direction.y = 0.0
-	var initial_duration = float(profile.stages[0].duration) if profile.has("stages") else (0.40 if profile.kind == "evade" else action_duration)
+	var initial_duration = float(profile.stages[0].duration) if profile.has("stages") else (0.40 if profile.kind == "evade" and profile.has("strike_clip") else action_duration)
 	play_clip(profile.clip, 0.08, initial_duration)
 	if profile.has("stages"):
 		skill_animation_index = 0
@@ -936,7 +936,7 @@ func _physics_process(delta: float) -> void:
 				var thrust = float(attack.lunge) if action_time < window.y and action_time > 0.06 else 0.0
 				velocity.x = forward().x * thrust
 				velocity.z = forward().z * thrust
-				if combo_buffered and combo < 2 and _can_chain_attack():
+				if combo_buffered and combo < int(attack.get("combo_end", 2)) and _can_chain_attack():
 					if not _begin_attack(combo + 1):
 						combo_buffered = false
 				elif action_time >= action_duration:
@@ -1284,7 +1284,7 @@ func _update_skill(delta: float) -> void:
 			skill_animation_index = index
 			_reset_thrust_contact()
 			play_clip(stage.clip, 0.065, float(stage.duration))
-	if kind == "evade" and action_time >= float(attack.strike_start) and not skill_animation_started:
+	if kind == "evade" and attack.has("strike_clip") and action_time >= float(attack.strike_start) and not skill_animation_started:
 		skill_animation_started = true
 		_reset_thrust_contact()
 		play_clip(attack.strike_clip, 0.07, 0.50)
@@ -1313,7 +1313,7 @@ func _update_skill(delta: float) -> void:
 			payload["counter_confirmed"] = true
 		_thrust_segment_data = payload
 		if not hit_landed:
-			strike_requested.emit(self, payload)
+			_emit_attack_strike(payload)
 			if state != "skill": return
 	var motion = skill_motion_velocity(attack)
 	if kind != "evade" and is_instance_valid(opponent) and global_position.distance_to(opponent.global_position) < 1.12:
@@ -1357,7 +1357,7 @@ func _update_ultimate() -> void:
 				_thrust_segment_data = attack.duplicate(true)
 				skill_triggered.emit(self, "ultimate", "finish" if index == hits.size() - 1 else "strike")
 			if not hit_landed:
-				strike_requested.emit(self, attack)
+				_emit_attack_strike(attack)
 				if state != "ultimate": return
 	var motion = skill_motion_velocity(profile)
 	if is_instance_valid(opponent) and global_position.distance_to(opponent.global_position) < 1.18:

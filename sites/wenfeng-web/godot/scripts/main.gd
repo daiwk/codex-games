@@ -87,9 +87,11 @@ func _ready() -> void:
 	fx = Effects.new()
 	# DuelSkillFX owns the contact sparks; retain this host's audio and text.
 	fx.legacy_contact_sparks = false
+	fx.guan_effects_enabled = true
 	add_child(fx)
 	skill_fx = SkillEffects.new()
 	add_child(skill_fx)
+	fx.guan_tear_released.connect(skill_fx.guan_tear)
 	specials = Specials.new()
 	add_child(specials)
 	specials.hit_requested.connect(_on_special_hit)
@@ -273,6 +275,7 @@ func start_match() -> void:
 
 func _new_round() -> void:
 	skill_fx.clear()
+	fx.clear_guan()
 	specials.clear()
 	duel_director.reset()
 	cavalry_director.reset()
@@ -314,6 +317,7 @@ func return_to_menu() -> void:
 	if is_instance_valid(player):
 		player.set("lock_facing", false)
 	skill_fx.clear()
+	fx.clear_guan()
 	_reset_hit_feedback()
 	camera_axis_ready = false
 	camera_look_ready = false
@@ -652,7 +656,8 @@ func _on_impact(fighter: DuelFighter, outcome: String, at: Vector3) -> void:
 	fx.burst(at, outcome, damage)
 	if outcome != "evade":
 		var heavy = outcome in ["heavy_hit", "parry", "counter", "break"]
-		skill_fx.impact(at, outcome, -fighter.forward(), 1.35 if heavy else 0.8)
+		if not resolving_special.is_empty() or not skill_fx.guan_impact(fighter.opponent, at, outcome):
+			skill_fx.impact(at, outcome, -fighter.forward(), 1.35 if heavy else 0.8)
 		# Directional recoil reads as contact; only hard contacts add a small
 		# tremor, rather than vibrating through every ordinary thrust.
 		shake = maxf(shake, 0.032 if heavy else 0.008)
@@ -803,6 +808,15 @@ func _update_camera(delta: float, instant = false) -> void:
 			fov = 52.0 + wide_special * 2.5
 		if phase == "fight":
 			fov -= maxf(CombatCamera.anticipation(player), CombatCamera.anticipation(enemy))
+			var cleaver = player if player.state == "ultimate" else enemy
+			if cleaver.state == "ultimate" and cleaver.current_clip.begins_with("GuanCrescentU"):
+				# Ease sideways so the vertical cut reads as a plane and both
+				# hands remain visible as the long shaft rises above the head.
+				var clock: float = cleaver.action_time
+				var reveal = smoothstep(0.30, 0.85, clock) * (1.0 - smoothstep(1.53, 1.98, clock))
+				desired += (side * 0.92 + Vector3.UP * 0.16) * reveal
+				target += Vector3.UP * 0.36 * reveal
+				fov += 3.5 * reveal
 	if combat_mode == "mounted" and phase != "menu":
 		# The horse keeps its own heading. Marking an enemy only biases the
 		# rider's view a little; a passed foe cannot spin the camera backwards.

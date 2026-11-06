@@ -13,7 +13,6 @@ import re
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
 from scipy.spatial.transform import Rotation as R, Slerp
 from scipy.ndimage import gaussian_filter1d
 
@@ -166,6 +165,8 @@ def clip_set(character):
 
 
 def resize_images(scene, binary, maximum=1024, normal_maximum=None):
+    from PIL import Image
+
     images = {v['bufferView']: v for v in scene.get('images', [])}
     normal_views = set()
     if normal_maximum is not None:
@@ -222,7 +223,7 @@ def projected_twist(rotation, axis):
     return R.from_quat(value)
 
 
-def fit_polearm_hands(target, pose, axis, hand_rotations, palms, history=None, _reach=.90, sides=None, _centre=None):
+def fit_polearm_hands(target, pose, axis, hand_rotations, palms, history=None, _reach=.90, sides=None, _centre=None, _spacing=.09):
     """Jointly solve the grasp with natural wrists and continuous arm frames.
 
     Cylinder roll and a bounded rest-relative wrist cone leave each forearm
@@ -233,10 +234,12 @@ def fit_polearm_hands(target, pose, axis, hand_rotations, palms, history=None, _
     """
     sides = sides or ['Right', 'Left']
     world = target.world(pose)
-    spacing = .09 if len(sides) == 2 else 0.0
+    spacing = _spacing if len(sides) == 2 else 0.0
     wanted = sum(world[target.names['mixamorig:' + side + 'Hand']][0] +
                  world[target.names['mixamorig:' + side + 'Hand']][1].apply(palms[side.lower()])
                  for side in sides) / len(sides)
+    if _centre is not None:
+        wanted = np.asarray(_centre)
     if history and '_centre' in history:
         wanted = wanted * .85 + history['_centre'] * .15
     arms = {}
@@ -357,6 +360,13 @@ def fit_polearm_hands(target, pose, axis, hand_rotations, palms, history=None, _
                 valid = np.tile(valid, len(points))
                 indices = {side: np.tile(idx, len(points)) for side, idx in indices.items()}
         scores = np.sum((centres - wanted)**2, axis=1) * 150.
+        if history and '_shaft_clearance' in history:
+            (tail, tip), obstacles = history['_shaft_clearance']
+            for point, radius in obstacles:
+                offset = point - centres
+                along_shaft = np.clip(offset @ axis, -tail - spacing, tip - spacing)
+                distance = np.linalg.norm(offset - along_shaft[:, None] * axis, axis=1)
+                scores += np.maximum(radius - distance, 0.) ** 2 * 1500.
         debug = [('intersection', int(valid.sum()))]
         solved = {}
         for side, arm in arms.items():
@@ -369,9 +379,30 @@ def fit_polearm_hands(target, pose, axis, hand_rotations, palms, history=None, _
             upper_before = previous_upper if previous_upper is not None else world[arm['a']][1]
             upper_axis = np.asarray(target.nodes[arm['e']]['translation'])
             upper = batch_between(upper_before.apply(upper_axis), elbow - arm['shoulder']) * upper_before
+            upper_guide = history.get('_upper_guides', {}).get(side) if history else None
+            if upper_guide is not None:
+                # Parallel transport provides a stable elbow but can collect
+                # axial roll over a turn. Steer its twist back toward the
+                # authored shoulder frame without moving the elbow or wrists.
+                direction = elbow - arm['shoulder']
+                axis_upper = direction / np.linalg.norm(direction, axis=1)[:, None]
+                guided = batch_between(upper_guide.apply(upper_axis), direction) * upper_guide
+                delta = (guided * upper.inv()).as_rotvec()
+                roll = np.einsum('ij,ij->i', delta, axis_upper)
+                step = np.clip(roll * .24, -np.deg2rad(6.), np.deg2rad(6.))
+                upper = R.from_rotvec(axis_upper * step[:, None]) * upper
+                scores += roll ** 2 * .12
             local_upper = world[target.parents[arm['a']]][1].inv() * upper
             local_fore = upper.inv() * fore
             scores += np.sum((elbow - arm['elbow'])**2, axis=1) * 2.
+            if upper_guide is not None:
+                # Forearm pronation is independent of wrist bend. Penalize
+                # turning the skin around the shaft past a natural roll.
+                reference = history['_fore_guides'][side]
+                q = (reference.inv() * local_fore).as_quat()
+                twist = 2. * np.arctan2(q[:, :3] @ arm['axis'], q[:, 3])
+                twist = np.abs((twist + np.pi) % (2. * np.pi) - np.pi)
+                scores += twist ** 2 * .26 + np.maximum(twist - np.deg2rad(85.), 0.) ** 2 * 3.4
             if history:
                 for part, local in [('upper', local_upper), ('fore', local_fore), ('hand', d['wrist'][idx])]:
                     previous = history.get(side + '_' + part)

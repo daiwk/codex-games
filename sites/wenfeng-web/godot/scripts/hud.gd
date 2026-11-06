@@ -369,15 +369,16 @@ func _ultimate_warning() -> void:
 		return
 	var hostile: bool = fighter == game.enemy
 	var accent = _role_color(fighter)
-	var rect = Rect2(438, 215, 404, 76)
+	var profile = fighter.skill_profile("ultimate")
+	var rect = Rect2(438, 126 if profile.get("guan_blade", false) else 215, 404, 76)
 	draw_rect(rect, Color(0.035, 0.065, 0.08, 0.90))
 	draw_line(rect.position, rect.position + Vector2(rect.size.x, 0), Color(accent, 0.75), 1.5, true)
 	draw_line(Vector2(rect.position.x, rect.end.y), rect.end, Color(accent, 0.35), 1.0, true)
 	var title: String = fighter.ultimate_name()
 	var width = display_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 27).x
-	_text(Vector2((1280 - width) * 0.5, 250), title, 27, accent, true)
-	var tactic = "连续追击 · 可打断" if bool(fighter.skill_profile("ultimate").get("chase", fighter.skill_profile("ultimate").kind == "chase")) else ("重击蓄势 · 转向脱离 / 冲刺" if game.combat_mode == "mounted" else "重击蓄势 · 后撤脱离 / 闪避")
-	var special: Dictionary = fighter.skill_profile("ultimate").get("special", {})
+	_text(Vector2((1280 - width) * 0.5, rect.position.y + 35), title, 27, accent, true)
+	var tactic = "连续追击 · 可打断" if bool(profile.get("chase", profile.kind == "chase")) else ("重击蓄势 · 转向脱离 / 冲刺" if game.combat_mode == "mounted" else "重击蓄势 · 后撤脱离 / 闪避")
+	var special: Dictionary = profile.get("special", {})
 	match String(special.get("formation", special.get("type",""))):
 		"spear_volley": tactic = "三轮长矛 · 横移离开矛路"
 		"cavalry": tactic = "六骑冲阵 · 横穿离开阵线"
@@ -387,7 +388,7 @@ func _ultimate_warning() -> void:
 		"returning_fan": tactic = "三刃抛回 · 侧向避开回旋"
 	var subtitle = ("对手 · " if hostile else "己方 · ") + tactic
 	var subtitle_width = body_font.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
-	_text(Vector2((1280 - subtitle_width) * 0.5, 276), subtitle, 12, PAPER)
+	_text(Vector2((1280 - subtitle_width) * 0.5, rect.position.y + 61), subtitle, 12, PAPER)
 
 func _draw() -> void:
 	if not is_instance_valid(game) or not is_instance_valid(game.player) or game.phase == "menu":

@@ -10,6 +10,9 @@ const XuUAL1K = preload("res://scripts/xu_ual1_k.gd")
 var source_k = XuUAL1K.new()
 const XuBladeFamily = preload("res://scripts/xu_blade_family.gd")
 var blade_family = XuBladeFamily.new()
+const GuanCrescent = preload("res://scripts/guan_crescent_motion.gd")
+var crescent_motion = GuanCrescent.new()
+var _crescent_strike: Dictionary = {}
 
 const DUEL_COMBO_CLIPS = {
 	"zhaoyun": {"Attack2": "DragonLow", "Attack3": "DragonHigh"},
@@ -65,6 +68,7 @@ func guard_facing() -> Vector3:
 
 func skill_profile(id: String) -> Dictionary:
 	var fallback = super.skill_profile(id)
+	if crescent_motion.enabled and not fallback.is_empty(): return DuelSkills.guan_foot_skill(id, fallback)
 	if mounted: fallback = Cavalry.profile(character_id, id, fallback)
 	var profile = DuelSkills.for_skill(character_id, id, fallback, mounted)
 	if not blade_family.enabled: return profile
@@ -84,6 +88,7 @@ func _ready() -> void:
 	super._ready()
 	source_k.setup(self)
 	blade_family.setup(self)
+	crescent_motion.setup(self)
 	_setup_recorded_gaits()
 	if not mounted and character_id in ["zhaoyun", "machao"] and is_thrust_weapon():
 		# Keep the shared/RPG and mounted contact modifiers untouched.
@@ -210,6 +215,7 @@ func _process(delta: float) -> void:
 
 func _update_two_hand_grip(delta = 0.0, instant = false) -> void:
 	if not is_inside_tree() or not is_instance_valid(grip) or not grip.is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree(): return
+	if crescent_motion.apply_grip(): return
 	super._update_two_hand_grip(delta, instant)
 	if not mounted or not is_instance_valid(grip) or not Roster.WEAPONS.get(weapon_id, {}).get("edge_forward", false): return
 	var axis = grip.global_basis.y.normalized()
@@ -240,6 +246,7 @@ func resolve_animation_clip(clip: String) -> String:
 	return String(DUEL_COMBO_CLIPS.get(character_id, {}).get(clip, clip))
 
 func prewarm_attack_animations() -> void:
+	if crescent_motion.enabled: return
 	var begin = Time.get_ticks_usec()
 	var profiles = _light_attacks().duplicate(true)
 	profiles.append(_heavy_attack_profile())
@@ -255,6 +262,19 @@ func prewarm_attack_animations() -> void:
 	attack_warmup_ms = float(Time.get_ticks_usec() - begin) / 1000.0
 
 func play_clip(clip: String, blend = 0.12, duration = 0.0) -> void:
+	if crescent_motion.enabled:
+		var authored = crescent_motion.owns(clip)
+		combat_motion.active = not authored
+		if is_instance_valid(thrust_contact):
+			thrust_contact.active = not authored
+			if authored: thrust_contact.pose_cached = false
+		if authored:
+			# Continuation clips share an authored boundary pose. Blending two
+			# rotating wrist tracks through that pose can select the wrong roll.
+			var combo_join = current_clip.begins_with("GuanCrescentJ") and clip.begins_with("GuanCrescentJ")
+			var cleave_join = current_clip == "GuanCrescentUCharge" and clip == "GuanCrescentU"
+			super.play_clip(clip, 0.0 if combo_join or cleave_join else 0.055, duration)
+			return
 	if blade_family.enabled:
 		if state == "attack" and blade_family.owns_profile(attack):
 			source_k.legacy_clip()
@@ -328,6 +348,10 @@ func duel_can_cancel_normal_recovery() -> bool:
 
 func request_light() -> bool:
 	if _duel_weapon_thrown: return false
+	if state == "attack" and attack.get("guan_blade", false) and attack.has("combo_at"):
+		# A late press must wait for a fresh stance rather than jump backward
+		# to the previous clip's authored join in the middle of its recovery.
+		if action_time > float(attack.combo_at): return false
 	if blade_family.action_active and blade_family.mode == "light" and state == "attack":
 		if combo < 2 and action_time <= float(attack.combo_at) + 0.00001:
 			combo_buffered = true
@@ -374,7 +398,14 @@ func _limit_thrust_motion() -> void:
 	if source_k.enabled and (source_k.active or source_k.pending_root.length_squared() > 0.0):
 		source_k.apply_motion(get_physics_process_delta_time())
 		return
-	if not mounted and state == "attack":
+	if crescent_motion.owns(current_clip) and state in ["attack", "skill", "ultimate"]:
+		var delta = get_physics_process_delta_time()
+		var start = ultimate_windup() if current_clip == "GuanCrescentU" else 0.0
+		var time = action_time - start
+		var displacement = global_basis * crescent_motion.root_delta(current_clip, time - delta, time)
+		velocity.x = displacement.x / maxf(delta, 0.001)
+		velocity.z = displacement.z / maxf(delta, 0.001)
+	elif not mounted and state == "attack":
 		var delta = get_physics_process_delta_time()
 		var desired = (_duel_step_offset(action_time) - _duel_step_offset(maxf(0.0, action_time - delta))) / maxf(delta, 0.001)
 		_duel_step_velocity = _duel_step_velocity.move_toward(desired.limit_length(3.2), delta * 22.0)
@@ -510,7 +541,7 @@ func _update_facing(delta: float) -> void:
 			# The diagonal second cut travels to the right of the chest axis.
 			# Lead with the shoulder during anticipation so the actual blade,
 			# rather than only the character's chest, crosses the target line.
-			var blade_lead = -0.22 if character_id == "guanyu" and combo == 1 and not bool(attack.get("heavy", false)) else 0.0
+			var blade_lead = -0.22 if character_id == "guanyu" and not crescent_motion.enabled and combo == 1 and not bool(attack.get("heavy", false)) else 0.0
 			var error = angle_difference(rotation.y, atan2(direction.x, direction.z) + blade_lead)
 			rotation.y += clampf(error, -3.5 * delta, 3.5 * delta)
 			_duel_step_basis = global_basis
@@ -563,6 +594,9 @@ func request_dodge(direction = Vector3.ZERO) -> bool:
 # Temporary Xu ground K opt-in. Old J, mounted, RPG and other roles keep defaults.
 func _heavy_attack_profile() -> Dictionary:
 	var profile = super._heavy_attack_profile()
+	if crescent_motion.enabled:
+		profile.merge({"clip": "GuanCrescentK", "duration": 1.45, "active": Vector2(0.63, 0.83),
+			"lunge": 0.0, "min_dot": -1.0, "physical_blade": true, "guan_blade": true, "guan_fx": "heavy"}, true)
 	if source_k.enabled and not is_jumping():
 		# The fitted guard enters the readable downward cut at source .40s.
 		profile.merge({"clip": "XuUAL1GameK", "duration": float(source_k.data.duration) + source_k.entry_shift(), "active": Vector2(0.40, 0.55) + Vector2.ONE * source_k.entry_shift(), "lunge": 0.0, "min_dot": -1.0, "xu_ual1_k": true, "physical_blade": true}, true)
@@ -582,17 +616,23 @@ func _weapon_adjusted_attack(profile: Dictionary) -> Dictionary:
 	return result
 
 func _advance_attack_animation(delta: float) -> void:
+	_crescent_strike = {}
 	if source_k.enabled: source_k.prepare_tick()
 	if blade_family.enabled: blade_family.prepare_tick(delta)
 
 func _emit_attack_strike(profile: Dictionary) -> void:
-	if profile.get("xu_blade_family", false): blade_family.queue_strike(profile)
+	if profile.get("guan_blade", false): _crescent_strike = profile
+	elif profile.get("xu_blade_family", false): blade_family.queue_strike(profile)
 	elif profile.get("xu_ual1_k", false): source_k.queue_strike(profile)
 	else: super._emit_attack_strike(profile)
 
 func _after_attack_move() -> void:
 	if source_k.enabled: source_k.post_move()
 	if blade_family.enabled: blade_family.post_move()
+	if crescent_motion.owns(current_clip):
+		_update_two_hand_grip()
+		if not _crescent_strike.is_empty():
+			super._emit_attack_strike(_crescent_strike)
 
 func _finish_attack() -> void:
 	if blade_family.action_active: blade_family.finish()
@@ -601,6 +641,19 @@ func _finish_attack() -> void:
 
 func _light_attacks() -> Array:
 	var profiles = super._light_attacks()
+	if crescent_motion.enabled:
+		var durations = [0.92, 0.94, 1.05, 1.25]
+		var windows = [Vector2(0.27, 0.39), Vector2(0.30, 0.44), Vector2(0.36, 0.53), Vector2(0.49, 0.64)]
+		var joins = [0.60, 0.65, 0.74, 1.25]
+		profiles.append(profiles[-1])
+		for index in profiles.size():
+			profiles[index] = profiles[index].duplicate()
+			profiles[index].merge({"clip": "GuanCrescentJ%d" % (index + 1), "duration": durations[index],
+				"active": windows[index], "combo_at": joins[index], "combo_end": 3,
+				"damage": [16.0, 18.0, 21.0, 24.0][index], "cost": [14.0, 16.0, 18.0, 21.0][index],
+				"reach": basic_reach() + 0.25, "knockback": 0.4 if index < 3 else 1.8,
+				"lunge": 0.0, "min_dot": -1.0, "physical_blade": true, "guan_blade": true}, true)
+		return profiles
 	if not blade_family.enabled: return profiles
 	var lengths = [1.4, 1.6, 2.0]
 	var windows = [Vector2(26.0/120.0, 33.0/120.0), Vector2(31.0/120.0, 40.0/120.0), Vector2(64.0/120.0, 76.0/120.0)]
@@ -612,7 +665,7 @@ func _light_attacks() -> Array:
 	return profiles
 
 func _can_chain_attack() -> bool:
-	if blade_family.owns_profile(attack): return action_time + 0.000001 >= float(attack.combo_at)
+	if attack.has("combo_at"): return action_time + 0.000001 >= float(attack.combo_at)
 	return super._can_chain_attack()
 
 func _update_skill(delta: float) -> void:

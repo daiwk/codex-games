@@ -109,7 +109,10 @@ func run()->void:
 	game.specials.hit_requested.connect(contact)
 	await frames(8)
 	for mode in ["foot","mounted"]:
-		for spec in ARMY:await army_case(spec,mode,"hit")
+		for spec in ARMY:
+			# Foot Guan now uses his held blade, covered in guan_crescent_test.
+			if mode == "foot" and spec[0] == "guanyu": continue
+			await army_case(spec,mode,"hit")
 	await array_lifecycle()
 	write_report(true);game._reset_hit_feedback();print("ARMY MAIN DONE ",checks.size()," checks ",failures.size()," failures")
 	quit(0 if failures.is_empty() else 1)

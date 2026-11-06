@@ -47,5 +47,31 @@ static func for_skill(role: String, id: String, fallback: Dictionary, mounted: b
 			hit["damage"] = 0.0
 	return p
 
+# Footwork and both hands are authored on one clock. The FX timeline uses
+# these same beats and only the held blade can resolve a hit.
+static func guan_foot_skill(id: String, fallback: Dictionary) -> Dictionary:
+	var profile = fallback.duplicate(true)
+	profile.merge({"guan_blade": true, "physical_blade": true, "motion": [], "lunge": 0.0, "wave": false, "min_dot": -1.0, "reach": 3.65}, true)
+	match id:
+		"rush":
+			profile.merge({"name": "偃月风暴", "description": "双手转杆 · 两道旋斩", "kind": "sequence",
+				"clip": "GuanCrescentQ", "duration": 1.78, "guan_fx": "rotary", "shape": "sector",
+				"active": Vector2(0.45, 1.26), "hits": [
+					{"active": Vector2(0.45, 0.60), "damage": 14.0, "knockback": 0.22, "hit_stun": 0.24, "guard_cost": 19.0},
+					{"active": Vector2(1.08, 1.26), "damage": 19.0, "knockback": 2.5, "hit_stun": 0.36, "guard_cost": 29.0}
+				]}, true)
+		"counter":
+			profile.erase("strike_clip")
+			profile.merge({"name": "拖刀回斩", "description": "撤步让锋 · 踏回斜斩", "clip": "GuanCrescentE",
+				"duration": 1.31, "active": Vector2(0.68, 0.86), "guan_fx": "counter"}, true)
+		"ultimate":
+			profile.merge({"name": "青龙裂空", "description": "踏步举刀 · 一劈裂空", "charge_clip": "GuanCrescentUCharge",
+				"windup": 0.76, "duration": 2.11, "radius": 0.0, "guan_fx": "dragon", "hits": [
+					{"start": 0.76, "clip": "GuanCrescentU", "clip_duration": 1.35, "active": Vector2(1.23, 1.39),
+						"damage": 58.0, "guard_cost": 76.0, "knockback": 4.4, "hit_stun": 0.58,
+						"shape": "sector", "min_dot": -1.0, "guan_blade": true, "physical_blade": true, "guan_fx": "dragon"}
+				]}, true)
+	return profile
+
 static func _beat(start: float, clip: String, duration: float, active: Vector2) -> Dictionary:
 	return {"start":start,"clip":clip,"clip_duration":duration,"active":active,"damage":0.0,"shape":"sector","reach":24.0,"external_only":true}

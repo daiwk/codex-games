@@ -63,7 +63,8 @@
     const enemyHorse = data.enemy_horse_color || data.enemy?.horse_color || 'brown';
     const horseName = color => color === 'brown' ? '棕马' : '白马';
     const locked = !!data.lock_on?.active;
-    const controls = `${mode}:${horse}:${enemyHorse}:${locked}`;
+    const guan = !mounted && data.player?.character === 'guanyu';
+    const controls = `${mode}:${horse}:${enemyHorse}:${locked}:${guan}`;
     if (displayedControls !== controls) {
       displayedControls = controls;
       document.body.dataset.combatMode = mode;
@@ -78,7 +79,7 @@
         ? `选将菜单切换模式与马色。当前马战 · 己方${horseName(horse)} / 对手${horseName(enemyHorse)}`
         : '仅选将菜单：切换步战 / 马战。当前步战';
       $('help-movement').textContent = mounted ? 'W 加速、S 减速至倒退、A/D 转马、X 急刹。松键保持巡航；高速转弯半径更大，标记敌人不会扭转马身' : locked ? '锁定对手：W/S 进退，A/D 绕敌' : '步战移动，自动面向对手';
-      $('help-light').textContent = mounted ? 'J 自动选择近侧出手；Z 左侧击、C 右侧击。马身仍由 A/D 操纵' : '轻击，连续按下衔接三段连招';
+      $('help-light').textContent = mounted ? 'J 自动选择近侧出手；Z 左侧击、C 右侧击。马身仍由 A/D 操纵' : (guan ? '轻击，连续按下衔接四段刀法' : '轻击，连续按下衔接三段连招');
       $('help-heavy').textContent = mounted ? 'K 朝近侧重击；实际接近速度影响冲击，背追和迎面冲锋加成不同' : '重击，造成更高伤害与格挡压力';
       $('help-dodge').textContent = mounted ? '短时催马加速；留出直线距离，再侧向交手。X 急刹减速回马' : '沿移动方向闪避；静止时向后撤';
       canvas.setAttribute('aria-label', mounted

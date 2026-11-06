@@ -690,7 +690,7 @@ func debug_state() -> Dictionary:
 	for group in groups.values():
 		var entities: Array = []
 		for entity in group.entities:
-			entities.append({"index": entity.index, "position": [entity.position.x, entity.position.y, entity.position.z], "done": entity.done, "delay": entity.get("delay", 0.0), "heading": [entity.get("heading", Vector3.ZERO).x, entity.get("heading", Vector3.ZERO).y, entity.get("heading", Vector3.ZERO).z], "contacts": entity.hit_set.size(), "returning":entity.returning, "handoff":_handoff_json(entity.get("handoff_debug",{})), "launched":entity.get("launched",true)})
+			entities.append({"index": entity.index, "position": [entity.position.x, entity.position.y, entity.position.z], "done": entity.done, "delay": entity.get("delay", 0.0), "heading": [entity.get("heading", Vector3.ZERO).x, entity.get("heading", Vector3.ZERO).y, entity.get("heading", Vector3.ZERO).z], "contacts": entity.hit_set.size(), "returning":entity.get("returning", false), "handoff":_handoff_json(entity.get("handoff_debug",{})), "launched":entity.get("launched",true)})
 		records.append({"type": group.type, "formation": group.formation, "weapon_id": group.weapon_id, "weapon_length": group.weapon_length, "release_height": group.origin.y, "owner": group.owner, "volley_id": group.id, "age": group.age, "entities": entities})
 	return {"handoff_events":_handoff_json(_handoff_events),"groups": records, "entities": entity_count(), "events": _events.duplicate(), "max_entities": MAX_ENTITIES, "cavalry_triangles_per_rider": CAVALRY_MESH.surface_get_array_len(0) / 3}
 

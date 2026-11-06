@@ -1,5 +1,9 @@
 extends "res://scripts/skill_fx.gd"
 
+const GuanBladeFX = preload("res://scripts/guan_blade_fx.gd")
+const GUAN_CONTACT = [Color("92d2b9"), Color("e3fff3"), Color("3b534b")]
+const GUAN_STEEL = [Color("d6a269"), Color("fff0c9"), Color("54483a")]
+
 ## Duel presentation adds readable physical motion cues to normal combat.
 ## Real projected weapons/cavalry/fronts belong to duel_specials.gd; their
 ## preparation is deliberately smaller than the released moving geometry.
@@ -20,7 +24,13 @@ func _palette(character: String) -> Array:
 func _get_mesh(shape: String, character: String, palette: Array) -> ArrayMesh:
 	# Cache the same batched geometry with Duel's restrained mineral/metal
 	# palette. The shared RPG effects retain their own original colours.
-	return super._get_mesh(shape, character, DUEL_PALETTES.get(character, palette))
+	var key = character
+	if character == "impact":
+		if palette == GUAN_CONTACT:
+			key = "guandao_contact"
+		elif palette == GUAN_STEEL:
+			key = "guandao_steel"
+	return super._get_mesh(shape, key, DUEL_PALETTES.get(character, palette))
 
 func _take_material(shape: String) -> ShaderMaterial:
 	var material = super._take_material(shape)
@@ -51,6 +61,9 @@ func action(fighter: DuelFighter, name: String) -> void:
 		_event(name)
 		return
 	if name in ["swing_light", "swing_heavy"]:
+		if GuanBladeFX.eligible(fighter) and fighter.attack.get("guan_blade", false):
+			_event(name)
+			return
 		var heavy = name == "swing_heavy"
 		var shape = "tex_lance" if fighter.is_thrust_weapon() else "tex_blade"
 		var data = fighter.attack.duplicate(true)
@@ -97,6 +110,13 @@ func _jump_feedback(fighter: DuelFighter, name: String) -> void:
 
 func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 	var profile: Dictionary = fighter.skill_profile(skill)
+	if GuanBladeFX.eligible(fighter) and profile.get("guan_blade", false):
+		if stage in ["cancel", "complete"]:
+			super.play_skill(fighter, skill, stage)
+		elif stage == "start" and skill in ["rush", "ultimate"]:
+			_spawn(fighter, "stance_scuff", DUEL_PALETTES.guanyu, 0.34, 0.0, Vector3.ONE * 0.50, Vector3.ONE * 0.82)
+		_event("guandao:" + skill + ":" + stage)
+		return
 	var special: Variant = profile.get("special", {})
 	if special is String: special = {"type": special}
 	if not special is Dictionary or special.is_empty():
@@ -137,6 +157,28 @@ func play_skill(fighter: DuelFighter, skill: String, stage: String) -> void:
 				_spawn(fighter, "stance_scuff", palette, 0.42, 0.0, Vector3.ONE * 0.65, Vector3.ONE * 0.85)
 			_event("formation:" + formation)
 		_event(type + ":release")
+
+func guan_impact(attacker: DuelFighter, at: Vector3, outcome: String) -> bool:
+	if not GuanBladeFX.eligible(attacker) or not attacker.attack.get("guan_blade", false) or outcome in ["evade", "dead"]:
+		return false
+	var heavy = outcome in ["heavy_hit", "break", "counter"]
+	var guarded = outcome in ["block", "parry", "counter", "break"]
+	var sweep = (attacker.blade_tip() - attacker.previous_tip).slide(Vector3.UP)
+	var direction = sweep.normalized() if sweep.length_squared() > 0.0025 else attacker.forward()
+	_world_effect(at, direction, "tex_contact_cut", GUAN_CONTACT, 0.075, Vector3.ONE * (0.86 if heavy else 0.63))
+	_world_effect(at, direction, "rpg_impact_sparks", GUAN_STEEL, 0.26 if guarded or heavy else 0.19, Vector3.ONE * (0.92 if guarded or heavy else 0.57))
+	if guarded or heavy:
+		_world_effect(at, direction, "rpg_impact_flash", GUAN_STEEL, 0.05, Vector3.ONE * (0.58 if guarded else 0.43))
+	if heavy and at.y < 2.4:
+		_world_effect(Vector3(at.x, 0.055, at.z), direction, "tex_contact_dust", GUAN_CONTACT, 0.38, Vector3(0.70, 0.26, 0.70))
+	_event("impact:" + outcome)
+	return true
+
+func guan_tear(at: Vector3, direction: Vector3) -> void:
+	_world_effect(at, direction, "tex_contact_dust", GUAN_CONTACT, 0.54, Vector3(1.38, 0.34, 1.72))
+	_world_effect(at + direction * 0.62, direction, "tex_step_dust", GUAN_CONTACT, 0.45, Vector3(1.38, 0.32, 1.95))
+	_world_effect(at, direction, "contact_chips", GUAN_CONTACT, 0.43, Vector3(0.95, 0.52, 1.15))
+	_event("guandao:vertical_tear")
 
 func impact(at: Vector3, outcome: String, direction = Vector3.FORWARD, strength = 1.0) -> void:
 	if not is_inside_tree() or outcome in ["evade", "dead"]: return

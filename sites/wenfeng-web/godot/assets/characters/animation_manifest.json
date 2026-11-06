@@ -4070,7 +4070,24 @@
       "axis_sign": -1.0,
       "adaptation": "Authored weapon axis; bounded anatomical wrists, exact shared centre on two upper-arm spheres, continuous forearm frames; exact bone lengths"
     },
-    "runtime_sha256": "9417490cfa392db0671d8b6e7f62e4d6b9e56296dd678728469fb6404ff8818f"
+    "runtime_sha256": "7f391fa790ee8a150d1fa662c1a7e8d66048ea2837182f793d3c3ce6c96ceb0b",
+    "duel_crescent": {
+      "author": "Wenfeng project",
+      "scope": "foot duel",
+      "sample_hz": 60,
+      "clips": {
+        "GuanCrescentJ1": 0.92,
+        "GuanCrescentJ2": 0.94,
+        "GuanCrescentJ3": 1.05,
+        "GuanCrescentJ4": 1.25,
+        "GuanCrescentK": 1.45,
+        "GuanCrescentQ": 1.78,
+        "GuanCrescentE": 1.31,
+        "GuanCrescentUCharge": 0.76,
+        "GuanCrescentU": 1.35
+      },
+      "reference": "Public Phantom Blade Zero Crescent Blade demonstrations, used as choreography reference"
+    }
   },
   "zhangfei": {
     "source": {

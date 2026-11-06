@@ -3,6 +3,9 @@ class_name DuelFX
 
 const TRAIL_MASK = preload("res://assets/vfx/kenney/trace_06.png")
 const TRAIL_LIFETIME = 0.11
+const GuanBladeFX = preload("res://scripts/guan_blade_fx.gd")
+
+signal guan_tear_released(at: Vector3, direction: Vector3)
 
 var muted = false:
 	set(value):
@@ -11,6 +14,7 @@ var muted = false:
 			for player in audio_pool:
 				player.stop()
 var legacy_contact_sparks = true
+var guan_effects_enabled = false
 var sounds: Dictionary = {}
 var audio_pool: Array[AudioStreamPlayer] = []
 var trails: Dictionary = {}
@@ -63,24 +67,40 @@ func register_fighter(fighter: DuelFighter) -> void:
 	node.material_override = mat
 	add_child(node)
 	var palette: Array = DuelSkillFX.PALETTES.get(fighter.character_id, DuelSkillFX.PALETTES.zhaoyun)
-	trails[fighter.get_instance_id()] = {"fighter": weakref(fighter), "node": node, "points": [], "color": palette[0]}
+	var tracked: GuanBladeFX
+	if guan_effects_enabled and GuanBladeFX.eligible(fighter):
+		tracked = GuanBladeFX.new()
+		tracked.name = "GuandaoBladeFX"
+		tracked.attach(fighter)
+		tracked.tear_released.connect(guan_tear_released.emit)
+		add_child(tracked)
+	trails[fighter.get_instance_id()] = {"fighter": weakref(fighter), "node": node, "points": [], "color": palette[0], "tracked": tracked}
 
 func clear_fighters() -> void:
 	for trail in trails.values():
 		trail.node.queue_free()
+		if is_instance_valid(trail.tracked):
+			trail.tracked.hide()
+			trail.tracked.queue_free()
 	trails.clear()
+
+func clear_guan() -> void:
+	for trail in trails.values():
+		if is_instance_valid(trail.tracked):
+			trail.tracked.clear()
 
 func _process(delta: float) -> void:
 	for trail in trails.values():
 		var fighter = trail.fighter.get_ref()
-		if not is_instance_valid(fighter):
+		if not is_instance_valid(fighter) or not fighter.is_inside_tree():
 			continue
 		var points: Array = trail.points
 		for point in points:
 			point.age += delta
 		while not points.is_empty() and points[0].age > TRAIL_LIFETIME:
 			points.pop_front()
-		if fighter.state in ["attack", "skill", "ultimate"] and fighter.enabled and fighter.attack.has("active"):
+		var tracked = is_instance_valid(trail.tracked) and fighter.attack.get("guan_blade", false)
+		if not tracked and fighter.state in ["attack", "skill", "ultimate"] and fighter.enabled and fighter.attack.has("active"):
 			var window: Vector2 = fighter.attack.active
 			if fighter.action_time > window.x - 0.025 and fighter.action_time < window.y + 0.06:
 				points.append({"a": fighter.blade_base(), "b": fighter.blade_tip(), "age": 0.0})

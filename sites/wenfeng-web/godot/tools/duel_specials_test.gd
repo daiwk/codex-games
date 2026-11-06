@@ -3,7 +3,6 @@ extends SceneTree
 const SKILLS = [
 	["zhaoyun","ultimate","flying_blades",6.0,9],
 	["machao","ultimate","cavalry",6.0,6],
-	["guanyu","rush","shockwave",6.0,1],
 	["zhangfei","counter","roar",3.0,1],
 	["lubu","ultimate","air_slam",2.6,1],
 	["xuchu","rush","returning_blade",6.0,1],
@@ -244,6 +243,8 @@ func run() -> void:
 	for spec in SKILLS:await exercise(spec,"foot","miss")
 	for spec in SKILLS:await exercise(spec,"foot","wall")
 	for spec in SKILLS:await exercise(spec,"mounted","hit")
+	# Guan’s shockwave is mounted-only. At five metres its route stays clear of the terrain.
+	await exercise(["guanyu","rush","shockwave",5.0,1],"mounted","hit")
 	await lifecycle()
 	write_report(true)
 	game._reset_hit_feedback()

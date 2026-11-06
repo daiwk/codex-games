@@ -92,7 +92,8 @@ func update(game: Node, delta: float) -> void:
 		reaction = 0.3
 		decision = "read_guard"
 		return
-	if boss.skill_ready("ultimate") and gap < 9.0 and gap > 1.3:
+	var ultimate_reach = 3.0 if boss.skill_profile("ultimate").get("guan_blade", false) else 9.0
+	if boss.skill_ready("ultimate") and gap < ultimate_reach and gap > 1.3:
 		if boss.request_ultimate():
 			decision = "signature_ultimate"
 			return
@@ -100,7 +101,10 @@ func update(game: Node, delta: float) -> void:
 	var e = boss.skill_profile("counter")
 	var special_q = q.get("special", {})
 	var special_e = e.get("special", {})
-	if boss.skill_ready("rush") and ((not special_q.is_empty() and gap > 2.4 and gap < 9.0) or (gap > 2.6 and gap < 4.6)) and game.rng.randf() < 0.4:
+	var rush_in_range = (not special_q.is_empty() and gap > 2.4 and gap < 9.0) or (gap > 2.6 and gap < 4.6)
+	if q.get("guan_blade", false):
+		rush_in_range = gap > 1.45 and gap < 2.65
+	if boss.skill_ready("rush") and rush_in_range and game.rng.randf() < 0.4:
 		if boss.request_skill("rush"):
 			decision = "signature_pressure"
 			return
@@ -114,7 +118,7 @@ func update(game: Node, delta: float) -> void:
 				decision = "heavy_commit"
 				return
 		if boss.request_light():
-			phrase_left = 2 if phase == 2 else 1
+			phrase_left = int(boss.attack.get("combo_end", 2)) if phase == 2 else 1
 			phrase_combo = -1
 			decision = "start_phrase"
 
