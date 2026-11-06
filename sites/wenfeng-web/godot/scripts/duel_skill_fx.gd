@@ -175,11 +175,23 @@ func guan_impact(attacker: DuelFighter, at: Vector3, outcome: String) -> bool:
 	return true
 
 func guan_tear(at: Vector3, direction: Vector3) -> void:
-	_world_effect(at, direction, "tex_contact_dust", GUAN_CONTACT, 0.64, Vector3(1.55, 0.38, 1.86))
-	_world_effect(at + direction * 0.86, direction, "tex_step_dust", GUAN_CONTACT, 0.55, Vector3(1.52, 0.30, 2.25))
-	_world_effect(at, direction, "slam_debris", GUAN_CONTACT, 0.49, Vector3(0.42, 0.66, 0.79))
-	_world_effect(at + Vector3.UP * 0.12, direction, "rpg_impact_sparks", GUAN_STEEL, 0.24, Vector3.ONE * 0.55)
 	_event("guandao:vertical_tear")
+	if at.y > GuanBladeFX.AIRBORNE_TIP_HEIGHT:
+		_world_effect(at, direction, "rpg_impact_flash", GUAN_CONTACT, 0.08, Vector3.ONE * 0.37)
+		return
+	_world_effect(at, direction, "tex_contact_dust", GUAN_CONTACT, 0.55, Vector3(1.05, 0.34, 1.35))
+	_world_effect(at + Vector3.UP * 0.08, direction, "rpg_impact_flash", GUAN_CONTACT, 0.09, Vector3.ONE * 0.50)
+	_guan_plant_spray(at, direction, "tex_step_dust", GUAN_CONTACT, 0.55, Vector3(1.06, 0.26, 1.80), 1.26)
+	_guan_plant_spray(at, direction, "slam_debris", GUAN_CONTACT, 0.45, Vector3(0.31, 0.57, 0.68), 1.18)
+	_guan_plant_spray(at + Vector3.UP * 0.12, direction, "rpg_impact_sparks", GUAN_STEEL, 0.24, Vector3.ONE * 0.52, 0.76)
+
+func _guan_plant_spray(at: Vector3, direction: Vector3, shape: String, palette: Array,
+		lifetime: float, size: Vector3, travel: float) -> void:
+	_world_effect(at, direction, shape, palette, lifetime, size)
+	var effect: Dictionary = active_effects[active_effects.keys().back()]
+	var node: Node3D = effect.node
+	node.create_tween().tween_property(node, "global_position", at + direction * travel, lifetime) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func impact(at: Vector3, outcome: String, direction = Vector3.FORWARD, strength = 1.0) -> void:
 	if not is_inside_tree() or outcome in ["evade", "dead"]: return

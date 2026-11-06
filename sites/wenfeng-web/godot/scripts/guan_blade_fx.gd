@@ -8,7 +8,13 @@ const ROTARY_LIFE = 0.21
 const TEAR_LIFE = 0.77
 const TEAR_LENGTH = 5.55
 const TEAR_HEIGHT = 4.55
-const TEAR_ADVANCE = 2.75
+const TEAR_ADVANCE = 6.70
+const TEAR_SEED_LENGTH = 0.20
+const TEAR_PUSH_TIME = 0.043
+const TEAR_PUSH_SPEED = 4.0
+const TEAR_PUSH_ACCELERATION = 420.0
+const TEAR_FLOOR_Y = 0.045
+const AIRBORNE_TIP_HEIGHT = 0.32
 
 signal tear_released(at: Vector3, direction: Vector3)
 
@@ -26,12 +32,15 @@ var _ribbon: ImmediateMesh
 var _tear: MeshInstance3D
 var _tear_material: ShaderMaterial
 var _tear_age = TEAR_LIFE
+var _tear_newborn = false
 var _tear_origin = Vector3.ZERO
 var _tear_heading = Vector3.FORWARD
 var _floor: MeshInstance3D
 var _floor_material: StandardMaterial3D
 var _wake: MeshInstance3D
 var _wake_material: ShaderMaterial
+var _crease: MeshInstance3D
+var _crease_material: ShaderMaterial
 var _light: OmniLight3D
 var _samples: Array[BladeSample] = []
 var _previous_base = Vector3.ZERO
@@ -78,6 +87,11 @@ func _ready() -> void:
 	_wake_material.set_shader_parameter("ground_wake", true)
 	_wake = _add_mesh("GuandaoGroundWake", _wake_mesh(), _wake_material)
 	_wake.hide()
+	_crease_material = ShaderMaterial.new()
+	_crease_material.shader = CutShader
+	_crease_material.set_shader_parameter("ground_crease", true)
+	_crease = _add_mesh("GuandaoGroundCrease", _crease_mesh(), _crease_material)
+	_crease.hide()
 	_floor_material = StandardMaterial3D.new()
 	_floor_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_floor_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -111,7 +125,10 @@ func _process(delta: float) -> void:
 			_samples[-1].base = fighter.blade_base()
 			_samples[-1].tip = fighter.blade_tip()
 	_draw_ribbon()
-	_update_tear(delta)
+	# Even if several physics ticks share one browser draw, show the tip
+	# contact once before giving the crest that frame's forward travel.
+	_update_tear(0.0 if _tear_newborn else delta)
+	_tear_newborn = false
 
 func _physics_process(delta: float) -> void:
 	var fighter = _fighter.get_ref() as DuelFighter
@@ -125,7 +142,7 @@ func _physics_process(delta: float) -> void:
 	var base = fighter.blade_base()
 	var tip = fighter.blade_tip()
 	_sample_blade(fighter, delta, base, tip)
-	_sample_tear(fighter, base, tip)
+	_sample_tear(fighter, tip)
 
 func _active_beat(fighter: DuelFighter) -> Dictionary:
 	if not fighter.enabled or fighter.state not in ["attack", "skill", "ultimate"] or not fighter.attack.get("guan_blade", false):
@@ -165,7 +182,7 @@ func _sample_blade(fighter: DuelFighter, delta: float, base: Vector3, tip: Vecto
 	_previous_base = base
 	_previous_tip = tip
 
-func _sample_tear(fighter: DuelFighter, base: Vector3, tip: Vector3) -> void:
+func _sample_tear(fighter: DuelFighter, tip: Vector3) -> void:
 	if not fighter.enabled or fighter.state != "ultimate":
 		_did_tear = false
 		_tear_previous_clock = -1.0
@@ -186,8 +203,7 @@ func _sample_tear(fighter: DuelFighter, base: Vector3, tip: Vector3) -> void:
 		and is_instance_valid(fighter.opponent) and fighter.opponent.hp <= 0.0
 	if clock + 0.0001 >= ground_beat or early_finish:
 		_did_tear = true
-		var contact = tip.lerp(base, 0.12) if tip.y <= base.y else base.lerp(tip, 0.15)
-		_release_tear(contact, fighter.forward(), movement)
+		_release_tear(tip, fighter.forward(), movement)
 
 func _push_sample(base: Vector3, tip: Vector3, style: String, strength: float, connected: bool) -> void:
 	var point = BladeSample.new()
@@ -232,9 +248,11 @@ func _ribbon_vertex(point: BladeSample, outer: bool) -> void:
 	_ribbon.surface_set_uv(Vector2(1.0 if outer else 0.0, age))
 	_ribbon.surface_add_vertex(point.tip if outer else inner)
 
-func _release_tear(blade_contact: Vector3, forward: Vector3, velocity: Vector3) -> void:
+func _release_tear(blade_tip: Vector3, forward: Vector3, velocity: Vector3) -> void:
 	_tear_age = 0.0
-	_tear_origin = Vector3(blade_contact.x, 0.045, blade_contact.z)
+	_tear_newborn = true
+	var grounded = blade_tip.y <= AIRBORNE_TIP_HEIGHT
+	_tear_origin = Vector3(blade_tip.x, TEAR_FLOOR_Y if grounded else blade_tip.y, blade_tip.z)
 	var motion = velocity.slide(Vector3.UP).normalized()
 	_tear_heading = forward.slide(Vector3.UP).normalized()
 	if motion.dot(_tear_heading) > 0.45:
@@ -243,12 +261,22 @@ func _release_tear(blade_contact: Vector3, forward: Vector3, velocity: Vector3) 
 	_tear.global_transform = Transform3D(frame, _tear_origin)
 	_floor.global_transform = _tear.global_transform
 	_wake.global_transform = _tear.global_transform
+	_crease.global_transform = _tear.global_transform
 	_tear.show()
-	_floor.show()
-	_wake.show()
+	_floor.visible = grounded
+	_wake.visible = grounded
+	_crease.visible = grounded
 	_light.show()
 	_update_tear(0.0)
 	tear_released.emit(_tear_origin, _tear_heading)
+
+func _crest_distance(seconds: float) -> float:
+	# The initial push carries the tip's impulse into the wave. Its momentum
+	# then decays, rather than starting from rest away from the cut.
+	var push = minf(seconds, TEAR_PUSH_TIME)
+	var impulse_distance = push * (TEAR_PUSH_SPEED + 0.5 * TEAR_PUSH_ACCELERATION * push)
+	var coast = clampf((seconds - push) / (TEAR_LIFE - TEAR_PUSH_TIME), 0.0, 1.0)
+	return impulse_distance + (TEAR_ADVANCE - impulse_distance) * (1.0 - pow(1.0 - coast, 2.65))
 
 func _update_tear(delta: float) -> void:
 	if not _tear.visible:
@@ -260,24 +288,31 @@ func _update_tear(delta: float) -> void:
 		return
 	_tear_material.set_shader_parameter("effect_age", age)
 	_wake_material.set_shader_parameter("effect_age", age)
-	# The lip travels in world space. Its body opens quickly down the same
-	# heading, while dust trails back toward the original floor contact.
-	var advance = TEAR_ADVANCE * (1.0 - pow(1.0 - age, 1.72))
-	var opening = smoothstep(0.0, 0.23, age)
+	_crease_material.set_shader_parameter("effect_age", age)
+	var advance = _crest_distance(_tear_age)
+	var stretch = clampf((advance + TEAR_SEED_LENGTH) / TEAR_LENGTH, 0.0, 1.0)
+	var opening = smoothstep(0.03, 3.6, advance)
 	var front = _tear_origin + _tear_heading * advance
+	front.y = lerpf(_tear_origin.y, TEAR_FLOOR_Y, smoothstep(0.14, 0.68, age))
+	# The moving lip pulls an expanding sheet behind it. Before the body reaches
+	# full length, its low tail stays at the place the real blade just struck.
 	_tear.global_position = front
-	_tear.scale = Vector3(1.0, lerpf(0.62, 1.0, opening), lerpf(0.34, 1.0, opening))
-	_wake.global_position = _tear_origin + _tear_heading * advance * 0.58
-	_wake.scale = Vector3(0.62 + age * 0.91, 0.94 + age * 0.90, 0.53 + opening * 0.62)
-	_floor.scale.z = 0.52 + opening * 0.48
-	_floor_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0 - smoothstep(0.52, 0.99, age))
-	_light.global_position = front + _tear_heading * 0.55 + Vector3.UP * 0.84
-	_light.light_energy = 1.50 * (1.0 - smoothstep(0.10, 0.82, age))
+	_tear.scale = Vector3(lerpf(0.15, 1.0, opening), lerpf(0.035, 1.0, opening), stretch)
+	var wake_reach = clampf((advance + TEAR_SEED_LENGTH) / TEAR_ADVANCE, 0.03, 1.0)
+	_wake.scale = Vector3(0.18 + smoothstep(0.0, 0.64, age) * 1.15, 0.34 + opening * 1.10, wake_reach)
+	_crease.scale = Vector3(0.68 + 0.40 * opening, 1.0, wake_reach)
+	_floor.scale.z = clampf(advance / 4.3, 0.035, 1.0)
+	_floor_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0 - smoothstep(0.55, 0.99, age))
+	_light.global_position = front + Vector3.UP * lerpf(0.20, 0.95, opening)
+	_light.omni_range = lerpf(1.65, 5.1, opening)
+	_light.light_energy = lerpf(0.65, 1.50, opening) * (1.0 - smoothstep(0.32, 0.89, age))
 
 func _hide_tear() -> void:
+	_tear_newborn = false
 	_tear.hide()
 	_floor.hide()
 	_wake.hide()
+	_crease.hide()
 	_light.hide()
 
 func _tear_mesh() -> ArrayMesh:
@@ -290,12 +325,19 @@ func _tear_mesh() -> ArrayMesh:
 			for uv: Vector2 in [from, Vector2(to.x, from.y), to, from, to, Vector2(from.x, to.y)]:
 				var h = uv.y
 				var d = uv.x
-				var forward = h * 0.44 - sin(h * PI) * 0.19
-				var depth = TEAR_LENGTH * (0.72 + sin(h * PI * 0.79) * 0.28)
-				var height = h * TEAR_HEIGHT * (1.0 - 0.25 * d * d) + 0.025 * d
-				var curl = h * 0.19 - sin(h * PI) * 0.13 + d * d * sin(h * 2.7 + 0.38) * 0.66
+				var lean = (h * h * 0.83 + sin(h * PI) * 0.16) * (1.0 - d)
+				var height = h * TEAR_HEIGHT * (1.0 - 0.82 * pow(d, 1.23)) + 0.025 * d
+				var curl = h * 0.22 - sin(h * PI) * 0.16 + sin(d * PI) * sin(h * 2.7 + 0.38) * 0.51
 				mesh.set_uv(uv)
-				mesh.add_vertex(Vector3(curl, height, forward + d * depth))
+				mesh.add_vertex(Vector3(curl, height, lean - d * TEAR_LENGTH))
+	return mesh.commit()
+
+func _crease_mesh() -> ArrayMesh:
+	var mesh = SurfaceTool.new()
+	mesh.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for uv: Vector2 in [Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, Vector2.ZERO, Vector2.ONE, Vector2.DOWN]:
+		mesh.set_uv(uv)
+		mesh.add_vertex(Vector3((uv.x - 0.5) * 0.42, 0.02, uv.y * TEAR_ADVANCE))
 	return mesh.commit()
 
 func _wake_mesh() -> ArrayMesh:
@@ -306,7 +348,7 @@ func _wake_mesh() -> ArrayMesh:
 			var spread = (uv.x - 0.5) * (3.7 + strip * 0.28)
 			var height = 0.055 + uv.y * float(strip) * 0.16
 			mesh.set_uv(uv)
-			mesh.add_vertex(Vector3(spread, height, (uv.y - 0.18) * (5.05 + strip * 0.36)))
+			mesh.add_vertex(Vector3(spread, height, (uv.y - 0.06) * (TEAR_ADVANCE + strip * 0.22)))
 	return mesh.commit()
 
 func _fracture_mesh() -> ArrayMesh:

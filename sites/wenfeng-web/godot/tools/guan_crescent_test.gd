@@ -72,8 +72,14 @@ func observe_tear(at: Vector3, direction: Vector3) -> void:
 	var player: DuelFighter = game.player
 	var base = player.blade_base().slide(Vector3.UP)
 	var tip = player.blade_tip().slide(Vector3.UP)
-	var distance = Geometry3D.get_closest_point_to_segment(at.slide(Vector3.UP), base, tip).distance_to(at.slide(Vector3.UP))
+	var origin = at.slide(Vector3.UP)
+	var distance = Geometry3D.get_closest_point_to_segment(origin, base, tip).distance_to(origin)
+	var surface: MeshInstance3D = game.fx.trails[player.get_instance_id()].tracked._tear
+	var extent = surface.get_aabb().size * surface.scale
 	tear_events.append({"clip": player.current_clip, "time": player.action_time, "edge_distance": distance,
+		"tip_distance": tip.distance_to(origin), "tip_height": player.blade_tip().y,
+		"birth_height": extent.y, "birth_length": extent.z,
+		"birth_offset": surface.global_position.distance_to(at),
 		"aim_dot": direction.dot(player.forward()), "at": at})
 
 func request(id: String) -> bool:
@@ -88,7 +94,7 @@ func request(id: String) -> bool:
 func observe_action() -> Dictionary:
 	var result = {"peak_entities": 0, "held": true, "ribbon_samples": 0, "retreat": 0.0, "advance": 0.0,
 		"shaft_sample_count": 0, "shaft_max_error": 0.0, "edge_sample_error": 0.0,
-		"tear_frames": 0, "tear_travel": 0.0, "tear_height": 0.0, "tear_length": 0.0}
+		"tear_frames": 0, "tear_travel": 0.0, "tear_height": 0.0, "tear_length": 0.0, "launch_travel": 0.0}
 	var actor: DuelFighter = game.player
 	var origin = actor.position
 	var forward = actor.forward()
@@ -118,8 +124,11 @@ func observe_action() -> Dictionary:
 			var surface: MeshInstance3D = tracked._tear
 			var extent = surface.get_aabb().size * surface.scale
 			var origin_on_blade: Vector3 = tear_events[0].at
+			var displacement_from_tip = surface.global_position.distance_to(origin_on_blade)
 			result.tear_frames += 1
-			result.tear_travel = maxf(result.tear_travel, surface.global_position.distance_to(origin_on_blade))
+			if tracked._tear_age <= 0.080:
+				result.launch_travel = maxf(result.launch_travel, displacement_from_tip)
+			result.tear_travel = maxf(result.tear_travel, displacement_from_tip)
 			result.tear_height = maxf(result.tear_height, extent.y)
 			result.tear_length = maxf(result.tear_length, extent.z)
 	result["hits"] = contacts.duplicate(true)
@@ -218,6 +227,12 @@ func action_case(id: String, gap: float, expected_hits: int, live_target = false
 		verify(label + " produces exactly one vertical tear on its actual blade line", data.tear.size() == 1
 			and data.tear[0].clip == "GuanCrescentU" and data.tear[0].time >= 1.20 and data.tear[0].time <= 1.45
 			and data.tear[0].edge_distance < 0.09 and data.tear[0].aim_dot > 0.8, data.tear)
+		verify(label + " starts as a low trace at the planted blade tip",
+			data.tear.size() == 1 and data.tear[0].tip_distance < 0.025 and data.tear[0].tip_height < 0.16
+			and data.tear[0].birth_offset < 0.025 and data.tear[0].birth_height < 0.35 and data.tear[0].birth_length < 0.55,
+			data.tear)
+		verify(label + " crest pushes outward in the first four physics ticks",
+			data.launch_travel >= 0.90, data.launch_travel)
 		verify(label + " opens and carries a broad upright sheet through the scene",
 			data.tear_frames >= 33 and data.tear_travel >= 2.0 and data.tear_height >= 4.0 and data.tear_length >= 4.5,
 			{"frames": data.tear_frames, "travel": data.tear_travel, "height": data.tear_height, "length": data.tear_length})

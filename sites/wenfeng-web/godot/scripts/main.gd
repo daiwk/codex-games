@@ -690,11 +690,13 @@ func _on_guan_cleave_ground(at: Vector3, direction: Vector3) -> void:
 	cleave_age = 0.0
 	cleave_origin = at
 	cleave_heading = direction
+	if at.y > 0.32:
+		return
 	# Plant feedback is separate from the earlier metal hit and also reads
 	# on a whiff, when the blade still completes its downward follow-through.
-	fx.sound("step", -13.0, 0.58)
-	shake = maxf(shake, 0.026)
-	camera_motion.kick(Vector3.DOWN - direction * 0.32, true)
+	fx.sound("step", -9.0, 0.50)
+	shake = maxf(shake, 0.034)
+	camera_motion.kick(Vector3.DOWN - direction * 0.18, true)
 
 func _on_action(fighter: DuelFighter, action: String) -> void:
 	skill_fx.action(fighter, action)
@@ -845,9 +847,14 @@ func _update_camera(delta: float, instant = false) -> void:
 			target += Vector3.UP * 0.40 * reveal
 			fov += 5.5 * reveal
 			if launched > 0.0:
-				var wake_center = cleave_origin + cleave_heading * (2.35 + cleave_age * 1.35) + Vector3.UP * 1.80
+				# Hold the view on the impact through the burst so the launched
+				# edge travels across the frame before the camera catches up.
+				var plant_dip = smoothstep(0.0, 0.026, cleave_age) * (1.0 - smoothstep(0.043, 0.15, cleave_age))
+				if cleave_origin.y <= 0.32:
+					target.y -= 0.13 * plant_dip
+				var wake_center = cleave_origin + cleave_heading * 3.25 + Vector3.UP * 1.55
 				var drift = (wake_center - target).limit_length(3.3)
-				target += drift * (0.50 * smoothstep(0.0, 0.22, cleave_age) * launched)
+				target += drift * (0.46 * smoothstep(0.085, 0.32, cleave_age) * launched)
 	if combat_mode == "mounted" and phase != "menu":
 		# The horse keeps its own heading. Marking an enemy only biases the
 		# rider's view a little; a passed foe cannot spin the camera backwards.

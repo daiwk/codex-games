@@ -3,6 +3,7 @@ render_mode unshaded, cull_disabled, depth_draw_never, blend_mix, fog_disabled;
 
 uniform bool vertical_tear = false;
 uniform bool ground_wake = false;
+uniform bool ground_crease = false;
 uniform float effect_age = 0.0;
 
 float hash21(vec2 p) {
@@ -36,25 +37,36 @@ void fragment() {
 	vec3 ink = vec3(0.10, 0.25, 0.22);
 	vec3 jade = vec3(0.31, 0.82, 0.72);
 	vec3 pale = vec3(0.83, 1.0, 0.96);
-	if (ground_wake) {
+	if (ground_crease) {
+		float t = clamp(effect_age, 0.0, 1.0);
+		float ribbon = ridge(UV.x, 0.5 + sin(UV.y * 18.0) * 0.041, 11.4);
+		float core = ridge(UV.x, 0.5 + sin(UV.y * 18.0) * 0.041, 34.0);
+		float contact = smoothstep(0.0, 0.05, UV.y) * (1.0 - smoothstep(0.94, 1.0, UV.y));
+		float fade = 1.0 - smoothstep(0.17, 0.63, t);
+		ALBEDO = mix(jade, pale, core);
+		EMISSION = pale * core * fade * 0.58;
+		ALPHA = (ribbon * 0.52 + core * 0.34) * contact * fade;
+	} else if (ground_wake) {
 		float t = clamp(effect_age, 0.0, 1.0);
 		float cloud = grain(vec2(UV.x * 9.0 - t * 3.0, UV.y * 6.0 + UV.x * 3.0));
 		float wisps = grain(vec2(UV.x * 17.0 + t * 2.0, UV.y * 8.0 - t * 3.1));
 		float outer = pow(max(0.0, sin(UV.x * 3.141593) * sin(UV.y * 3.141593)), 0.68);
-		ALBEDO = mix(vec3(0.20, 0.35, 0.30), vec3(0.56, 0.84, 0.76), cloud);
-		ALPHA = smoothstep(0.0, 0.15, t) * (1.0 - smoothstep(0.35, 1.0, t))
-			* outer * (cloud * 0.37 + wisps * 0.21);
+		float ground_streak = ridge(UV.x, 0.50 + (cloud - 0.5) * 0.08, 12.0);
+		float shove = ridge(UV.y, 0.83, 5.2) * ground_streak;
+		ALBEDO = mix(vec3(0.20, 0.35, 0.30), vec3(0.62, 0.95, 0.83), cloud * 0.64 + shove * 0.36);
+		ALPHA = smoothstep(0.0, 0.09, t) * (1.0 - smoothstep(0.42, 1.0, t))
+			* outer * (cloud * 0.32 + wisps * 0.18 + shove * 0.26);
 	} else if (vertical_tear) {
 		float age = clamp(effect_age, 0.0, 1.0);
 		float u = UV.x;
 		float v = UV.y;
-		// The broad film is continuously filled. Long wind lanes converge
-		// downrange and wash over it without punching holes in the silhouette.
-		float center = 0.23 - u * 0.11 + u * u * 0.06;
-		float fan = (v - center) / mix(1.0, 0.62, u);
-		fan += sin(u * 6.5 - age * 5.1) * (0.012 + u * 0.025);
-		float mist = grain(vec2(u * 4.1 - age * 4.8, fan * 9.0));
-		float stream = grain(vec2(u * 2.6 - age * 7.1, fan * 21.0 + mist * 0.76));
+		// UV.x runs from the flying lip back toward the blade. Long wind
+		// lanes flow out of that low tail into the broader cyan film.
+		float center = 0.27 + u * 0.09 - u * u * 0.08;
+		float fan = (v - center) / mix(1.0, 0.79, u);
+		fan += sin(u * 6.5 + age * 5.1) * (0.012 + u * 0.025);
+		float mist = grain(vec2(u * 4.1 + age * 4.8, fan * 9.0));
+		float stream = grain(vec2(u * 2.6 + age * 7.1, fan * 21.0 + mist * 0.76));
 		float bands = ridge(fan, -0.09, 20.0) * 0.63;
 		bands += ridge(fan, 0.12, 12.0) * 0.87;
 		bands += ridge(fan, 0.34, 14.5) * 0.66;
@@ -63,15 +75,16 @@ void fragment() {
 		float filament = pow(max(0.0, stream), 3.2);
 		float core = (ridge(fan, 0.117, 41.0) + ridge(fan, 0.548, 45.0)) * (0.11 + mist * 0.17);
 		float energy = clamp(bands * (0.46 + 0.44 * mist) + filament * 0.30 + core, 0.0, 1.0);
-		float leading = ridge(u, 0.013, 66.0);
+		float lip_sharpen = smoothstep(0.0, 0.25, age);
+		float leading = ridge(u, mix(0.063, 0.013, lip_sharpen), mix(12.0, 66.0, lip_sharpen));
 		float edge_glow = exp(-u * 17.0) * 0.36;
 		float floor_glow = exp(-v * 10.0) * (1.0 - u) * 0.30;
 		float edge_mask = smoothstep(0.0, 0.008, u);
 		float whisker = smoothstep(0.48, 0.89, stream);
 		float far_mask = 1.0 - smoothstep(0.83 + whisker * 0.09, 1.0, u + (mist - 0.5) * 0.073);
 		float height_mask = smoothstep(0.0, 0.029, v) * (1.0 - smoothstep(0.90, 1.0, v));
-		float ignition = smoothstep(0.0, 0.08, age);
-		float film_life = ignition * (1.0 - smoothstep(0.52, 0.96, age));
+		float ignition = 0.68 + 0.32 * smoothstep(0.0, 0.10, age);
+		float film_life = ignition * (1.0 - smoothstep(0.49 - u * 0.13, 0.96 - u * 0.09, age));
 		float lip_life = ignition * (1.0 - smoothstep(0.66, 1.0, age));
 		vec3 film = mix(vec3(0.035, 0.40, 0.36), vec3(0.21, 0.90, 0.80), 0.25 + mist * 0.60);
 		vec3 streak = vec3(0.77, 1.0, 0.96);
