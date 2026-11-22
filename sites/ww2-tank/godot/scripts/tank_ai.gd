@@ -154,7 +154,8 @@ func _drive_to_target(delta: float, toward: Vector3, sight_blocker: BattleUnit) 
 	var steer := clampf(yaw_error * 2.6, -1.0, 1.0)
 	var throttle := clampf(cos(yaw_error * 1.45), 0.0, 1.0)
 	tank.drive(throttle, steer, delta)
-	var stopped := tank.get_real_velocity().length_squared() < 0.27
+	var motion := tank.get_real_velocity()
+	var stopped := Vector2(motion.x, motion.z).length_squared() < 0.27
 	if stopped and (throttle > 0.40 or absf(steer) > 0.8):
 		_stall_time += delta
 	else:
@@ -193,6 +194,7 @@ func _try_detour(blocker: BattleUnit, offset: Vector3) -> bool:
 		var tentative := from + forward * advance + side * float(sign) * 4.85
 		var cell := _nearest_open_cell(tentative)
 		var point := Vector3(cell.x, 0.0, cell.y)
+		point.y = tank.ground_height_at(point)
 		if _grid.is_point_solid(cell) or from.distance_squared_to(point) < 5.0:
 			continue
 		if point.distance_squared_to(blocker.global_position) < 12.25:
@@ -274,7 +276,7 @@ func _reroll_aim() -> void:
 
 
 func _at_aim_height(at: Vector3) -> Vector3:
-	return Vector3(at.x, AIM_HEIGHT, at.z)
+	return at + Vector3.UP * AIM_HEIGHT
 
 
 func _living(unit: BattleUnit) -> bool:

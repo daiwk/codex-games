@@ -1,12 +1,12 @@
 extends Node3D
 
-const WORLD_MASK := 1
 const DROP_SPEED := 17.5
 const DROP_ACCELERATION := 24.0
 
 static var _visual_mesh: ArrayMesh
 
 var team: int
+var is_airstrike := false
 var _drop_speed := 7.5
 
 
@@ -25,7 +25,7 @@ func advance(delta: float) -> Dictionary:
 	_drop_speed = move_toward(_drop_speed, DROP_SPEED, DROP_ACCELERATION * delta)
 	var start := global_position
 	var end := start + Vector3.DOWN * _drop_speed * delta
-	var query := PhysicsRayQueryParameters3D.create(start, end, WORLD_MASK)
+	var query := PhysicsRayQueryParameters3D.create(start, end, BattleUnit.WORLD_LAYER)
 	query.hit_from_inside = true
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	global_position = hit.get("position", end)

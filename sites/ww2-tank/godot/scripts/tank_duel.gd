@@ -6,6 +6,7 @@ const TankAI = preload("res://scripts/tank_ai.gd")
 const Infantry = preload("res://scripts/infantry_unit.gd")
 const Aircraft = preload("res://scripts/aircraft_unit.gd")
 const Bomb = preload("res://scripts/aircraft_bomb.gd")
+const BossAbility = preload("res://scripts/boss_ability.gd")
 const DuelHUD = preload("res://scripts/duel_hud.gd")
 const Effects = preload("res://scripts/duel_effects.gd")
 const BOLT_MODEL := preload("res://assets/metal-bolt.glb")
@@ -20,19 +21,16 @@ const TANK_ROSTER := [
 		"preview": "res://assets/previews/tank-centurion-mk3.webp", "attack": 24, "defense": 20, "health": 116},
 ]
 
-const ALLY_SPAWNS := [Vector3(-18, 0, 29), Vector3(-11, 0, 34), Vector3(5, 0, 29), Vector3(15, 0, 29)]
-const ENEMY_TANK_COLUMNS := [[-14, 14], [-24, 0, 18], [-25, -9, 9, 24]]
-const ALLY_INFANTRY_SPAWNS := [Vector3(-3, 0, 21), Vector3(13, 0, 22)]
-const ENEMY_INFANTRY_SPAWNS := [Vector3(-7, 0, -20), Vector3(17, 0, -19)]
-const ALLY_AIR_SPAWNS := [Vector3(-22, 8.8, 27), Vector3(22, 9.6, 25)]
-const ENEMY_AIR_SPAWNS := [Vector3(21, 9.0, -27), Vector3(-23, 9.6, -25)]
 const STAGES := [
 	{"id": "plains", "name": "平原", "allied": Vector3i(4, 1, 1), "enemy": Vector3i(2, 1, 1),
-		"boss_model": 1, "boss_health": 150, "boss_attack": 35},
+		"boss_model": 1, "boss_health": 150, "boss_attack": 35,
+		"ally_armor": 1.70, "ally_attack": 0.95, "ally_support": 1.32},
 	{"id": "hills", "name": "山丘", "allied": Vector3i(5, 2, 1), "enemy": Vector3i(3, 2, 1),
-		"boss_model": 2, "boss_health": 190, "boss_attack": 44},
+		"boss_model": 2, "boss_health": 190, "boss_attack": 44,
+		"ally_armor": 2.20, "ally_attack": 0.95, "ally_support": 1.48},
 	{"id": "coast", "name": "海边", "allied": Vector3i(4, 2, 2), "enemy": Vector3i(4, 2, 2),
-		"boss_model": 3, "boss_health": 240, "boss_attack": 52},
+		"boss_model": 3, "boss_health": 240, "boss_attack": 52,
+		"ally_armor": 2.65, "ally_attack": 1.10, "ally_support": 1.82},
 ]
 const WAVES_PER_STAGE := 3
 const REPAIR_SECONDS := 9.0
@@ -52,8 +50,16 @@ const BOMB_COOLDOWN := 5.0
 const BOMB_RADIUS := 7.0
 const BOMB_UNIT_DAMAGE := 68
 const BOMB_BUILDING_DAMAGE := 124
+const AIRSTRIKE_UNIT_DAMAGE := 82
+const AIRSTRIKE_BUILDING_DAMAGE := 158
+const BURST_DAMAGE_FACTOR := 0.63
 const WEB_LOCK_TIMEOUT_MS := 1250
 const WEB_PHASES := ["intro", "active", "paused", "result", "takeover", "switch"]
+const STAGE_LIGHTS := [
+	[Color("#6e9cbb"), Color("#d9dac0"), Color("#fff0cd"), Vector3(-43, -48, 0), 0.0040],
+	[Color("#597f9b"), Color("#ccd9db"), Color("#edf4fc"), Vector3(-47, 39, 0), 0.0055],
+	[Color("#638494"), Color("#c1d0cf"), Color("#f4f2e6"), Vector3(-53, -65, 0), 0.0048],
+]
 
 enum Phase { INTRO, ACTIVE, PAUSED, RESULT, TAKEOVER, SWITCH }
 
@@ -70,11 +76,14 @@ var _arena_stage := -1
 var _stage_index := 0
 var _hud: DuelHUD
 var _camera: Camera3D
+var _environment: Environment
+var _sun: DirectionalLight3D
 var _round: Node3D
 var _effects: Effects
 var _player: Tank
 var _controlled: BattleUnit
 var _boss: Tank
+var _boss_ability: BossAbility
 var _allies: Array[BattleUnit] = []
 var _enemies: Array[BattleUnit] = []
 var _ally_brains: Array[TankAI] = []
@@ -181,6 +190,7 @@ func _process(delta: float) -> void:
 			"takeover_choices": _takeover_choices.map(_unit_snapshot),
 			"wave": _wave,
 			"total_waves": WAVES_PER_STAGE,
+			"boss_ability": _boss_ability.snapshot(),
 			"intermission": {
 				"active": _repair_left >= 0.0,
 				"seconds": maxf(0.0, _repair_left),
@@ -193,7 +203,8 @@ func _process(delta: float) -> void:
 			"bombs": _bombs.map(func(bomb: Bomb) -> Dictionary:
 				var at := bomb.global_position
 				return {"x": at.x, "y": at.y, "z": at.z,
-					"team": "ally" if bomb.team == BattleUnit.FRIENDLY_LAYER else "enemy"}),
+					"team": "ally" if bomb.team == BattleUnit.FRIENDLY_LAYER else "enemy",
+					"source": "airstrike" if bomb.is_airstrike else "aircraft"}),
 			"views": {"main": "third_person"},
 			"menu": _web_menu(),
 		}))
@@ -242,33 +253,26 @@ func _rect_coordinates(rects: Array[Rect2]) -> Array:
 
 func _build_view() -> void:
 	var lighting := WorldEnvironment.new()
-	var environment := Environment.new()
+	_environment = Environment.new()
 	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color("#668a9b")
-	sky_material.sky_horizon_color = Color("#c8d0c4")
-	sky_material.ground_horizon_color = Color("#b9bda0")
 	sky_material.ground_bottom_color = Color("#60644b")
 	var sky := Sky.new()
 	sky.sky_material = sky_material
-	environment.background_mode = Environment.BG_SKY
-	environment.sky = sky
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("#e1e5db")
-	environment.ambient_light_energy = 0.55
-	environment.fog_enabled = true
-	environment.fog_light_color = Color("#b7c2b5")
-	environment.fog_density = 0.006
-	environment.fog_sky_affect = 0.28
-	lighting.environment = environment
+	_environment.background_mode = Environment.BG_SKY
+	_environment.sky = sky
+	_environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	_environment.ambient_light_color = Color("#e1e5db")
+	_environment.ambient_light_energy = 0.55
+	_environment.fog_enabled = true
+	_environment.fog_sky_affect = 0.28
+	lighting.environment = _environment
 	add_child(lighting)
 
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-55, -33, 0)
-	sun.light_color = Color("#fff5e7")
-	sun.light_energy = 0.78
-	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 110.0
-	add_child(sun)
+	_sun = DirectionalLight3D.new()
+	_sun.light_energy = 0.78
+	_sun.shadow_enabled = true
+	_sun.directional_shadow_max_distance = 110.0
+	add_child(_sun)
 
 	_camera = Camera3D.new()
 	_camera.name = "BattleCamera"
@@ -280,17 +284,36 @@ func _build_view() -> void:
 	_camera.make_current()
 
 
+func _set_stage_lighting() -> void:
+	var palette: Array = STAGE_LIGHTS[_stage_index]
+	var sky_material := _environment.sky.sky_material as ProceduralSkyMaterial
+	var horizon: Color = palette[1]
+	sky_material.sky_top_color = palette[0]
+	sky_material.sky_horizon_color = horizon
+	sky_material.ground_horizon_color = horizon.darkened(0.10)
+	_environment.fog_light_color = horizon
+	_environment.fog_density = palette[4]
+	_sun.light_color = palette[2]
+	_sun.rotation_degrees = palette[3]
+
+
 func _build_ai_grid() -> void:
 	var navigable_extent := Vector2i(Arena.ARENA_HALF_SIZE - Vector2.ONE * AI_COVER_CLEARANCE)
 	_ai_grid.region = Rect2i(-navigable_extent, navigable_extent * 2 + Vector2i.ONE)
 	_ai_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	_ai_grid.update()
 	_ai_grid.fill_solid_region(_ai_grid.region, false)
+	for z in range(_ai_grid.region.position.y, _ai_grid.region.end.y):
+		for x in range(_ai_grid.region.position.x, _ai_grid.region.end.x):
+			if not _arena.is_ground_navigable(Vector2(x, z)):
+				_ai_grid.set_point_solid(Vector2i(x, z))
 	for cover: Rect2 in _arena.cover_rects:
 		var padded := cover.grow(AI_COVER_CLEARANCE)
 		var first := Vector2i(ceili(padded.position.x), ceili(padded.position.y))
 		var last := Vector2i(floori(padded.end.x), floori(padded.end.y))
-		_ai_grid.fill_solid_region(Rect2i(first, last - first + Vector2i.ONE))
+		var cells := Rect2i(first, last - first + Vector2i.ONE).intersection(_ai_grid.region)
+		if cells.has_area():
+			_ai_grid.fill_solid_region(cells)
 
 
 func _on_building_destroyed(at: Vector3) -> void:
@@ -300,6 +323,7 @@ func _on_building_destroyed(at: Vector3) -> void:
 
 
 func _load_arena() -> void:
+	_set_stage_lighting()
 	if is_instance_valid(_arena):
 		remove_child(_arena)
 		_arena.queue_free()
@@ -338,9 +362,13 @@ func _reset_round() -> void:
 	_round = Node3D.new()
 	_round.name = "Round"
 	add_child(_round)
+	_boss_ability = BossAbility.new()
+	_boss_ability.name = "BossAbility"
+	_round.add_child(_boss_ability)
 
 	_round_tanks = _hud.selected_tanks()
-	_player = _add_tank("Player", Arena.PLAYER_SPAWN, 0.0, true, TANK_ROSTER[_round_tanks.x], Tank.FRIENDLY_LAYER)
+	var start: Vector3 = _arena.get_spawns(true, "player")[0]
+	_player = _add_tank("Player", start, 0.0, true, TANK_ROSTER[_round_tanks.x], Tank.FRIENDLY_LAYER)
 	_controlled = _player
 	_ally_brains.append(TankAI.new(_player, _ai_grid, 0.85))
 	_add_team_marker(_player, "队友", Color("#9fd8c4")).hide()
@@ -368,8 +396,10 @@ func _add_tank(tank_name: String, spawn: Vector3, heading: float, is_player: boo
 	tank.name = tank_name
 	tank.position = spawn
 	tank.rotation.y = heading
+	tank.terrain_height = _arena.ground_height
 	tank.configure(_tank_models[path], is_player, profile, layer)
 	_round.add_child(tank)
+	tank.update_hull_pose(1.0)
 	return tank
 
 
@@ -395,14 +425,17 @@ func _restart_from_menu() -> void:
 
 
 func _spawn_allies() -> void:
-	var slots: Vector3i = STAGES[_stage_index]["allied"]
+	var stage: Dictionary = STAGES[_stage_index]
+	var slots: Vector3i = stage["allied"]
 	var occupied := _living_friendlies()
-	var health_scale := 1.95 if _stage_index == STAGES.size() - 1 else 1.70
+	var health_scale: float = stage["ally_armor"]
+	var attack_scale: float = stage["ally_attack"]
+	var positions := _arena.get_spawns(true, "tank")
 	for index in range(slots.x - 1):
 		var profile: Dictionary = TANK_ROSTER[index].duplicate()
 		profile["health"] = roundi(int(profile["health"]) * health_scale)
-		profile["attack"] = roundi(int(profile["attack"]) * 0.95)
-		var spawn := _ground_spawn(ALLY_SPAWNS[index], occupied)
+		profile["attack"] = roundi(int(profile["attack"]) * attack_scale)
+		var spawn := _ground_spawn(positions[index], occupied)
 		var tank := _add_tank("Ally%d" % (index + 1), spawn, 0.0, false, profile, Tank.FRIENDLY_LAYER)
 		tank.reload_time = 2.0
 		tank.reload_left = 0.55 + 0.22 * index
@@ -422,6 +455,7 @@ func _advance_wave() -> void:
 	var rank := _stage_index * WAVES_PER_STAGE + _wave - 1
 	var base: Dictionary = TANK_ROSTER[_round_tanks.y]
 	var occupied := _living_friendlies()
+	var positions := _arena.get_spawns(false, "tank")
 	for slot in enemy_slots.x:
 		var is_boss := _wave == WAVES_PER_STAGE and slot == floori(enemy_slots.x * 0.5)
 		var profile: Dictionary = TANK_ROSTER[stage["boss_model"]].duplicate() if is_boss else base.duplicate()
@@ -429,8 +463,7 @@ func _advance_wave() -> void:
 		profile["attack"] = stage["boss_attack"] if is_boss else roundi(int(base["attack"]) * (0.72 + rank * 0.055))
 		if is_boss:
 			profile["defense"] = 24
-		var column: float = ENEMY_TANK_COLUMNS[_stage_index][slot]
-		var spawn := _ground_spawn(Arena.ENEMY_SPAWN + Vector3(column, 0.0, 0.0), occupied)
+		var spawn := _ground_spawn(positions[slot], occupied)
 		var tank := _add_tank("Boss" if is_boss else "Enemy%d" % (slot + 1), spawn, PI, false, profile, Tank.HOSTILE_LAYER)
 		tank.reload_time = 2.55 - _stage_index * 0.19 if is_boss else 2.65 - rank * 0.10375
 		tank.reload_left = 0.75 + 0.20 * slot
@@ -443,11 +476,13 @@ func _advance_wave() -> void:
 		_enemy_brains.append(TankAI.new(tank, _ai_grid, 0.43 if is_boss else 1.17 - rank * 0.082))
 		occupied.append(tank)
 	_deploy_support(allied_slots, enemy_slots, 0.81 + rank * 0.052, occupied)
+	if is_instance_valid(_boss):
+		_boss_ability.begin(stage["id"])
 	_update_hud()
 
 
 func _deploy_support(allied_slots: Vector3i, enemy_slots: Vector3i, strength: float, occupied: Array[BattleUnit]) -> void:
-	var allied_strength := 1.50 if _stage_index == STAGES.size() - 1 else 1.32
+	var allied_strength: float = STAGES[_stage_index]["ally_support"]
 	for slot in range(allied_slots.y + allied_slots.z):
 		if slot < _allied_support.size() and _allied_support[slot].health > 0:
 			continue
@@ -465,14 +500,13 @@ func _deploy_support(allied_slots: Vector3i, enemy_slots: Vector3i, strength: fl
 func _add_support(friendly: bool, slot: int, infantry_slots: int, strength: float, occupied: Array[BattleUnit]) -> BattleUnit:
 	var is_aircraft := slot >= infantry_slots
 	var index := slot - infantry_slots if is_aircraft else slot
-	var positions := ALLY_AIR_SPAWNS if friendly else ENEMY_AIR_SPAWNS
-	if not is_aircraft:
-		positions = ALLY_INFANTRY_SPAWNS if friendly else ENEMY_INFANTRY_SPAWNS
+	var positions := _arena.get_spawns(friendly, "aircraft" if is_aircraft else "infantry")
 	var preferred: Vector3 = positions[index]
 	var spawn := _air_spawn(preferred, occupied) if is_aircraft else _ground_spawn(preferred, occupied)
 	var unit: BattleUnit = Aircraft.new() if is_aircraft else Infantry.new()
 	unit.position = spawn
 	unit.rotation.y = 0.0 if friendly else PI
+	unit.terrain_height = _arena.ground_height
 	var layer := BattleUnit.FRIENDLY_LAYER if friendly else BattleUnit.HOSTILE_LAYER
 	var title := ("战机 %d" if is_aircraft else "步兵 %d") % (index + 1)
 	if is_aircraft:
@@ -487,8 +521,11 @@ func _add_support(friendly: bool, slot: int, infantry_slots: int, strength: floa
 
 
 func _air_spawn(preferred: Vector3, occupied: Array[BattleUnit]) -> Vector3:
+	var clearance := preferred.y - _ground_point(preferred).y
 	for offset in [0.0, -10.0, 10.0, -16.0, 16.0]:
 		var candidate := preferred + Vector3(offset, 0.0, 0.0)
+		candidate.x = clampf(candidate.x, -Aircraft.FLIGHT_MAX.x, Aircraft.FLIGHT_MAX.x)
+		candidate.y = _ground_point(candidate).y + clearance
 		var blocked := false
 		for unit in occupied:
 			if unit.kind == "aircraft" and candidate.distance_squared_to(unit.position) < 64.0:
@@ -499,10 +536,15 @@ func _air_spawn(preferred: Vector3, occupied: Array[BattleUnit]) -> Vector3:
 	return preferred
 
 
+func _ground_point(at: Vector3) -> Vector3:
+	at.y = _arena.ground_height(Vector2(at.x, at.z))
+	return at
+
+
 func _ground_spawn(preferred: Vector3, occupied: Array[BattleUnit]) -> Vector3:
 	var cell := Vector2i(roundi(preferred.x), roundi(preferred.z))
 	if _spawn_is_clear(cell, occupied):
-		return preferred
+		return _ground_point(preferred)
 	var best := preferred
 	var closest := INF
 	for z in range(_ai_grid.region.position.y, _ai_grid.region.end.y):
@@ -512,15 +554,17 @@ func _ground_spawn(preferred: Vector3, occupied: Array[BattleUnit]) -> Vector3:
 			if distance < closest and _spawn_is_clear(candidate, occupied):
 				closest = distance
 				best = Vector3(x, 0.0, z)
-	return best
+	return _ground_point(best)
 
 
 func _spawn_is_clear(cell: Vector2i, occupied: Array[BattleUnit]) -> bool:
-	if _ai_grid.is_point_solid(cell):
+	if not _ai_grid.region.has_point(cell) or _ai_grid.is_point_solid(cell):
 		return false
-	var position := Vector3(cell.x, 0.0, cell.y)
-	for tank in occupied:
-		if position.distance_squared_to(tank.position) < SPAWN_CLEARANCE_SQUARED:
+	for unit in occupied:
+		if unit.kind == "aircraft":
+			continue
+		var other := Vector2(unit.position.x, unit.position.z)
+		if Vector2(cell).distance_squared_to(other) < SPAWN_CLEARANCE_SQUARED:
 			return false
 	return true
 
@@ -559,6 +603,67 @@ func _living_enemies() -> Array[BattleUnit]:
 	return enemies
 
 
+func _spawn_boss_reinforcements(call_index: int) -> void:
+	var occupied := _living_friendlies()
+	occupied.append_array(_living_enemies())
+	var side := -1.0 if call_index == 1 else 1.0
+	var approach := _boss.position + Vector3(side * 9.0, 0.0, -11.0)
+	var spawn := _ground_spawn(approach, occupied)
+	var profile: Dictionary = TANK_ROSTER[0].duplicate()
+	profile["name"] = "援军坦克"
+	profile["health"] = 64
+	profile["attack"] = 24
+	var tank := _add_tank("ReserveTank%d" % call_index, spawn, PI, false, profile, Tank.HOSTILE_LAYER)
+	tank.reload_left = 1.2
+	tank.reload_time = 2.6
+	tank.max_speed = 5.5
+	_add_team_marker(tank, "援军坦克", Color("#ffc275"))
+	_enemies.append(tank)
+	_enemy_brains.append(TankAI.new(tank, _ai_grid, 0.87))
+	occupied.append(tank)
+
+	var infantry := Infantry.new()
+	infantry.position = _ground_spawn(approach + Vector3(side * 4.0, 0.0, 5.0), occupied)
+	infantry.rotation.y = PI
+	infantry.terrain_height = _arena.ground_height
+	infantry.configure(BattleUnit.HOSTILE_LAYER, 1.08, "援军步兵")
+	_round.add_child(infantry)
+	_add_team_marker(infantry, infantry.display_name, Color("#ffc275"), 2.04)
+	_enemy_support.append(infantry)
+	_web_snapshot_delay = 0.0
+
+
+func _boss_strike_target(allies: Array[BattleUnit]) -> BattleUnit:
+	if _controlled.health > 0 and _controlled.kind != "aircraft":
+		return _controlled
+	var target: BattleUnit
+	var nearest := INF
+	for ally in allies:
+		if ally.health <= 0 or ally.kind == "aircraft":
+			continue
+		var distance := _boss.global_position.distance_squared_to(ally.global_position)
+		if distance < nearest:
+			target = ally
+			nearest = distance
+	return target
+
+
+func _update_boss_ability(allies: Array[BattleUnit], delta: float) -> void:
+	if not is_instance_valid(_boss):
+		return
+	var target: BattleUnit = _boss_strike_target(allies) if _stage_index == 2 else null
+	_boss_ability.advance(delta, _boss.health > 0, target, _ground_point,
+		_fire_boss_burst, _spawn_boss_reinforcements, _release_boss_bomb)
+
+
+func _fire_boss_burst() -> void:
+	_fire(_boss, BURST_DAMAGE_FACTOR)
+
+
+func _release_boss_bomb(origin: Vector3) -> void:
+	_spawn_bomb(origin, BattleUnit.HOSTILE_LAYER, true)
+
+
 func _count_kind(units: Array[BattleUnit], kind: String) -> int:
 	var count := 0
 	for unit in units:
@@ -568,6 +673,7 @@ func _count_kind(units: Array[BattleUnit], kind: String) -> int:
 
 
 func _update_hud() -> void:
+	_hud.update_boss_ability(_boss_ability.snapshot(), is_instance_valid(_boss) and _boss.health > 0)
 	_hud.update_battle(_controlled.health, _controlled.reload_fraction(), _elapsed, _wave,
 		_living_units(_allies).size() + int(_player.health > 0), _living_units(_enemies).size(),
 		_boss.health if is_instance_valid(_boss) else 0, _boss.max_health if is_instance_valid(_boss) else 0)
@@ -774,6 +880,7 @@ func _physics_process(delta: float) -> void:
 		_update_support_team(_allied_support, enemies_alive, delta)
 		_update_support_team(_enemy_support, allies_alive, delta)
 		_advance_shells(delta)
+		_update_boss_ability(allies_alive, delta)
 		_check_wave_outcome()
 	_update_hud()
 
@@ -841,12 +948,17 @@ func _drop_bomb() -> void:
 func _launch_bomb(aircraft: Aircraft) -> void:
 	if not _can_drop_bomb(aircraft):
 		return
+	_spawn_bomb(aircraft.bomb_origin(), aircraft.collision_layer)
+	aircraft.bomb_cooldown_left = BOMB_COOLDOWN
+
+
+func _spawn_bomb(origin: Vector3, team: int, airstrike := false) -> void:
 	var bomb := Bomb.new()
-	bomb.position = _round.to_local(aircraft.bomb_origin())
-	bomb.team = aircraft.collision_layer
+	bomb.position = _round.to_local(origin)
+	bomb.team = team
+	bomb.is_airstrike = airstrike
 	_round.add_child(bomb)
 	_bombs.append(bomb)
-	aircraft.bomb_cooldown_left = BOMB_COOLDOWN
 	_web_snapshot_delay = 0.0
 
 
@@ -863,18 +975,22 @@ func _advance_bombs(delta: float) -> void:
 			continue
 		_bombs.remove_at(index)
 		if not hit.is_empty():
-			_explode_bomb(hit["position"], bomb.team)
+			_explode_bomb(hit["position"], bomb.team, bomb.is_airstrike)
 		bomb.queue_free()
 
 
-func _explode_bomb(at: Vector3, team: int) -> void:
+func _explode_bomb(at: Vector3, team: int, airstrike := false) -> void:
 	_effects.bomb_blast(at)
-	_arena.damage_buildings_in_area(at, BOMB_RADIUS, BOMB_BUILDING_DAMAGE)
+	var radius := BossAbility.STRIKE_RADIUS if airstrike else BOMB_RADIUS
+	_arena.damage_buildings_in_area(at, radius, AIRSTRIKE_BUILDING_DAMAGE if airstrike else BOMB_BUILDING_DAMAGE)
+	var base_damage := AIRSTRIKE_UNIT_DAMAGE if airstrike else BOMB_UNIT_DAMAGE
 	var targets := _living_enemies() if team == BattleUnit.FRIENDLY_LAYER else _living_friendlies()
 	for unit in targets:
+		if airstrike and unit.kind == "aircraft":
+			continue
 		var distance := at.distance_to(unit.target_point())
-		if distance < BOMB_RADIUS:
-			var damage := roundi(BOMB_UNIT_DAMAGE * lerpf(1.0, 0.28, distance / BOMB_RADIUS))
+		if distance < radius:
+			var damage := roundi(base_damage * lerpf(1.0, 0.28, distance / radius))
 			_damage_unit(unit, damage, team)
 	_web_snapshot_delay = 0.0
 
@@ -933,6 +1049,9 @@ func _update_view(follow: BattleUnit) -> void:
 func _update_ai_team(brains: Array[TankAI], opponents: Array[BattleUnit], delta: float) -> void:
 	for brain in brains:
 		if brain.tank != _controlled and brain.tank.health > 0 and brain.update(delta, opponents):
+			if brain.tank == _boss and not _boss_ability.allow_cannon():
+				brain.tank.reload_left = 0.18
+				continue
 			_fire(brain.tank)
 
 
@@ -949,8 +1068,9 @@ func _update_support_team(units: Array[BattleUnit], opponents: Array[BattleUnit]
 			_fire_support(unit)
 
 
-func _fire(tank: Tank) -> void:
+func _fire(tank: Tank, damage_scale := 1.0) -> void:
 	tank.reload_left = tank.reload_time
+	var damage := roundi(tank.attack * damage_scale)
 	var muzzle := tank.muzzle_position()
 	var direction := tank.muzzle_direction()
 	var pivot := tank.gun_pivot_position()
@@ -958,7 +1078,7 @@ func _fire(tank: Tank) -> void:
 		_view_kick = 0.115
 	var obstruction := _cast_ray(pivot, muzzle, Tank.BATTLE_MASK, tank.get_rid())
 	if not obstruction.is_empty():
-		_register_impact(obstruction, tank.attack, tank.collision_layer, true)
+		_register_impact(obstruction, damage, tank.collision_layer, true)
 		return
 
 	_effects.muzzle_flash(muzzle, direction)
@@ -968,7 +1088,7 @@ func _fire(tank: Tank) -> void:
 	shell.direction = direction
 	shell.shooter_rid = tank.get_rid()
 	shell.shooter_team = tank.collision_layer
-	shell.damage = tank.attack
+	shell.damage = damage
 	shell.position = muzzle
 	var bolt := BOLT_MODEL.instantiate() as Node3D
 	bolt.name = "BoltModel"
@@ -1073,6 +1193,7 @@ func _finish_round(outcome: String) -> void:
 	_phase = Phase.RESULT
 	_outcome = outcome
 	_clear_shells()
+	_boss_ability.cancel()
 	for bomb in _bombs:
 		bomb.queue_free()
 	_bombs.clear()

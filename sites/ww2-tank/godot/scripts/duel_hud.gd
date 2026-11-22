@@ -16,11 +16,17 @@ const SUBTLE := Color("bac0a7")
 const BRASS := Color("e8bc70")
 const ALLIED := Color("9fd8c4")
 const OPPONENT := Color("e59a7e")
+const WARNING := Color("ffc275")
 const BUNDLED_FONT := preload("res://assets/fonts/StonewallSans.otf")
 const TankSelection := preload("res://scripts/tank_selection.gd")
 const TANK_CONTROLS := "WASD 驾驶   鼠标瞄准   空格开火   Q 切换   Tab 鼠标"
 const INFANTRY_CONTROLS := "WASD 步行   鼠标瞄准   空格开火   Q 切换   Tab 鼠标"
 const AIRCRAFT_CONTROLS := "WASD 飞行   鼠标调航向   空格开火   B 投弹   Q 切换"
+const BOSS_ABILITY_NAMES := {
+	"burst": "火炮连发",
+	"reinforcements": "呼叫援军",
+	"airstrike": "呼叫空袭",
+}
 
 class AimReticle extends Control:
 	var aligned := false
@@ -65,6 +71,10 @@ var _enemy_support: Label
 var _boss_panel: PanelContainer
 var _boss_health: ProgressBar
 var _boss_number: Label
+var _boss_ability_panel: PanelContainer
+var _boss_ability_title: Label
+var _boss_ability_status: Label
+var _boss_ability_style: StyleBoxFlat
 var _building_panel: PanelContainer
 var _building_title: Label
 var _building_health: ProgressBar
@@ -84,6 +94,7 @@ var _stage_total := 3
 var _wave_total := 3
 var _allied_slots := Vector3i(4, 1, 1)
 var _enemy_slots := Vector3i(2, 1, 1)
+var _enemy_reinforcements := Vector2i.ZERO
 var _controlled_kind := "tank"
 var _player_down := false
 var _screen := "intro"
@@ -110,6 +121,7 @@ func show_intro() -> void:
 	_intermission_panel.hide()
 	_building_panel.hide()
 	_bomb_panel.hide()
+	_boss_ability_panel.hide()
 	_menu_card.hide()
 	_takeover_card.hide()
 	_selection.show()
@@ -145,7 +157,8 @@ func set_controlled_unit(title: String, kind: String, max_health: int) -> void:
 
 func set_support_counts(allied_infantry: int, enemy_infantry: int, allied_aircraft: int, enemy_aircraft: int) -> void:
 	_allied_support.text = "步兵 %d / %d\n飞机 %d / %d" % [allied_infantry, _allied_slots.y, allied_aircraft, _allied_slots.z]
-	_enemy_support.text = "步兵 %d / %d\n飞机 %d / %d" % [enemy_infantry, _enemy_slots.y, enemy_aircraft, _enemy_slots.z]
+	_enemy_support.text = "步兵 %d / %d\n飞机 %d / %d" % [enemy_infantry, _enemy_slots.y + _enemy_reinforcements.y,
+		enemy_aircraft, _enemy_slots.z]
 
 
 func set_stage(index: int, total_stages: int, title: String, waves: int, allied_slots: Vector3i, enemy_slots: Vector3i) -> void:
@@ -154,6 +167,7 @@ func set_stage(index: int, total_stages: int, title: String, waves: int, allied_
 	_wave_total = waves
 	_allied_slots = allied_slots
 	_enemy_slots = enemy_slots
+	_enemy_reinforcements = Vector2i.ZERO
 	_stage_label.text = "第 %d / %d 关 · %s" % [index, total_stages, title]
 	_wave_title.text = "第 1 / %d 波" % _wave_total
 	_ally_count.text = "坦克 %d / %d" % [_allied_slots.x, _allied_slots.x]
@@ -179,6 +193,7 @@ func show_takeover(candidates: Array[Dictionary], voluntary := false) -> void:
 	_intermission_panel.hide()
 	_building_panel.hide()
 	_bomb_panel.hide()
+	_boss_ability_panel.hide()
 	_selection.hide()
 	_menu_card.hide()
 	_takeover_heading.text = "切换操控单位" if voluntary else "接管友军"
@@ -232,7 +247,7 @@ func update_battle(
 	_player_number.text = "%d / %d" % [player_health, int(_player_health.max_value)]
 	_wave_title.text = "第 %d / %d 波" % [wave, _wave_total]
 	_ally_count.text = "坦克 %d / %d" % [allied_tanks, _allied_slots.x]
-	_enemy_count.text = "坦克 %d / %d" % [enemy_tanks, _enemy_slots.x]
+	_enemy_count.text = "坦克 %d / %d" % [enemy_tanks, _enemy_slots.x + _enemy_reinforcements.x]
 	var elapsed := maxi(0, floori(seconds))
 	_clock.text = "%02d:%02d" % [floori(elapsed / 60.0), elapsed % 60]
 	_boss_panel.visible = boss_health > 0 and boss_max_health > 0
@@ -250,6 +265,41 @@ func update_battle(
 	var ready := reload_fraction >= 0.999
 	_reload_label.text = "可开火" if ready else "装填中"
 	_reload_label.modulate = Color.WHITE if ready else SUBTLE
+
+
+func update_boss_ability(info: Dictionary, boss_alive := true) -> void:
+	_enemy_reinforcements = Vector2i(int(info.get("extra_enemy_tanks", 0)), int(info.get("extra_enemy_infantry", 0)))
+	var skill_id := str(info.get("id", ""))
+	var title: String = BOSS_ABILITY_NAMES.get(skill_id, "")
+	var status := str(info.get("status", ""))
+	var incoming_strike := skill_id == "airstrike" and status == "active"
+	_boss_ability_panel.visible = _screen == "active" and not title.is_empty() and (boss_alive or incoming_strike)
+	if not _boss_ability_panel.visible:
+		return
+	_boss_ability_title.text = title
+	var seconds := float(info.get("seconds_remaining", 0.0))
+	var alert := status == "warning" or status == "active"
+	_boss_ability_status.modulate = WARNING if alert else Color.WHITE
+	_boss_ability_style.border_color = OPPONENT if alert else LINE
+	match status:
+		"warning":
+			match skill_id:
+				"airstrike":
+					_boss_ability_status.text = "撤出标记区 · %.1f 秒" % seconds
+				"reinforcements":
+					_boss_ability_status.text = "援军即将抵达 · %.1f 秒" % seconds
+				_:
+					_boss_ability_status.text = "即将连发 · %.1f 秒" % seconds
+		"active":
+			_boss_ability_status.text = "空袭进行中" if skill_id == "airstrike" else "连发中"
+		"cooldown":
+			_boss_ability_status.text = "冷却 %d 秒" % ceili(seconds)
+		"spent":
+			_boss_ability_status.text = "援军已用尽"
+		"ready":
+			_boss_ability_status.text = "随时发动"
+		_:
+			_boss_ability_status.text = "准备中"
 
 
 func set_intermission(seconds_remaining: float, repair_available: bool, repair_used: bool) -> void:
@@ -385,6 +435,18 @@ func _build_wave_panels() -> void:
 	_boss_health = _bar(1.0, OPPONENT)
 	_health_display(_boss_panel, "敌军首领", OPPONENT, _boss_number, _boss_health)
 	_boss_panel.hide()
+	_boss_ability_panel = _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-185, 209, 370, 46))
+	_boss_ability_style = _style(SURFACE, LINE, 8, 9.0)
+	_boss_ability_panel.add_theme_stylebox_override("panel", _boss_ability_style)
+	var ability_row := HBoxContainer.new()
+	ability_row.add_theme_constant_override("separation", 12)
+	_boss_ability_panel.add_child(ability_row)
+	_boss_ability_title = _label("", 17, OPPONENT)
+	_boss_ability_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ability_row.add_child(_boss_ability_title)
+	_boss_ability_status = _label("", 16, PAPER)
+	ability_row.add_child(_boss_ability_status)
+	_boss_ability_panel.hide()
 
 	_intermission_panel = _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-202, 215, 404, 88))
 	var intermission_stack := VBoxContainer.new()
@@ -514,6 +576,7 @@ func _open_menu(screen: String, heading: String, description: String, action: St
 	_reticle.hide()
 	_building_panel.hide()
 	_bomb_panel.hide()
+	_boss_ability_panel.hide()
 	_selection.hide()
 	_takeover_card.hide()
 	_menu_card.show()

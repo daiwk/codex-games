@@ -47,7 +47,7 @@ func configure(layer: int, strength: float, title: String) -> void:
 	collision_mask = BATTLE_MASK
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
 	safe_margin = 0.012
-	position = position.clamp(FLIGHT_MIN, FLIGHT_MAX)
+	position = _flight_bounds(position)
 	_turn_side = 1.0 if layer == FRIENDLY_LAYER else -1.0
 
 	var model := AIRFRAME.instantiate() as Node3D
@@ -111,7 +111,7 @@ func update_ai(opponents: Array[BattleUnit], _grid: AStarGrid2D, delta: float) -
 
 	var preferred_height := CRUISE_HEIGHT
 	if _target.kind == "aircraft":
-		preferred_height = clampf(point.y, FLIGHT_MIN.y, RECOVERY_HEIGHT)
+		preferred_height = clampf(point.y - ground_height_at(point), FLIGHT_MIN.y, RECOVERY_HEIGHT)
 	var aim_pitch := clampf(atan2(toward.y, range_flat), -0.65, 0.54)
 	if bombing_pass:
 		var approach := smoothstep(PASS_END_DISTANCE, PASS_END_DISTANCE * 2.0, range_flat)
@@ -184,14 +184,22 @@ func _add_hitbox(size: Vector3, offset: Vector3) -> void:
 func _advance(desired_velocity: Vector3, delta: float) -> void:
 	velocity = velocity.move_toward(desired_velocity, MOVE_ACCELERATION * delta)
 	var incoming_position := global_position + velocity * delta
-	var bounded_position := incoming_position.clamp(FLIGHT_MIN, FLIGHT_MAX)
+	var bounded_position := _flight_bounds(incoming_position)
 	if incoming_position != bounded_position:
 		velocity = (bounded_position - global_position) / delta
 	move_and_slide()
-	bounded_position = global_position.clamp(FLIGHT_MIN, FLIGHT_MAX)
+	bounded_position = _flight_bounds(global_position)
 	if global_position != bounded_position:
 		global_position = bounded_position
 	_propeller.rotate_z(delta * 37.0)
+
+
+func _flight_bounds(at: Vector3) -> Vector3:
+	at.x = clampf(at.x, FLIGHT_MIN.x, FLIGHT_MAX.x)
+	at.z = clampf(at.z, FLIGHT_MIN.z, FLIGHT_MAX.z)
+	var ground := maxf(0.0, ground_height_at(at))
+	at.y = clampf(at.y, ground + FLIGHT_MIN.y, ground + FLIGHT_MAX.y)
+	return at
 
 
 func _turn_flight(yaw: float, pitch: float, bank: float, turn_speed: float, delta: float) -> void:
@@ -271,7 +279,10 @@ func _follow_course(point: Vector3, height: float, pitch: float, delta: float) -
 	var heading := Basis(Vector3.UP, global_rotation.y) * Vector3.FORWARD
 	var speed_fraction := clampf(1.0 - absf(yaw_error) * 0.29, 0.32, 1.0)
 	var motion := heading * AI_SPEED * speed_fraction
-	motion.y = clampf((height - global_position.y) * 2.5, -4.4, 4.4)
+	var ground_ahead := ground_height_at(global_position + heading * 5.0)
+	var ground_below := ground_height_at(global_position)
+	var target_y := maxf(0.0, maxf(ground_ahead, ground_below)) + height
+	motion.y = clampf((target_y - global_position.y) * 2.5, -4.4, 4.4)
 	_advance(motion, delta)
 
 

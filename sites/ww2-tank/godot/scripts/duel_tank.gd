@@ -8,6 +8,9 @@ var hull_turn_speed := 2.4
 var turret_turn_speed := 5.8
 
 var _speed := 0.0
+var _hull_pose: Node3D
+var _hull_shapes: Array[CollisionShape3D] = []
+var _hull_shape_centers: Array[Vector3] = []
 var _turret: Node3D
 var _gun: Node3D
 var _muzzle: Node3D
@@ -23,12 +26,15 @@ func configure(model_scene: PackedScene, is_player: bool, profile: Dictionary, t
 	defense = profile["defense"]
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
 	collision_layer = team_layer
-	collision_mask = BATTLE_MASK
+	collision_mask = GROUND_UNIT_MASK
 	safe_margin = 0.008
 
 	var model := model_scene.instantiate() as Node3D
 	model.rotation.y = PI
-	add_child(model)
+	_hull_pose = Node3D.new()
+	_hull_pose.name = "HullPose"
+	_hull_pose.add_child(model)
+	add_child(_hull_pose)
 	var hull := model.get_node("Hull") as MeshInstance3D
 	var turret := model.get_node("Turret") as MeshInstance3D
 	_turret = turret
@@ -62,6 +68,8 @@ func configure(model_scene: PackedScene, is_player: bool, profile: Dictionary, t
 	var turret_center := (_turret.position + turret_bounds.get_center()) * model_scale
 	turret_hitbox.position = Vector3(-turret_center.x, maxf(turret_center.y, 1.68), -turret_center.z)
 	add_child(turret_hitbox)
+	_hull_shapes.assign([collider, turret_hitbox])
+	_hull_shape_centers.assign([collider.position, turret_hitbox.position])
 
 	if is_player:
 		turret_turn_speed = 14.0
@@ -83,8 +91,10 @@ func drive(throttle: float, steer: float, delta: float) -> void:
 	var acceleration := 9.6 if not is_zero_approx(throttle) else 13.0
 	_speed = move_toward(_speed, target_speed, acceleration * delta)
 	velocity = global_basis * Vector3.FORWARD * _speed
-	move_and_slide()
-	if get_real_velocity().length_squared() < 0.1 and absf(_speed) > 1.0:
+	move_on_ground(delta)
+	update_hull_pose(delta)
+	var movement := get_real_velocity()
+	if Vector2(movement.x, movement.z).length_squared() < 0.1 and absf(_speed) > 1.0:
 		_speed = move_toward(_speed, 0.0, 15.0 * delta)
 
 
@@ -102,7 +112,8 @@ func drive_direction(direction: Vector3, reverse: bool, delta: float) -> void:
 		var previous_yaw := rotation.y
 		_try_hull_yaw(rotate_toward(previous_yaw, yaw_towards(heading), hull_turn_speed * delta))
 		_turret.rotation.y = wrapf(_turret.rotation.y - angle_difference(previous_yaw, rotation.y), -PI, PI)
-	move_and_slide()
+	move_on_ground(delta)
+	update_hull_pose(delta)
 
 
 func resume_ai() -> void:
@@ -131,9 +142,11 @@ func aim_at(point: Vector3, delta: float) -> bool:
 
 
 func point_gun(world_yaw: float, pitch: float, delta: float) -> float:
-	var offset := angle_difference(global_rotation.y, world_yaw)
+	var world_direction := Basis(Vector3.UP, world_yaw) * Vector3(0.0, sin(pitch), -cos(pitch))
+	var local_direction := _hull_pose.global_basis.transposed() * world_direction
+	var offset := yaw_towards(local_direction)
 	_turret.rotation.y = rotate_toward(_turret.rotation.y, offset, turret_turn_speed * delta)
-	_gun.rotation.x = move_toward(_gun.rotation.x, -pitch, 10.0 * delta)
+	_gun.rotation.x = move_toward(_gun.rotation.x, -asin(clampf(local_direction.y, -1.0, 1.0)), 10.0 * delta)
 	return absf(angle_difference(_turret.rotation.y, offset))
 
 
@@ -158,7 +171,24 @@ func shot_direction() -> Vector3:
 
 
 func target_point() -> Vector3:
-	return global_position + Vector3.UP * NEUTRAL_MUZZLE_HEIGHT
+	return _hull_pose.to_global(Vector3.UP * NEUTRAL_MUZZLE_HEIGHT)
+
+
+func update_hull_pose(delta: float) -> void:
+	if not terrain_height.is_valid():
+		return
+	var center := global_position
+	var fore := global_basis.z * 2.0
+	var side := global_basis.x * 1.25
+	var slope_z := (ground_height_at(center + fore) - ground_height_at(center - fore)) / 4.0
+	var slope_x := (ground_height_at(center + side) - ground_height_at(center - side)) / 2.5
+	var up := Vector3(-slope_x, 1.0, -slope_z).normalized()
+	var forward := Vector3(0.0, slope_z, 1.0).normalized()
+	var pose := Basis(up.cross(forward), up, forward).orthonormalized()
+	var weight := minf(delta * 12.0, 1.0)
+	_hull_pose.basis = _hull_pose.basis.slerp(pose, weight).orthonormalized()
+	for index in _hull_shapes.size():
+		_hull_shapes[index].transform = Transform3D(_hull_pose.basis, _hull_pose.basis * _hull_shape_centers[index])
 
 
 static func yaw_towards(direction: Vector3) -> float:

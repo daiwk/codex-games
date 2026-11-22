@@ -39,7 +39,7 @@ func configure(layer: int, strength: float, title: String) -> void:
 	reload_left = 0.0
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
 	collision_layer = layer
-	collision_mask = BATTLE_MASK
+	collision_mask = GROUND_UNIT_MASK
 	safe_margin = 0.006
 
 	var collision := CollisionShape3D.new()
@@ -143,7 +143,7 @@ func target_point() -> Vector3:
 
 func _move(direction: Vector3, delta: float) -> void:
 	velocity = velocity.move_toward(direction.limit_length() * MOVE_SPEED, 19.0 * delta)
-	move_and_slide()
+	move_on_ground(delta)
 	var target_pace := clampf(get_real_velocity().length() / MOVE_SPEED, 0.0, 1.0)
 	_pace = move_toward(_pace, target_pace, 7.0 * delta)
 	_stride += delta * (4.0 + 7.0 * _pace)

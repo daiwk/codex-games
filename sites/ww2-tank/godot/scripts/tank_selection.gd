@@ -8,6 +8,11 @@ const BRASS := Color("#e8bc70")
 const INK := Color("#18201b")
 const PANEL := Color("#1f2922")
 const BORDER := Color("#626955")
+const CAMPAIGN_BRIEF := [
+	["平原 · 火炮连发", "沿田野侧路迂回"],
+	["山丘 · 呼叫援军", "沿坡道翻越山脊"],
+	["海边 · 呼叫空袭", "守住滩头防线，撤出标记区"],
+]
 
 var _roster: Array
 var _selected := Vector2i(0, 1)
@@ -28,14 +33,15 @@ func configure(roster: Array) -> void:
 	frame.set_anchors_preset(Control.PRESET_CENTER)
 	frame.offset_left = -510
 	frame.offset_right = 510
-	frame.offset_top = -316
-	frame.offset_bottom = 316
+	frame.offset_top = -351
+	frame.offset_bottom = 351
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 11)
 	frame.add_child(stack)
 
 	stack.add_child(_label("二战：装甲战线", 40, PAPER))
-	stack.add_child(_label("依次通过平原、山丘和海边。每关 3 波，最后一波由首领坦克带队。", 16, MUTED))
+	stack.add_child(_label("每关迎击 3 波，最后一波由首领坦克带队。", 16, MUTED))
+	_build_campaign_brief(stack)
 	var gallery := HBoxContainer.new()
 	gallery.add_theme_constant_override("separation", 16)
 	gallery.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -70,6 +76,22 @@ func choice_rects(side: int) -> Array[Rect2]:
 	for button: Button in _choice_buttons[side]:
 		result.append(button.get_global_rect())
 	return result
+
+
+func _build_campaign_brief(parent: VBoxContainer) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	parent.add_child(row)
+	for brief in CAMPAIGN_BRIEF:
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.add_theme_stylebox_override("panel", _surface(Color("#27342c"), BORDER, 9))
+		row.add_child(card)
+		var stack := VBoxContainer.new()
+		stack.add_theme_constant_override("separation", 3)
+		card.add_child(stack)
+		stack.add_child(_label(brief[0], 16, BRASS))
+		stack.add_child(_label(brief[1], 15, MUTED))
 
 
 func _build_slot(parent: Control, side: int, title: String, tint: Color) -> void:
