@@ -7,6 +7,8 @@ const FIRE_DISTANCE := 23.0
 const SHELL_SPEED := 28.0
 const LOCAL_LOOK_AHEAD := 5.8
 const WAYPOINT_REACHED_SQUARED := 1.48
+const FORMATION_STOP_DISTANCE := 2.5
+const ESCORT_ENGAGEMENT_DISTANCE_SQUARED := 48.0 * 48.0
 
 var tank: Tank
 
@@ -26,6 +28,7 @@ var _detour_point: Vector3
 var _detour_left := 0.0
 var _stall_time := 0.0
 var _backoff_left := 0.0
+var _regroup_direction := Vector3.ZERO
 
 
 func _init(unit: Tank, grid: AStarGrid2D, aim_spread: float) -> void:
@@ -52,6 +55,7 @@ func resume() -> void:
 	_detour_left = 0.0
 	_stall_time = 0.0
 	_backoff_left = 0.0
+	_regroup_direction = Vector3.ZERO
 
 
 ## Advance the tank once per physics frame. The match owns projectile creation.
@@ -60,8 +64,8 @@ func update(delta: float, opponents: Array[BattleUnit]) -> bool:
 		return false
 	tank.update_reload(delta)
 	_select_target(delta, opponents)
-	if _target == null:
-		tank.drive(0.0, 0.0, delta)
+	if not is_instance_valid(_target):
+		_follow_formation(delta)
 		return false
 
 	var here := tank.global_position
@@ -73,7 +77,7 @@ func update(delta: float, opponents: Array[BattleUnit]) -> bool:
 	var clear: bool = sight.is_empty() or sight["collider"] == _target
 
 	if not clear or distance > HOLD_DISTANCE:
-		_drive_to_target(delta, toward, sight.get("collider") as BattleUnit if not clear else null)
+		_drive_to_goal(delta, _target.global_position, toward, sight.get("collider") as BattleUnit if not clear else null)
 	elif distance < 4.6 and toward.dot(-tank.global_basis.z) > 0.0:
 		tank.drive(-0.65, 0.0, delta)
 	else:
@@ -91,6 +95,21 @@ func update(delta: float, opponents: Array[BattleUnit]) -> bool:
 	return true
 
 
+func _follow_formation(delta: float) -> void:
+	var goal := tank.formation_goal
+	if not goal.is_finite():
+		tank.drive(0.0, 0.0, delta)
+		return
+	var toward := goal - tank.global_position
+	toward.y = 0.0
+	var distance := toward.length()
+	if distance <= FORMATION_STOP_DISTANCE:
+		tank.drive(0.0, 0.0, delta)
+		return
+	var speed_scale := lerpf(0.35, 1.36, smoothstep(FORMATION_STOP_DISTANCE, 14.0, distance))
+	_drive_to_goal(delta, goal, toward, null, speed_scale)
+
+
 func _select_target(delta: float, opponents: Array[BattleUnit]) -> void:
 	_target_left -= delta
 	var previous_valid := is_instance_valid(_target) and _opposes(_target) and opponents.has(_target)
@@ -103,6 +122,8 @@ func _select_target(delta: float, opponents: Array[BattleUnit]) -> void:
 	for opponent in opponents:
 		if not is_instance_valid(opponent) or not _opposes(opponent):
 			continue
+		if tank.formation_goal.is_finite() and here.distance_squared_to(opponent.global_position) > ESCORT_ENGAGEMENT_DISTANCE_SQUARED:
+			continue
 		var distance_squared := _target_cost(here, opponent)
 		if distance_squared < nearest_squared:
 			nearest = opponent
@@ -111,7 +132,7 @@ func _select_target(delta: float, opponents: Array[BattleUnit]) -> void:
 		var current_squared := _target_cost(here, _target)
 		if nearest_squared > current_squared * 0.72:
 			return
-	if not is_instance_valid(_target) or _target != nearest:
+	if _target != nearest:
 		if is_instance_valid(_target):
 			_repath_left = 0.0
 		_route = PackedVector2Array()
@@ -125,20 +146,23 @@ func _target_cost(from: Vector3, opponent: BattleUnit) -> float:
 	return distance if opponent.kind == "tank" else distance * 2.5
 
 
-func _drive_to_target(delta: float, toward: Vector3, sight_blocker: BattleUnit) -> void:
+func _drive_to_goal(delta: float, goal: Vector3, toward: Vector3, sight_blocker: BattleUnit, speed_scale := 1.0) -> void:
 	_repath_left -= delta
 	_probe_left -= delta
 	_detour_left = maxf(0.0, _detour_left - delta)
 	if _backoff_left > 0.0:
 		_backoff_left -= delta
-		tank.drive(-0.54, _flank_side * 0.28, delta)
+		if _regroup_direction.is_zero_approx() or is_instance_valid(_target):
+			tank.drive(-0.54, _flank_side * 0.28, delta)
+		else:
+			tank.drive_direction(_regroup_direction, false, delta)
 		return
 
 	if _detour_left > 0.0 and tank.global_position.distance_squared_to(_detour_point) < 2.05:
 		_detour_left = 0.0
 		_repath_left = 0.0
 	if _repath_left <= 0.0:
-		var route_end := _detour_point if _detour_left > 0.0 else _target.global_position
+		var route_end := _detour_point if _detour_left > 0.0 else goal
 		_replace_route(route_end)
 	var offset := _next_offset(toward)
 	if _probe_left <= 0.0 and _detour_left <= 0.0:
@@ -153,7 +177,7 @@ func _drive_to_target(delta: float, toward: Vector3, sight_blocker: BattleUnit) 
 	var yaw_error := angle_difference(tank.rotation.y, Tank.yaw_towards(offset))
 	var steer := clampf(yaw_error * 2.6, -1.0, 1.0)
 	var throttle := clampf(cos(yaw_error * 1.45), 0.0, 1.0)
-	tank.drive(throttle, steer, delta)
+	tank.drive(throttle * speed_scale, steer, delta)
 	var motion := tank.get_real_velocity()
 	var stopped := Vector2(motion.x, motion.z).length_squared() < 0.27
 	if stopped and (throttle > 0.40 or absf(steer) > 0.8):
@@ -166,6 +190,21 @@ func _drive_to_target(delta: float, toward: Vector3, sight_blocker: BattleUnit) 
 		_detour_left = 0.0
 		_repath_left = 0.0
 		_flank_side = -_flank_side
+		if not is_instance_valid(_target) and tank.formation_goal.is_finite():
+			_regroup_direction = _regroup_step(offset)
+			_backoff_left = 0.68
+		else:
+			_regroup_direction = Vector3.ZERO
+
+
+func _regroup_step(offset: Vector3) -> Vector3:
+	var safe := _grid.get_point_position(_nearest_open_cell(tank.global_position))
+	var here := Vector2(tank.position.x, tank.position.z)
+	if here.distance_squared_to(safe) > 0.80:
+		return Vector3(safe.x - here.x, 0.0, safe.y - here.y).normalized()
+	var forward := offset.normalized()
+	var sidestep := Vector3.UP.cross(forward) * _flank_side
+	return (forward * 0.52 + sidestep).normalized()
 
 
 func _blocking_tank(offset: Vector3, sight_blocker: BattleUnit) -> BattleUnit:
@@ -175,7 +214,7 @@ func _blocking_tank(offset: Vector3, sight_blocker: BattleUnit) -> BattleUnit:
 		var toward_blocker := _at_aim_height(sight_blocker.global_position) - from
 		if toward_blocker.length_squared() < 64.0 and direction.dot(toward_blocker.normalized()) > 0.64:
 			return sight_blocker
-	var hit := _cast(from, from + direction * LOCAL_LOOK_AHEAD)
+	var hit := _cast(from, from + direction * LOCAL_LOOK_AHEAD, Tank.GROUND_UNIT_MASK)
 	var collider := hit.get("collider") as BattleUnit
 	return collider if collider != _target else null
 
@@ -193,13 +232,14 @@ func _try_detour(blocker: BattleUnit, offset: Vector3) -> bool:
 	for sign in [_flank_side, -_flank_side]:
 		var tentative := from + forward * advance + side * float(sign) * 4.85
 		var cell := _nearest_open_cell(tentative)
-		var point := Vector3(cell.x, 0.0, cell.y)
+		var flat := _grid.get_point_position(cell)
+		var point := Vector3(flat.x, 0.0, flat.y)
 		point.y = tank.ground_height_at(point)
 		if _grid.is_point_solid(cell) or from.distance_squared_to(point) < 5.0:
 			continue
 		if point.distance_squared_to(blocker.global_position) < 12.25:
 			continue
-		if not _cast(_at_aim_height(from), _at_aim_height(point)).is_empty():
+		if not _cast(_at_aim_height(from), _at_aim_height(point), Tank.GROUND_UNIT_MASK).is_empty():
 			continue
 		var candidate := _grid.get_point_path(here, cell)
 		if candidate.size() < 2:
@@ -234,7 +274,9 @@ func _next_offset(fallback: Vector3) -> Vector3:
 
 func _nearest_open_cell(at: Vector3) -> Vector2i:
 	var region := _grid.region
-	var origin := Vector2i(roundi(at.x), roundi(at.z)).clamp(region.position, region.end - Vector2i.ONE)
+	var horizontal := Vector2(at.x, at.z)
+	var origin := Vector2i(((horizontal - _grid.offset) / _grid.cell_size).round())
+	origin = origin.clamp(region.position, region.end - Vector2i.ONE)
 	if not _grid.is_point_solid(origin):
 		return origin
 	var best := origin
@@ -244,7 +286,7 @@ func _nearest_open_cell(at: Vector3) -> Vector2i:
 			var candidate := origin + Vector2i(x, y)
 			if not region.has_point(candidate) or _grid.is_point_solid(candidate):
 				continue
-			var distance := Vector2(at.x, at.z).distance_squared_to(Vector2(candidate))
+			var distance := horizontal.distance_squared_to(_grid.get_point_position(candidate))
 			if distance < min_distance:
 				min_distance = distance
 				best = candidate
@@ -265,9 +307,10 @@ func _is_opponent_hit(hit: Dictionary, opponents: Array[BattleUnit]) -> bool:
 	return _opposes(victim) and opponents.has(victim)
 
 
-func _cast(from: Vector3, to: Vector3) -> Dictionary:
+func _cast(from: Vector3, to: Vector3, mask := Tank.BATTLE_MASK) -> Dictionary:
 	_ray.from = from
 	_ray.to = to
+	_ray.collision_mask = mask
 	return tank.get_world_3d().direct_space_state.intersect_ray(_ray)
 
 

@@ -86,6 +86,8 @@ void fragment() {
 
 var cover_rects: Array[Rect2] = []
 var _stage_index := 0
+var _region_variant := 0
+var _campaign_height: Callable
 var _permanent_cover: Array[Rect2] = []
 var _buildings: Dictionary = {}
 var _random := RandomNumberGenerator.new()
@@ -96,7 +98,16 @@ func configure(stage_index: int) -> void:
 	_stage_index = clampi(stage_index, 0, 2)
 
 
+func configure_region(stage_index: int, origin_z: float, shared_height: Callable, variant := 0) -> void:
+	configure(stage_index)
+	position.z = origin_z
+	_campaign_height = shared_height
+	_region_variant = variant
+
+
 func ground_height(at: Vector2) -> float:
+	if _campaign_height.is_valid():
+		return _campaign_height.call(at + Vector2(position.x, position.z))
 	return StageTerrain.ground_height(_stage_index, at)
 
 
@@ -122,11 +133,12 @@ func _on_ground(at: Vector2, offset := 0.0) -> Vector3:
 
 
 func _ready() -> void:
-	_random.seed = 527643 + _stage_index * 421
+	_random.seed = 527643 + _stage_index * 421 + _region_variant * 1349
 	if ResourceLoader.exists(WALL_MODEL):
 		_wall_scene = load(WALL_MODEL) as PackedScene
-	add_child(StageTerrain.ground(_stage_index))
-	_build_boundary()
+	if not _campaign_height.is_valid():
+		add_child(StageTerrain.ground(_stage_index))
+		_build_boundary()
 	match _stage_index:
 		1:
 			_build_hill_cover()
@@ -154,6 +166,14 @@ func _build_plain_cover() -> void:
 
 
 func _build_hill_cover() -> void:
+	if _region_variant == 1:
+		_build_cover(Vector2(-20.0, 17.0), 0.11)
+		_build_cover(Vector2(-10.5, 4.0), 0.04)
+		_build_cover(Vector2(16.4, -11.5), PI * 0.5)
+		_build_cover(Vector2(24.6, 0.8), -0.19)
+		_build_cover(Vector2(-27.8, -16.6), PI * 0.5)
+		_build_hill_boulders()
+		return
 	_build_cover(Vector2(5.1, 18.0), PI * 0.5)
 	_build_cover(Vector2(-2.8, 11.0), PI * 0.5)
 	_build_cover(Vector2(13, 7.0), PI * 0.5)
@@ -166,12 +186,13 @@ func _build_hill_cover() -> void:
 
 
 func _build_coast_cover() -> void:
-	add_child(StageTerrain.sea())
-	var water_barrier := _add_static_box(
-		Vector3(0.0, -0.56, (LAND_LIMIT - ARENA_HALF_SIZE.y) * 0.5),
-		Vector3(ARENA_HALF_SIZE.x * 2.0, 1.35, LAND_LIMIT + ARENA_HALF_SIZE.y)
-	)
-	water_barrier.name = "ShorelineLimit"
+	if not _campaign_height.is_valid():
+		add_child(StageTerrain.sea())
+		var water_barrier := _add_static_box(
+			Vector3(0.0, -0.56, (LAND_LIMIT - ARENA_HALF_SIZE.y) * 0.5),
+			Vector3(ARENA_HALF_SIZE.x * 2.0, 1.35, LAND_LIMIT + ARENA_HALF_SIZE.y)
+		)
+		water_barrier.name = "ShorelineLimit"
 
 	var sandbags := _material(Color("#9c8965"))
 	var covers := [
@@ -185,8 +206,9 @@ func _build_coast_cover() -> void:
 		[Vector2(24, 13.4), PI * 0.5, 6.0],
 	]
 	var bags: Array[Transform3D] = []
+	var defense_shift := Vector2(0.0, -12.0) if _campaign_height.is_valid() else Vector2.ZERO
 	for segment: Array in covers:
-		_build_sandbag_wall(segment[0], segment[1], segment[2], bags)
+		_build_sandbag_wall(segment[0] + defense_shift, segment[1], segment[2], bags)
 	var bag := CapsuleMesh.new()
 	bag.radius = 0.24
 	bag.height = 0.95
@@ -235,7 +257,8 @@ func _ground_slope(at: Vector2, axis: Vector3) -> float:
 
 
 func damage_buildings_in_area(center: Vector3, radius: float, damage: int) -> void:
-	var blast := Vector2(center.x, center.z)
+	var local := to_local(center)
+	var blast := Vector2(local.x, local.z)
 	for collider: StaticBody3D in _buildings:
 		var building := _buildings[collider] as Building
 		if building.health == 0:
@@ -516,9 +539,13 @@ func _build_grass() -> void:
 	var clumps: Array[Transform3D] = []
 	var colors: Array[Color] = []
 	var density := 2700 if _stage_index == 2 else 5100
+	if _campaign_height.is_valid():
+		density = roundi(density * 0.72)
 	for index in density:
 		var field := Vector2(_random.randf_range(-45, 45), _random.randf_range(-42, 42))
 		if StageTerrain.road_factor(_stage_index, field) < 1.0:
+			continue
+		if _campaign_height.is_valid() and absf(field.x - StageTerrain.campaign_road(field.y + position.z)) < 3.7:
 			continue
 		var in_crop := _stage_index == 0 and field.x + 0.16 * field.y > 10.0 and field.x < 34.5 and absf(field.y) < 29.0
 		var near_shore := _stage_index == 2 and StageTerrain.coast_distance(field) > -29.0
@@ -556,7 +583,8 @@ func _build_orchard() -> void:
 		var column := -37.0 + index * 4.15
 		for side in [-1.0, 1.0]:
 			var field := Vector2(column, side * _random.randf_range(39.4, 44.0))
-			if absf(field.x + 2.0) > 4.1:
+			var road := StageTerrain.campaign_road(field.y + position.z) if _campaign_height.is_valid() else -2.0
+			if absf(field.x - road) > 5.0:
 				_shrub_transforms(_on_ground(field), crowns)
 	for side in [-1.0, 1.0]:
 		for field: Vector2 in [Vector2(44, -30), Vector2(47, -12), Vector2(44, 7), Vector2(45, 22), Vector2(46, 35)]:
@@ -589,6 +617,8 @@ func _build_pines() -> void:
 	var cypress_tones: Array[Color] = [Color("#3d4b36"), Color("#506044"), Color("#485c40"), Color("#657057")]
 	for index in range(100):
 		var field := Vector2(_random.randf_range(-59, 59), _random.randf_range(-48, 48))
+		if _campaign_height.is_valid() and absf(field.x - StageTerrain.campaign_road(field.y + position.z)) < 5.1:
+			continue
 		var on_flank := absf(field.x) > 34 or absf(field.y) > 39
 		var on_spur := absf(field.x) > 15 and StageTerrain.road_factor(_stage_index, field) > 2.2
 		if not on_flank and (not on_spur or index % 3 != 0):
@@ -619,6 +649,8 @@ func _build_coastal_scrub() -> void:
 	var limbs: Array[Transform3D] = []
 	for index in 46:
 		var field := Vector2(_random.randf_range(-49, 49), _random.randf_range(-4, 49))
+		if _campaign_height.is_valid() and absf(field.x - StageTerrain.campaign_road(field.y + position.z)) < 4.6:
+			continue
 		if absf(field.x) < 36.0 and field.y < 33.0 and index % 3 != 0:
 			continue
 		_shrub_transforms(_on_ground(field) - Vector3.UP * 0.12, crowns)
@@ -701,6 +733,9 @@ func _draw_instances(
 	foliage.name = node_name
 	foliage.multimesh = multimesh
 	foliage.material_override = material
+	if _campaign_height.is_valid():
+		foliage.visibility_range_end = 146.0
+		foliage.visibility_range_end_margin = 12.0
 	if not shadows:
 		foliage.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(foliage)
@@ -716,6 +751,11 @@ func _build_village() -> void:
 	var tile := _building_material(shader, Color("#7b5845"), true)
 	var timber := _material(Color("#493f32"))
 	if _stage_index == 1:
+		if _region_variant == 1:
+			_add_barn(_on_ground(Vector2(-25, 12)), -0.21, Vector2(6.2, 7.7), limestone, slate, timber, 4.2, 108, "山路仓房")
+			_add_barn(_on_ground(Vector2(17, 5)), 0.27, Vector2(6.7, 7.3), rubble, slate, timber, 3.7, 106, "山坡谷仓")
+			_add_barn(_on_ground(Vector2(36, -14)), -0.14, Vector2(4.4, 5.3), plaster, tile, timber, 2.8, 94, "北侧谷仓")
+			return
 		_add_barn(_on_ground(Vector2(-32, 9)), -0.21, Vector2(5.4, 6.3), rubble, slate, timber, 3.8, 100, "谷地农舍")
 		_add_barn(_on_ground(Vector2(-7, -2)), -0.20, Vector2(5.6, 6.1), limestone, slate, timber, 3.4, 102, "山坡谷仓")
 		_add_barn(_on_ground(Vector2(19, 2.5)), 0.18, Vector2(5.1, 6.6), rubble, slate, timber, 4.2, 98, "东侧石屋")
@@ -724,9 +764,11 @@ func _build_village() -> void:
 		_add_barn(_on_ground(Vector2(-25, 20)), -0.34, Vector2(4.4, 5.3), plaster, tile, timber, 2.8, 90, "山南工棚")
 		return
 	if _stage_index == 2:
-		_add_bunker(Vector2(-24.5, 5.8), -0.14, Vector2(8.0, 5.6), rubble, slate, 136, "西湾碉堡")
-		_add_bunker(Vector2(26.2, 6.6), 0.12, Vector2(8.8, 5.6), rubble, slate, 144, "东岸碉堡")
-		_add_bunker(Vector2(2.1, 10), 0.02, Vector2(5.7, 4.2), rubble, slate, 110, "海岸掩体")
+		var defense_shift := Vector2(0.0, -11.0) if _campaign_height.is_valid() else Vector2.ZERO
+		_add_bunker(Vector2(-24.5, 5.8) + defense_shift, -0.14, Vector2(8.0, 5.6), rubble, slate, 136, "西湾碉堡")
+		_add_bunker(Vector2(26.2, 6.6) + defense_shift, 0.12, Vector2(8.8, 5.6), rubble, slate, 144, "东岸碉堡")
+		var interior := Vector2(10.5, 7.5) if _campaign_height.is_valid() else Vector2(2.1, 10.0)
+		_add_bunker(interior + defense_shift, 0.02, Vector2(5.7, 4.2), rubble, slate, 110, "海岸掩体")
 		_add_barn(_on_ground(Vector2(-29, 24)), -0.16, Vector2(5.0, 6.3), plaster, slate, timber, 3.6, 98, "西湾仓库")
 		_add_barn(_on_ground(Vector2(18, 18.5)), 0.13, Vector2(5.1, 5.9), limestone, tile, timber, 2.7, 90, "岸边仓房")
 		_add_barn(_on_ground(Vector2(33, 23)), -0.30, Vector2(5.1, 6.3), plaster, tile, timber, 3.3, 96, "海湾小屋")

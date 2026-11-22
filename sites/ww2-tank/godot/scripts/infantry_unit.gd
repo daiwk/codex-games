@@ -9,6 +9,8 @@ const RIFLE_GRIP := Vector3(0.103, 0.72, -0.035)
 const RIFLE_TIP := Vector3(0.0, 0.014, -0.76)
 const REPATH_DELAY := 0.45
 const SHOT_RANGE := 34.0
+const FORMATION_STOP_DISTANCE := 1.6
+const ESCORT_ENGAGEMENT_DISTANCE_SQUARED := 48.0 * 48.0
 
 class StrideJoint:
 	var index: int
@@ -24,7 +26,7 @@ var _pace := 0.0
 var _fire_direction := Vector3.FORWARD
 var _route := PackedVector2Array()
 var _route_cursor := 0
-var _route_target: BattleUnit
+var _route_target_id := 0
 var _repath_left := 0.0
 
 
@@ -79,7 +81,7 @@ func drive_player(axes: Vector2, yaw: float, pitch: float, delta: float) -> void
 
 
 func resume_ai() -> void:
-	_route_target = null
+	_route_target_id = 0
 	_route.clear()
 	_route_cursor = 0
 	_repath_left = 0.0
@@ -89,7 +91,7 @@ func update_ai(opponents: Array[BattleUnit], grid: AStarGrid2D, delta: float) ->
 	_repath_left = maxf(0.0, _repath_left - delta)
 	var target := _preferred_opponent(opponents)
 	if target == null:
-		_move(Vector3.ZERO, delta)
+		_follow_formation(grid, delta)
 		return false
 
 	var point := target.target_point()
@@ -103,7 +105,7 @@ func update_ai(opponents: Array[BattleUnit], grid: AStarGrid2D, delta: float) ->
 			var side := 1.0 if get_instance_id() % 2 == 0 else -1.0
 			movement = Vector3.UP.cross(horizontal).normalized() * side
 		else:
-			movement = _route_direction(target, grid)
+			movement = _route_direction(target.global_position, grid, target.get_instance_id())
 	elif horizontal.length_squared() > open_range * open_range:
 		movement = horizontal.normalized()
 	_move(movement, delta)
@@ -141,13 +143,41 @@ func target_point() -> Vector3:
 	return global_position + Vector3.UP * 1.23
 
 
-func _move(direction: Vector3, delta: float) -> void:
-	velocity = velocity.move_toward(direction.limit_length() * MOVE_SPEED, 19.0 * delta)
+func _move(direction: Vector3, delta: float, speed_scale := 1.0) -> void:
+	velocity = velocity.move_toward(direction.limit_length() * MOVE_SPEED * speed_scale, 19.0 * delta)
 	move_on_ground(delta)
 	var target_pace := clampf(get_real_velocity().length() / MOVE_SPEED, 0.0, 1.0)
+	if is_zero_approx(_pace) and is_zero_approx(target_pace):
+		return
 	_pace = move_toward(_pace, target_pace, 7.0 * delta)
 	_stride += delta * (4.0 + 7.0 * _pace)
 	_pose_stride()
+
+
+func _follow_formation(grid: AStarGrid2D, delta: float) -> void:
+	if not formation_goal.is_finite():
+		_move(Vector3.ZERO, delta)
+		return
+	var toward := formation_goal - global_position
+	toward.y = 0.0
+	var distance := toward.length()
+	if distance <= FORMATION_STOP_DISTANCE:
+		_move(Vector3.ZERO, delta)
+		return
+	var direction := toward / distance
+	var eyes := target_point()
+	var probe_height := Vector3.UP * 0.52
+	var blocker := _ray(global_position + probe_height, formation_goal + probe_height, COVER_LAYER)
+	if not blocker.is_empty():
+		direction = _route_direction(formation_goal, grid)
+	var ahead := _ray(eyes, eyes + direction * 2.3, FRIENDLY_LAYER)
+	if not ahead.is_empty():
+		var side := 1.0 if get_instance_id() % 2 == 0 else -1.0
+		direction = (direction * 0.55 + Vector3.UP.cross(direction) * side).normalized()
+	var yaw := atan2(-direction.x, -direction.z)
+	if not direction.is_zero_approx():
+		_aim(rotate_toward(rotation.y, yaw, 9.0 * delta), 0.0)
+	_move(direction, delta, lerpf(0.45, 1.66, smoothstep(FORMATION_STOP_DISTANCE, 18.0, distance)))
 
 
 func _aim(yaw: float, pitch: float) -> void:
@@ -163,27 +193,30 @@ func _aim(yaw: float, pitch: float) -> void:
 func _preferred_opponent(opponents: Array[BattleUnit]) -> BattleUnit:
 	var best: BattleUnit
 	var best_score := INF
+	var escorting := formation_goal.is_finite()
 	for opponent in opponents:
 		if not is_instance_valid(opponent) or opponent.health <= 0:
 			continue
 		var score := global_position.distance_squared_to(opponent.global_position)
+		if escorting and score > ESCORT_ENGAGEMENT_DISTANCE_SQUARED:
+			continue
 		if opponent.kind != "infantry":
-			score += 1000000.0
+			score += 100.0 if escorting else 1000000.0
 		if score < best_score:
 			best_score = score
 			best = opponent
 	return best
 
 
-func _route_direction(target: BattleUnit, grid: AStarGrid2D) -> Vector3:
+func _route_direction(goal: Vector3, grid: AStarGrid2D, target_id := 0) -> Vector3:
 	if grid == null or not grid.region.has_area():
 		return Vector3.ZERO
-	if not is_instance_valid(_route_target) or _route_target != target or _repath_left <= 0.0:
-		_route_target = target
-		_repath_left = REPATH_DELAY
+	if _route_target_id != target_id or _repath_left <= 0.0:
+		_route_target_id = target_id
+		_repath_left = REPATH_DELAY + (0.20 + float(get_instance_id() % 17) * 0.025 if target_id == 0 else 0.0)
 		_route_cursor = 0
 		var start := _open_cell(global_position, grid)
-		var finish := _open_cell(target.global_position, grid)
+		var finish := _open_cell(goal, grid)
 		_route.clear()
 		if not grid.is_point_solid(start) and not grid.is_point_solid(finish):
 			_route = grid.get_point_path(start, finish, true)
@@ -219,8 +252,8 @@ func _open_cell(point: Vector3, grid: AStarGrid2D) -> Vector2i:
 	return closest
 
 
-func _ray(start: Vector3, finish: Vector3) -> Dictionary:
-	var query := PhysicsRayQueryParameters3D.create(start, finish, BATTLE_MASK, [get_rid()])
+func _ray(start: Vector3, finish: Vector3, mask := BATTLE_MASK) -> Dictionary:
+	var query := PhysicsRayQueryParameters3D.create(start, finish, mask, [get_rid()])
 	return get_world_3d().direct_space_state.intersect_ray(query)
 
 

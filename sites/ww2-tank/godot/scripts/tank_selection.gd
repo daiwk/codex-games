@@ -9,9 +9,9 @@ const INK := Color("#18201b")
 const PANEL := Color("#1f2922")
 const BORDER := Color("#626955")
 const CAMPAIGN_BRIEF := [
-	["平原 · 火炮连发", "沿田野侧路迂回"],
-	["山丘 · 呼叫援军", "沿坡道翻越山脊"],
-	["海边 · 呼叫空袭", "守住滩头防线，撤出标记区"],
+	["穿越平原", "沿路线推进，迎击沿途敌军"],
+	["翻越群山", "驶过山脊，在补给点恢复"],
+	["固守滩头", "击退登陆部队，守住海滩"],
 ]
 
 var _roster: Array
@@ -40,7 +40,7 @@ func configure(roster: Array) -> void:
 	frame.add_child(stack)
 
 	stack.add_child(_label("二战：装甲战线", 40, PAPER))
-	stack.add_child(_label("每关迎击 3 波，最后一波由首领坦克带队。", 16, MUTED))
+	stack.add_child(_label("率领 10 辆坦克、20 名步兵和 5 架飞机一路推进。阵亡单位无法补充。", 16, MUTED))
 	_build_campaign_brief(stack)
 	var gallery := HBoxContainer.new()
 	gallery.add_theme_constant_override("separation", 16)
@@ -52,10 +52,10 @@ func configure(roster: Array) -> void:
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 16)
 	stack.add_child(footer)
-	var keys := _label("WASD 移动   鼠标瞄准   空格开火   B 飞机投弹   H 恢复   Q 切换友军   Tab 鼠标", 15, MUTED)
+	var keys := _label("WASD 移动   鼠标瞄准   空格开火   B 飞机投弹   Q 切换友军   Tab 鼠标", 15, MUTED)
 	keys.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(keys)
-	_start = _button("开始战役", BRASS, true)
+	_start = _button("开始任务", BRASS, true)
 	_start.custom_minimum_size = Vector2(214, 47)
 	_start.pressed.connect(confirmed.emit)
 	footer.add_child(_start)

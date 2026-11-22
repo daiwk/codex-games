@@ -18,6 +18,7 @@ var defense: int
 var reload_time := 1.12
 var reload_left := 0.0
 var terrain_height: Callable
+var formation_goal := Vector3.INF
 
 
 func ground_height_at(at: Vector3) -> float:

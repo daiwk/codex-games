@@ -6,7 +6,6 @@ signal resume_requested
 signal selection_requested
 signal takeover_requested(index: int)
 signal switch_cancelled
-signal next_stage_requested
 
 const INK := Color("18201b")
 const SURFACE := Color("202920f5")
@@ -22,6 +21,7 @@ const TankSelection := preload("res://scripts/tank_selection.gd")
 const TANK_CONTROLS := "WASD 驾驶   鼠标瞄准   空格开火   Q 切换   Tab 鼠标"
 const INFANTRY_CONTROLS := "WASD 步行   鼠标瞄准   空格开火   Q 切换   Tab 鼠标"
 const AIRCRAFT_CONTROLS := "WASD 飞行   鼠标调航向   空格开火   B 投弹   Q 切换"
+const TAKEOVER_PAGE_SIZE := 7
 const BOSS_ABILITY_NAMES := {
 	"burst": "火炮连发",
 	"reinforcements": "呼叫援军",
@@ -42,6 +42,16 @@ class AimReticle extends Control:
 		if aligned:
 			draw_circle(Vector2.ZERO, 2.0, tint)
 
+class MissionBearing extends Control:
+	var angle := 0.0
+
+	func _draw() -> void:
+		var center := size * 0.5
+		var points := PackedVector2Array()
+		for corner: Vector2 in [Vector2(0, -7), Vector2(5, 5), Vector2(0, 3), Vector2(-5, 5)]:
+			points.append(center + corner.rotated(angle))
+		draw_colored_polygon(points, BRASS)
+
 var _root: Control
 var _board: Control
 var _menu: ColorRect
@@ -49,21 +59,30 @@ var _menu_card: PanelContainer
 var _takeover_card: PanelContainer
 var _takeover_heading: Label
 var _takeover_description: Label
-var _takeover_list: VBoxContainer
 var _takeover_buttons: Array[Button] = []
 var _takeover_cancel: Button
+var _takeover_nav: HBoxContainer
+var _takeover_prev: Button
+var _takeover_next: Button
+var _takeover_page_label: Label
+var _takeover_candidates: Array[Dictionary] = []
+var _takeover_page := 0
 var _selection: TankSelection
 var _heading: Label
 var _description: Label
 var _primary: Button
 var _secondary: Button
-var _selection_button: Button
 var _reticle: AimReticle
 var _player_title: Label
 var _player_health: ProgressBar
 var _player_number: Label
-var _stage_label: Label
-var _wave_title: Label
+var _region_label: Label
+var _objective_title: Label
+var _mission_bearing: MissionBearing
+var _mission_measure: Label
+var _mission_progress: ProgressBar
+var _supply_panel: PanelContainer
+var _supply_notice: Label
 var _ally_count: Label
 var _enemy_count: Label
 var _allied_support: Label
@@ -86,14 +105,9 @@ var _mouse_status: Label
 var _controls: Label
 var _reload: ProgressBar
 var _reload_label: Label
-var _intermission_panel: PanelContainer
-var _intermission_title: Label
-var _repair_status: Label
-var _stage_name := "平原"
-var _stage_total := 3
-var _wave_total := 3
-var _allied_slots := Vector3i(4, 1, 1)
-var _enemy_slots := Vector3i(2, 1, 1)
+var _region_name := "平原"
+var _allied_slots := Vector3i(10, 20, 5)
+var _enemy_slots := Vector3i.ZERO
 var _enemy_reinforcements := Vector2i.ZERO
 var _controlled_kind := "tank"
 var _player_down := false
@@ -118,10 +132,10 @@ func show_intro() -> void:
 	_screen = "intro"
 	_board.hide()
 	_reticle.hide()
-	_intermission_panel.hide()
 	_building_panel.hide()
 	_bomb_panel.hide()
 	_boss_ability_panel.hide()
+	_supply_panel.hide()
 	_menu_card.hide()
 	_takeover_card.hide()
 	_selection.show()
@@ -161,18 +175,37 @@ func set_support_counts(allied_infantry: int, enemy_infantry: int, allied_aircra
 		enemy_aircraft, _enemy_slots.z]
 
 
-func set_stage(index: int, total_stages: int, title: String, waves: int, allied_slots: Vector3i, enemy_slots: Vector3i) -> void:
-	_stage_name = title
-	_stage_total = total_stages
-	_wave_total = waves
+func set_mission_forces(allied_slots: Vector3i, enemy_slots: Vector3i) -> void:
 	_allied_slots = allied_slots
 	_enemy_slots = enemy_slots
-	_enemy_reinforcements = Vector2i.ZERO
-	_stage_label.text = "第 %d / %d 关 · %s" % [index, total_stages, title]
-	_wave_title.text = "第 1 / %d 波" % _wave_total
-	_ally_count.text = "坦克 %d / %d" % [_allied_slots.x, _allied_slots.x]
-	_enemy_count.text = "坦克 %d / %d" % [_enemy_slots.x, _enemy_slots.x]
-	set_support_counts(_allied_slots.y, _enemy_slots.y, _allied_slots.z, _enemy_slots.z)
+
+
+func set_mission(region: String, objective: String, distance_m := -1.0, defense_left := -1.0, defense_total := 0.0) -> void:
+	_region_name = region
+	_region_label.text = region
+	_objective_title.text = objective
+	if defense_left >= 0.0:
+		_mission_measure.text = "下一波 %d 秒" % ceili(defense_left)
+	elif distance_m >= 0.0:
+		_mission_measure.text = "距离 %d 米" % ceili(distance_m)
+	else:
+		_mission_measure.text = ""
+	_mission_measure.visible = not _mission_measure.text.is_empty()
+	_mission_progress.visible = defense_left >= 0.0 and defense_total > 0.0
+	if _mission_progress.visible:
+		_mission_progress.value = clampf(1.0 - defense_left / defense_total, 0.0, 1.0)
+
+
+func set_mission_bearing(angle: float) -> void:
+	_mission_bearing.visible = is_finite(angle)
+	if _mission_bearing.visible:
+		_mission_bearing.angle = angle
+		_mission_bearing.queue_redraw()
+
+
+func set_supply_notice(message: String) -> void:
+	_supply_notice.text = message
+	_supply_panel.visible = _screen == "active" and not message.is_empty()
 
 
 func show_active() -> void:
@@ -184,68 +217,100 @@ func show_active() -> void:
 
 
 func show_pause() -> void:
-	_open_menu("pause", "对战暂停", "可以继续当前对战，或从本关第 1 波重开。", "继续对战", true)
+	_open_menu("pause", "战役暂停", "可以继续当前战役，或从平原重新出发。", "继续战役", true)
 
 
 func show_takeover(candidates: Array[Dictionary], voluntary := false) -> void:
 	_screen = "takeover"
 	_reticle.hide()
-	_intermission_panel.hide()
 	_building_panel.hide()
 	_bomb_panel.hide()
 	_boss_ability_panel.hide()
+	_supply_panel.hide()
 	_selection.hide()
 	_menu_card.hide()
 	_takeover_heading.text = "切换操控单位" if voluntary else "接管友军"
 	_takeover_description.text = (
-		"点击友军或按 1–7 切换。按 Q 或 Esc 返回当前单位。" if voluntary
-		else "当前单位已失去战斗能力。点击友军或按 1–7 接管。"
+		"点击或按 1–7 选择本页友军。按 Q 或 Esc 返回。" if voluntary
+		else "当前单位已失去战斗能力。点击或按 1–7 接管本页友军。"
 	)
+	_takeover_candidates = candidates
+	_takeover_page = 0
 	_takeover_cancel.visible = voluntary
-	for button in _takeover_buttons:
-		_takeover_list.remove_child(button)
-		button.queue_free()
-	_takeover_buttons.clear()
-	for index in candidates.size():
-		var candidate := candidates[index]
-		var button := _button(false)
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.text = "%d    %s    ·    %s    ·    生命 %d / %d" % [
-			index + 1, candidate["name"], _kind_label(candidate["kind"]), candidate["health"], candidate["max_health"],
-		]
-		button.pressed.connect(takeover_requested.emit.bind(index))
-		_takeover_list.add_child(button)
-		_takeover_buttons.append(button)
-	var half_height := (_takeover_card.get_combined_minimum_size().y + 20.0) * 0.5
-	_takeover_card.offset_top = -half_height
-	_takeover_card.offset_bottom = half_height
+	_update_takeover_page()
 	_takeover_card.show()
 	_menu.show()
 
 
-func show_stage_clear(title: String, next_title: String) -> void:
-	_intermission_panel.hide()
-	_open_menu("stage_clear", "关卡完成", "已通过「%s」。下一关是「%s」。" % [title, next_title], "进入下一关")
+func _update_takeover_page() -> void:
+	var pages := maxi(1, ceili(float(_takeover_candidates.size()) / TAKEOVER_PAGE_SIZE))
+	for slot in TAKEOVER_PAGE_SIZE:
+		var button := _takeover_buttons[slot]
+		var index := takeover_index_for_key(slot + 1)
+		button.visible = index >= 0
+		if index < 0:
+			continue
+		var candidate := _takeover_candidates[index]
+		button.text = "%d    %s    ·    %s    ·    生命 %d / %d" % [
+			slot + 1, candidate["name"], _kind_label(candidate["kind"]), candidate["health"], candidate["max_health"],
+		]
+	_takeover_nav.visible = pages > 1
+	_takeover_prev.disabled = _takeover_page == 0
+	_takeover_next.disabled = _takeover_page + 1 >= pages
+	_takeover_page_label.text = "第 %d / %d 页 · %d 个单位" % [_takeover_page + 1, pages, _takeover_candidates.size()]
+	var half_height := (_takeover_card.get_combined_minimum_size().y + 20.0) * 0.5
+	_takeover_card.offset_top = -half_height
+	_takeover_card.offset_bottom = half_height
 
 
-func show_result(outcome: String, wave: int) -> void:
-	_intermission_panel.hide()
+func turn_takeover_page(delta: int) -> void:
+	if _screen != "takeover":
+		return
+	var last_page := maxi(0, ceili(float(_takeover_candidates.size()) / TAKEOVER_PAGE_SIZE) - 1)
+	var page := clampi(_takeover_page + delta, 0, last_page)
+	if page == _takeover_page:
+		return
+	_takeover_page = page
+	_update_takeover_page()
+
+
+func takeover_index_for_key(number: int) -> int:
+	var index := _takeover_page * TAKEOVER_PAGE_SIZE + number - 1
+	return index if number >= 1 and number <= TAKEOVER_PAGE_SIZE and index < _takeover_candidates.size() else -1
+
+
+func takeover_visible_count() -> int:
+	return clampi(_takeover_candidates.size() - _takeover_page * TAKEOVER_PAGE_SIZE, 0, TAKEOVER_PAGE_SIZE)
+
+
+func takeover_page_button_rects() -> Array[Rect2]:
+	if not _takeover_nav.is_visible_in_tree():
+		return []
+	return [_takeover_prev.get_global_rect(), _takeover_next.get_global_rect()]
+
+
+func _select_takeover_slot(number: int) -> void:
+	var index := takeover_index_for_key(number)
+	if index >= 0:
+		takeover_requested.emit(index)
+
+
+func show_result(outcome: String) -> void:
 	match outcome:
 		"win":
-			_open_menu("result", "战役胜利", "已完成全部 %d 关战役。" % _stage_total, "重开战役")
+			_open_menu("result", "任务成功", "我军守住了海滩，已击退全部登陆部队。", "重开战役")
 		"loss":
-			_open_menu("result", "战败", "%s · 第 %d 波，己方全部单位已退出战斗。" % [_stage_name, wave], "重试本关")
+			_open_menu("result", "任务失败", "%s · 我军已全灭，未能守住海滩。" % _region_name, "重开战役")
 		_:
-			_open_menu("result", "平局", "%s · 第 %d 波，双方最后的单位同时倒下。" % [_stage_name, wave], "重试本关")
+			_open_menu("result", "任务失败", "双方最后的单位同时倒下，滩头防线失守。", "重开战役")
 
 
 func update_battle(
-	player_health: int, reload_fraction: float, seconds: float, wave: int,
+	player_health: int, reload_fraction: float, seconds: float,
 	allied_tanks: int, enemy_tanks: int, boss_health: int = 0, boss_max_health: int = 0
 ) -> void:
 	_player_health.value = player_health
 	_player_number.text = "%d / %d" % [player_health, int(_player_health.max_value)]
-	_wave_title.text = "第 %d / %d 波" % [wave, _wave_total]
 	_ally_count.text = "坦克 %d / %d" % [allied_tanks, _allied_slots.x]
 	_enemy_count.text = "坦克 %d / %d" % [enemy_tanks, _enemy_slots.x + _enemy_reinforcements.x]
 	var elapsed := maxi(0, floori(seconds))
@@ -300,22 +365,6 @@ func update_boss_ability(info: Dictionary, boss_alive := true) -> void:
 			_boss_ability_status.text = "随时发动"
 		_:
 			_boss_ability_status.text = "准备中"
-
-
-func set_intermission(seconds_remaining: float, repair_available: bool, repair_used: bool) -> void:
-	_intermission_panel.visible = seconds_remaining >= 0.0
-	if not _intermission_panel.visible:
-		return
-	_intermission_title.text = "下一波将在 %d 秒后开始" % ceili(seconds_remaining)
-	if _player_down:
-		_repair_status.text = "接管友军后可恢复该单位的生命"
-	elif repair_used:
-		_repair_status.text = "本轮恢复已用"
-	elif repair_available:
-		var action := "治疗" if _controlled_kind == "infantry" else "修理"
-		_repair_status.text = "H  %s%s，恢复全部生命" % [action, _kind_label(_controlled_kind)]
-	else:
-		_repair_status.text = "当前单位生命已满"
 
 
 func set_aim(active_alignment: bool) -> void:
@@ -379,7 +428,7 @@ func _build_board() -> void:
 	_player_number = _label("100 / 100", 16, PAPER)
 	_player_health = _bar(100.0, ALLIED)
 	_player_title = _health_display(player_panel, "玩家坦克", ALLIED, _player_number, _player_health)
-	_build_wave_panels()
+	_build_mission_panels()
 	_build_battle_footer()
 	_reticle = AimReticle.new()
 	_reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -387,26 +436,41 @@ func _build_board() -> void:
 	_reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 
 
-func _build_wave_panels() -> void:
-	var center := _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-128, 24, 256, 102))
+func _build_mission_panels() -> void:
+	var center := _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-188, 24, 376, 105))
 	var center_stack := VBoxContainer.new()
 	center_stack.add_theme_constant_override("separation", 2)
 	center.add_child(center_stack)
-	_stage_label = _label("", 16, PAPER)
-	_stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	center_stack.add_child(_stage_label)
-	_wave_title = _label("", 21, BRASS)
-	_wave_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	center_stack.add_child(_wave_title)
-	var wave_details := HBoxContainer.new()
-	wave_details.add_theme_constant_override("separation", 12)
-	wave_details.alignment = BoxContainer.ALIGNMENT_CENTER
-	center_stack.add_child(wave_details)
+	_region_label = _label("", 16, PAPER)
+	_region_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	center_stack.add_child(_region_label)
+	_objective_title = _label("", 21, BRASS)
+	_objective_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_objective_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	center_stack.add_child(_objective_title)
+	var mission_details := HBoxContainer.new()
+	mission_details.add_theme_constant_override("separation", 12)
+	mission_details.alignment = BoxContainer.ALIGNMENT_CENTER
+	center_stack.add_child(mission_details)
 	_clock = _label("00:00", 14, PAPER)
-	wave_details.add_child(_clock)
+	mission_details.add_child(_clock)
+	var routing := HBoxContainer.new()
+	routing.add_theme_constant_override("separation", 3)
+	mission_details.add_child(routing)
+	_mission_bearing = MissionBearing.new()
+	_mission_bearing.custom_minimum_size = Vector2(17, 18)
+	_mission_bearing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	routing.add_child(_mission_bearing)
+	_mission_measure = _label("", 14, BRASS)
+	routing.add_child(_mission_measure)
+	_mission_progress = _bar(1.0, ALLIED)
+	_mission_progress.custom_minimum_size.y = 4.0
+	center_stack.add_child(_mission_progress)
 	_mouse_status = _label("", 14, SUBTLE)
-	wave_details.add_child(_mouse_status)
+	mission_details.add_child(_mouse_status)
 	set_mouse_locked(false)
+	set_mission("平原", "沿路线推进")
+	set_mission_bearing(NAN)
 
 	var unit_panel := _panel(_board, Control.PRESET_TOP_RIGHT, Rect2(-307, 24, 277, 124))
 	var unit_counts := GridContainer.new()
@@ -428,7 +492,7 @@ func _build_wave_panels() -> void:
 	unit_counts.add_child(_allied_support)
 	_enemy_support = _label("", 16, SUBTLE)
 	unit_counts.add_child(_enemy_support)
-	set_stage(1, _stage_total, _stage_name, _wave_total, _allied_slots, _enemy_slots)
+	set_support_counts(_allied_slots.y, 0, _allied_slots.z, 0)
 
 	_boss_panel = _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-185, 137, 370, 66))
 	_boss_number = _label("", 16, PAPER)
@@ -447,18 +511,13 @@ func _build_wave_panels() -> void:
 	_boss_ability_status = _label("", 16, PAPER)
 	ability_row.add_child(_boss_ability_status)
 	_boss_ability_panel.hide()
-
-	_intermission_panel = _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-202, 215, 404, 88))
-	var intermission_stack := VBoxContainer.new()
-	intermission_stack.add_theme_constant_override("separation", 5)
-	_intermission_panel.add_child(intermission_stack)
-	_intermission_title = _label("", 23, BRASS)
-	_intermission_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intermission_stack.add_child(_intermission_title)
-	_repair_status = _label("", 16, PAPER)
-	_repair_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intermission_stack.add_child(_repair_status)
-	_intermission_panel.hide()
+	_supply_panel = _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-198, 264, 396, 46))
+	_supply_panel.add_theme_stylebox_override("panel", _style(SURFACE, ALLIED, 8, 9.0))
+	_supply_notice = _label("", 16, ALLIED)
+	_supply_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_supply_notice.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_supply_panel.add_child(_supply_notice)
+	_supply_panel.hide()
 
 
 func _build_battle_footer() -> void:
@@ -519,7 +578,7 @@ func _build_menu() -> void:
 	_description = _label("", 17, SUBTLE)
 	_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	stack.add_child(_description)
-	var keys := _label("WASD 移动　 鼠标瞄准　 空格开火\nQ 切换单位　 H 休整恢复　 Tab 鼠标\nEsc 暂停　 R 重开本关", 15, SUBTLE)
+	var keys := _label("WASD 移动　 鼠标瞄准　 空格开火\nQ 切换单位　 B 飞机投弹　 Tab 鼠标\nEsc 暂停　 R 重开战役", 15, SUBTLE)
 	keys.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	keys.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	stack.add_child(keys)
@@ -530,15 +589,15 @@ func _build_menu() -> void:
 	actions.add_theme_constant_override("separation", 9)
 	stack.add_child(actions)
 	_secondary = _button(false)
-	_secondary.text = "重开本关"
+	_secondary.text = "重开战役"
 	_secondary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_secondary.pressed.connect(func() -> void: restart_requested.emit())
 	actions.add_child(_secondary)
-	_selection_button = _button(false)
-	_selection_button.text = "换坦克"
-	_selection_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_selection_button.pressed.connect(func() -> void: selection_requested.emit())
-	actions.add_child(_selection_button)
+	var selection_button := _button(false)
+	selection_button.text = "换坦克"
+	selection_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	selection_button.pressed.connect(func() -> void: selection_requested.emit())
+	actions.add_child(selection_button)
 
 	_selection = TankSelection.new()
 	_selection.confirmed.connect(func() -> void: start_requested.emit())
@@ -556,9 +615,35 @@ func _build_takeover_menu() -> void:
 	stack.add_child(_takeover_heading)
 	_takeover_description = _label("", 16, SUBTLE)
 	stack.add_child(_takeover_description)
-	_takeover_list = VBoxContainer.new()
-	_takeover_list.add_theme_constant_override("separation", 7)
-	stack.add_child(_takeover_list)
+	var takeover_list := VBoxContainer.new()
+	takeover_list.add_theme_constant_override("separation", 7)
+	stack.add_child(takeover_list)
+	for slot in TAKEOVER_PAGE_SIZE:
+		var button := _button(false)
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.pressed.connect(_select_takeover_slot.bind(slot + 1))
+		takeover_list.add_child(button)
+		_takeover_buttons.append(button)
+	_takeover_nav = HBoxContainer.new()
+	_takeover_nav.add_theme_constant_override("separation", 8)
+	stack.add_child(_takeover_nav)
+	_takeover_prev = _button(false)
+	_takeover_prev.text = "上一页"
+	_takeover_prev.tooltip_text = "PgUp"
+	_takeover_prev.focus_mode = Control.FOCUS_NONE
+	_takeover_prev.pressed.connect(turn_takeover_page.bind(-1))
+	_takeover_nav.add_child(_takeover_prev)
+	_takeover_page_label = _label("", 16, SUBTLE)
+	_takeover_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_takeover_page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_takeover_page_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_takeover_nav.add_child(_takeover_page_label)
+	_takeover_next = _button(false)
+	_takeover_next.text = "下一页"
+	_takeover_next.tooltip_text = "PgDn"
+	_takeover_next.focus_mode = Control.FOCUS_NONE
+	_takeover_next.pressed.connect(turn_takeover_page.bind(1))
+	_takeover_nav.add_child(_takeover_next)
 	_takeover_cancel = _button(false)
 	_takeover_cancel.text = "返回当前单位"
 	_takeover_cancel.pressed.connect(switch_cancelled.emit)
@@ -572,11 +657,11 @@ func _open_menu(screen: String, heading: String, description: String, action: St
 	_description.text = description
 	_primary.text = action
 	_secondary.visible = can_restart
-	_selection_button.visible = screen != "stage_clear"
 	_reticle.hide()
 	_building_panel.hide()
 	_bomb_panel.hide()
 	_boss_ability_panel.hide()
+	_supply_panel.hide()
 	_selection.hide()
 	_takeover_card.hide()
 	_menu_card.show()
@@ -587,8 +672,6 @@ func _on_primary() -> void:
 	match _screen:
 		"pause":
 			resume_requested.emit()
-		"stage_clear":
-			next_stage_requested.emit()
 		"result":
 			restart_requested.emit()
 

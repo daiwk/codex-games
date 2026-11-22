@@ -2,8 +2,9 @@ class_name AircraftUnit
 extends "res://scripts/battle_unit.gd"
 
 const AIRFRAME := preload("res://assets/plane1.glb")
-const FLIGHT_MIN := Vector3(-39.0, 4.4, -35.0)
-const FLIGHT_MAX := Vector3(39.0, 11.0, 35.0)
+const DEFAULT_FLIGHT_AREA := Rect2(-39.0, -35.0, 78.0, 70.0)
+const MIN_ALTITUDE := 4.4
+const MAX_ALTITUDE := 11.0
 const CRUISE_HEIGHT := 7.8
 const RECOVERY_HEIGHT := 10.0
 const FORWARD_SPEED := 16.0
@@ -17,6 +18,7 @@ const BOMB_PASS_END_DISTANCE := 2.1
 const BOMB_RELEASE_RADIUS := 5.6
 const BOMB_ORIGIN_OFFSET := 1.12
 const BOMB_GROUND_CHECK_DEPTH := 16.0
+const ESCORT_ENGAGEMENT_DISTANCE_SQUARED := 64.0 * 64.0
 
 var bomb_cooldown_left := 0.0:
 	set(seconds):
@@ -32,6 +34,13 @@ var _exit_course := Vector3.ZERO
 var _turn_side := 1.0
 var _blocked_time := 0.0
 var _bomb_drop_pending := false
+var _flight_area := DEFAULT_FLIGHT_AREA
+var _home := Vector3.ZERO
+var _hold_height := CRUISE_HEIGHT
+
+
+func set_flight_bounds(bounds: Rect2) -> void:
+	_flight_area = bounds
 
 
 func configure(layer: int, strength: float, title: String) -> void:
@@ -48,6 +57,8 @@ func configure(layer: int, strength: float, title: String) -> void:
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
 	safe_margin = 0.012
 	position = _flight_bounds(position)
+	_home = position
+	_hold_height = clampf(position.y - maxf(0.0, ground_height_at(position)), CRUISE_HEIGHT, MAX_ALTITUDE)
 	_turn_side = 1.0 if layer == FRIENDLY_LAYER else -1.0
 
 	var model := AIRFRAME.instantiate() as Node3D
@@ -91,12 +102,7 @@ func update_ai(opponents: Array[BattleUnit], _grid: AStarGrid2D, delta: float) -
 		_follow_course(_exit_course, RECOVERY_HEIGHT, 0.12, delta)
 		return false
 	if not is_instance_valid(_target):
-		var center := Vector3(0.0, CRUISE_HEIGHT, 0.0)
-		var center_offset := center - global_position
-		if Vector2(center_offset.x, center_offset.z).length_squared() > 4.0:
-			_follow_course(center, CRUISE_HEIGHT, 0.0, delta)
-		else:
-			_advance(Vector3.ZERO, delta)
+		_fly_formation(delta)
 		return false
 
 	var point := _target.target_point()
@@ -111,7 +117,7 @@ func update_ai(opponents: Array[BattleUnit], _grid: AStarGrid2D, delta: float) -
 
 	var preferred_height := CRUISE_HEIGHT
 	if _target.kind == "aircraft":
-		preferred_height = clampf(point.y - ground_height_at(point), FLIGHT_MIN.y, RECOVERY_HEIGHT)
+		preferred_height = clampf(point.y - ground_height_at(point), MIN_ALTITUDE, RECOVERY_HEIGHT)
 	var aim_pitch := clampf(atan2(toward.y, range_flat), -0.65, 0.54)
 	if bombing_pass:
 		var approach := smoothstep(PASS_END_DISTANCE, PASS_END_DISTANCE * 2.0, range_flat)
@@ -195,11 +201,29 @@ func _advance(desired_velocity: Vector3, delta: float) -> void:
 
 
 func _flight_bounds(at: Vector3) -> Vector3:
-	at.x = clampf(at.x, FLIGHT_MIN.x, FLIGHT_MAX.x)
-	at.z = clampf(at.z, FLIGHT_MIN.z, FLIGHT_MAX.z)
+	at = _clamp_course(at, _flight_area)
 	var ground := maxf(0.0, ground_height_at(at))
-	at.y = clampf(at.y, ground + FLIGHT_MIN.y, ground + FLIGHT_MAX.y)
+	at.y = clampf(at.y, ground + MIN_ALTITUDE, ground + MAX_ALTITUDE)
 	return at
+
+
+func _clamp_course(at: Vector3, bounds: Rect2) -> Vector3:
+	at.x = clampf(at.x, bounds.position.x, bounds.end.x)
+	at.z = clampf(at.z, bounds.position.y, bounds.end.y)
+	return at
+
+
+func _fly_formation(delta: float) -> void:
+	var goal := _home if not formation_goal.is_finite() else formation_goal
+	goal = _clamp_course(goal, _flight_area)
+	var offset := goal - global_position
+	var distance := Vector2(offset.x, offset.z).length()
+	if distance > 3.0:
+		_follow_course(goal, _hold_height, 0.0, delta, smoothstep(1.0, 12.0, distance))
+	else:
+		var altitude := maxf(0.0, ground_height_at(global_position)) + _hold_height
+		_turn_flight(global_rotation.y, 0.0, 0.0, 2.4, delta)
+		_advance(Vector3.UP * clampf((altitude - global_position.y) * 2.5, -4.4, 4.4), delta)
 
 
 func _turn_flight(yaw: float, pitch: float, bank: float, turn_speed: float, delta: float) -> void:
@@ -229,6 +253,9 @@ func _choose_target(opponents: Array[BattleUnit], delta: float) -> void:
 	for opponent in opponents:
 		if not _can_target(opponent):
 			continue
+		var distance := global_position.distance_squared_to(opponent.global_position)
+		if formation_goal.is_finite() and distance > ESCORT_ENGAGEMENT_DISTANCE_SQUARED:
+			continue
 		var ground_target := opponent.kind != "aircraft"
 		if found_ground_target and not ground_target:
 			continue
@@ -236,7 +263,7 @@ func _choose_target(opponents: Array[BattleUnit], delta: float) -> void:
 			found_ground_target = true
 			best_score = INF
 		var weight := 1.0 if opponent.kind == "tank" else 1.35
-		var score := global_position.distance_squared_to(opponent.global_position) * weight
+		var score := distance * weight
 		if opponent == previous:
 			score *= 0.76
 		if score < best_score:
@@ -260,17 +287,16 @@ func _begin_exit() -> void:
 	var forward := heading * Vector3.FORWARD
 	var side := heading.x * _turn_side
 	var projected := global_position + forward * 14.0 + side * 7.0
-	var inner_min := FLIGHT_MIN + Vector3(3.5, 0.0, 3.5)
-	var inner_max := FLIGHT_MAX - Vector3(3.5, 0.0, 3.5)
-	if not projected.is_equal_approx(projected.clamp(inner_min, inner_max)):
-		projected = global_position * 0.44 + side * 6.0
-	_exit_course = projected.clamp(inner_min, inner_max)
+	var inner := _flight_area.grow(-3.5)
+	_exit_course = _clamp_course(projected, inner)
+	if _exit_course.distance_squared_to(global_position) < 64.0:
+		_exit_course = _clamp_course(global_position - forward * 12.0 + side * 5.0, inner)
 	_exit_left = 1.65
 	_turn_side *= -1.0
 	_blocked_time = 0.0
 
 
-func _follow_course(point: Vector3, height: float, pitch: float, delta: float) -> void:
+func _follow_course(point: Vector3, height: float, pitch: float, delta: float, speed_scale := 1.0) -> void:
 	var toward := point - global_position
 	var yaw := atan2(-toward.x, -toward.z)
 	var yaw_error := angle_difference(global_rotation.y, yaw)
@@ -278,7 +304,7 @@ func _follow_course(point: Vector3, height: float, pitch: float, delta: float) -
 	_turn_flight(yaw, pitch, bank, 2.4, delta)
 	var heading := Basis(Vector3.UP, global_rotation.y) * Vector3.FORWARD
 	var speed_fraction := clampf(1.0 - absf(yaw_error) * 0.29, 0.32, 1.0)
-	var motion := heading * AI_SPEED * speed_fraction
+	var motion := heading * AI_SPEED * speed_fraction * speed_scale
 	var ground_ahead := ground_height_at(global_position + heading * 5.0)
 	var ground_below := ground_height_at(global_position)
 	var target_y := maxf(0.0, maxf(ground_ahead, ground_below)) + height

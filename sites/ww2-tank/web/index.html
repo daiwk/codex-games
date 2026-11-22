@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#171d17">
-  <meta name="description" content="切换操控坦克、步兵与飞机，穿过平原田野、攀上山丘坡道、守住海边滩头，迎战拥有火炮连发、呼叫援军和空袭技能的首领。">
+  <meta name="description" content="带领坦克、步兵和飞机穿过平原，翻越群山。在补给点恢复幸存部队，抵达海滩并阻击敌方登陆部队。">
   <title>二战：装甲战线</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="web.css">
@@ -14,20 +14,21 @@
 <body>
   <main id="stage" aria-label="二战：装甲战线">
     <canvas id="canvas" width="1280" height="800" tabindex="0"
-      aria-label="三关第三人称战役。WASD 移动，鼠标瞄准，空格开火，驾驶飞机时按 B 投弹，波次间按 H 恢复，按 Q 打开切换列表，按 1 到 7 选择友军，Tab 锁定或释放鼠标，Esc 暂停，R 重开本关。"></canvas>
+      aria-label="连续地图第三人称战役。WASD 移动，鼠标瞄准，空格开火，驾驶飞机时按 B 投弹。到达补给点恢复。按 Q 打开友军列表，按 1 到 7 选择本页单位，Page Up 和 Page Down 翻页。Tab 锁定或释放鼠标，Esc 暂停，R 重开任务。"></canvas>
 
     <section id="cover" aria-labelledby="game-title">
       <div class="launch-copy">
         <h1 id="game-title">二战：装甲战线</h1>
-        <p class="intro">穿过平原田野、翻越山丘坡道、守住海边滩头。三位首领分别会连发火炮、呼叫援军和空袭。</p>
+        <p class="intro">率领 10 辆坦克、20 名步兵和 5 架飞机穿过平原与群山。阵亡单位无法补充，击退海滩上的登陆部队才算完成任务。</p>
         <dl class="controls">
           <div><dt><kbd>WASD</kbd></dt><dd>四方向移动</dd></div>
           <div><dt>鼠标 · 空格</dt><dd>鼠标瞄准，空格开火</dd></div>
           <div><dt><kbd>B</kbd></dt><dd>驾驶飞机时投弹</dd></div>
-          <div><dt><kbd>H</kbd></dt><dd>休整时恢复当前单位</dd></div>
-          <div><dt><kbd>Q</kbd><kbd>1–7</kbd></dt><dd>打开列表，选择要接管的友军</dd></div>
+          <div><dt>补给点</dt><dd>恢复存活单位的生命</dd></div>
+          <div><dt><kbd>Q</kbd><kbd>1–7</kbd></dt><dd>打开列表，选择本页友军</dd></div>
+          <div><dt><kbd>PgUp</kbd><kbd>PgDn</kbd></dt><dd>翻页查看友军</dd></div>
           <div><dt><kbd>Tab</kbd></dt><dd>锁定或释放鼠标</dd></div>
-          <div><dt><kbd>Esc</kbd><kbd>R</kbd><kbd>F</kbd></dt><dd>暂停、重开本关、全屏</dd></div>
+          <div><dt><kbd>Esc</kbd><kbd>R</kbd><kbd>F</kbd></dt><dd>暂停、重开任务、全屏</dd></div>
         </dl>
         <div class="launch-actions">
           <button id="start-btn" type="button" hidden>重新载入</button>

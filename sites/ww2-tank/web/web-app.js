@@ -13,8 +13,10 @@
   const note = byId('browser-note');
   const nativeFetch = window.fetch.bind(window);
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const isUnitMenu = (mode) => mode === 'takeover' || mode === 'switch';
   let phase = 'cover';
   let noticeTimer;
+  let pointerNotice = false;
   let pointerLockPending = false;
   let pointerLockTimer;
 
@@ -36,7 +38,12 @@
     loading: phase,
     ...(window.__stonewallState || { ready: phase === 'ready', phase }),
   });
-  window.stonewallState = (json) => { window.__stonewallState = JSON.parse(json); };
+  window.stonewallState = (json) => {
+    window.__stonewallState = JSON.parse(json);
+    if (noticeTimer && pointerNotice) {
+      note.hidden = isUnitMenu(window.__stonewallState.phase);
+    }
+  };
   window.stonewallPointerLocked = () => document.pointerLockElement === canvas;
   window.stonewallReleasePointer = () => {
     if (window.stonewallPointerLocked()) document.exitPointerLock();
@@ -51,18 +58,22 @@
     canvas.focus({ preventScroll: true });
   };
 
-  function showNotice(message) {
+  function showNotice(message, isPointerNotice = false) {
     clearTimeout(noticeTimer);
+    pointerNotice = isPointerNotice;
     note.textContent = message;
-    note.hidden = false;
-    noticeTimer = setTimeout(() => { note.hidden = true; }, 6500);
+    note.hidden = pointerNotice && isUnitMenu(window.__stonewallState?.phase);
+    noticeTimer = setTimeout(() => {
+      noticeTimer = undefined;
+      note.hidden = true;
+    }, 6500);
   }
 
   function pointerLockFailed() {
     if (!pointerLockPending) return;
     clearTimeout(pointerLockTimer);
     pointerLockPending = false;
-    showNotice('浏览器未能锁定鼠标。对战中可按 Tab 重试，或在独立浏览器窗口打开此页面。');
+    showNotice('浏览器未能锁定鼠标。对战中可按 Tab 重试，或在独立浏览器窗口打开此页面。', true);
   }
 
   function requestGamePointerLock() {
@@ -127,7 +138,7 @@
       event.stopImmediatePropagation();
       void toggleFullscreen();
     } else if (canvasInput && menu) {
-      const choosingUnit = mode === 'takeover' || mode === 'switch';
+      const choosingUnit = isUnitMenu(mode);
       const selectUnit = choosingUnit && /^[1-7]$/.test(event.key) && Number(event.key) <= menu.choice_count;
       const cancelSwitch = mode === 'switch' && (event.code === 'KeyQ' || event.code === 'Escape');
       const restart = event.code === 'KeyR' && ['paused', 'result', 'takeover', 'switch'].includes(mode);
@@ -140,6 +151,7 @@
   canvas.addEventListener('contextmenu', (event) => event.preventDefault());
   canvas.addEventListener('keydown', (event) => {
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
+    if (isUnitMenu(window.__stonewallState?.phase) && ['PageUp', 'PageDown'].includes(event.code)) event.preventDefault();
   });
   document.addEventListener('mouseup', (event) => {
     if (event.isTrusted && event.button === 0 && event.target === canvas &&
