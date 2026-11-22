@@ -2,6 +2,7 @@ extends Node3D
 
 const Arena = preload("res://scripts/campaign_arena.gd")
 const Mission = preload("res://scripts/campaign_mission.gd")
+const Difficulty = preload("res://scripts/campaign_difficulty.gd")
 const Waypoints = preload("res://scripts/campaign_waypoints.gd")
 const Tank = preload("res://scripts/duel_tank.gd")
 const TankAI = preload("res://scripts/tank_ai.gd")
@@ -14,14 +15,20 @@ const Effects = preload("res://scripts/duel_effects.gd")
 const BOLT_MODEL := preload("res://assets/metal-bolt.glb")
 const TANK_ROSTER := [
 	{"id": "default", "name": "默认坦克", "model": "res://assets/tank.glb",
-		"preview": "res://assets/previews/tank-default.webp", "attack": 28, "defense": 10, "health": 100},
+		"attack": 28, "defense": 10, "health": 100},
 	{"id": "panther_g", "name": "豹式 G 型", "model": "res://assets/tank-panther-g.glb",
-		"preview": "res://assets/previews/tank-panther-g.webp", "attack": 34, "defense": 6, "health": 90},
+		"attack": 34, "defense": 6, "health": 90},
 	{"id": "m26_pershing", "name": "M26 潘兴", "model": "res://assets/tank-m26-pershing.glb",
-		"preview": "res://assets/previews/tank-m26-pershing.webp", "attack": 29, "defense": 14, "health": 105},
+		"attack": 29, "defense": 14, "health": 105},
 	{"id": "centurion_mk3", "name": "百夫长 Mk.3", "model": "res://assets/tank-centurion-mk3.glb",
-		"preview": "res://assets/previews/tank-centurion-mk3.webp", "attack": 24, "defense": 20, "health": 116},
+		"attack": 24, "defense": 20, "health": 116},
+	{"id": "leopard_2a8", "name": "豹 2A8", "model": "res://assets/tank-leopard-2a8.glb",
+		"attack": 30, "defense": 14, "health": 108},
+	{"id": "m1a2_sepv3", "name": "M1A2 SEP v3", "model": "res://assets/tank-m1a2-sepv3.glb",
+		"attack": 30, "defense": 18, "health": 110},
 ]
+const PLAYER_TANK := 4
+const ENEMY_TANK_ORDER := [5, 1, 4, 2, 0, 3]
 
 const BOSS_PROFILES := {
 	"plains": {"model": 1, "health": 150, "attack": 35},
@@ -90,7 +97,7 @@ var _takeover_choices: Array[BattleUnit] = []
 var _switch_resume_lock := false
 var _building_target := {}
 var _tank_models := {}
-var _round_tanks := Vector2i(0, 1)
+var _difficulty := Difficulty.DEFAULT
 var _shells: Array[Shell] = []
 var _bombs: Array[Bomb] = []
 var _formation_left := 0.0
@@ -122,8 +129,6 @@ func _ready() -> void:
 	_hud.takeover_requested.connect(_takeover_unit)
 	_hud.switch_cancelled.connect(_cancel_switch)
 	add_child(_hud)
-	_hud.configure_roster(TANK_ROSTER)
-
 	_reset_round()
 	_hud.show_intro()
 	if OS.has_feature("web"):
@@ -149,7 +154,7 @@ func _process(delta: float) -> void:
 	_web_snapshot_delay -= delta
 	if _web_snapshot_delay <= 0.0:
 		_web_snapshot_delay = 0.15
-		var selected := _hud.selected_tanks()
+		var rule: Dictionary = Difficulty.LEVELS[_difficulty]
 		var aircraft := _controlled as Aircraft
 		var bounds := _arena.navigation_region(0.0)
 		var destination := Mission.DEFENSE_POINT if _mission.defending else _mission.next_destination(_controlled.position.z)
@@ -181,7 +186,8 @@ func _process(delta: float) -> void:
 				"allies": _allied_support.map(_unit_snapshot),
 				"enemies": _enemy_support.map(_unit_snapshot),
 			},
-			"selection": {"player": TANK_ROSTER[selected.x]["id"], "enemy": TANK_ROSTER[selected.y]["id"]},
+			"difficulty": {"id": rule["id"], "label": rule["label"], "level": _difficulty,
+				"attack_multiplier": rule["attack"], "defense_adjustment": rule["defense"]},
 			"player": player_state,
 			"starting_tank": _unit_snapshot(_player),
 			"allies": _allies.map(_unit_snapshot),
@@ -212,7 +218,9 @@ func _unit_snapshot(unit: BattleUnit) -> Dictionary:
 	if unit is Tank:
 		state["tank"] = (unit as Tank).model_id
 	elif unit is Aircraft:
-		state["bomb_cooldown"] = (unit as Aircraft).bomb_cooldown_left
+		var aircraft := unit as Aircraft
+		state["airframe"] = aircraft.airframe_id
+		state["bomb_cooldown"] = aircraft.bomb_cooldown_left
 	return state
 
 
@@ -227,8 +235,7 @@ func _web_menu() -> Variant:
 	var menu := {"width": viewport_size.x, "height": viewport_size.y,
 		"buttons": _rect_coordinates(_hud.menu_button_rects())}
 	if _phase == Phase.INTRO:
-		menu["choices"] = [_rect_coordinates(_hud.selection_choice_rects(0)),
-			_rect_coordinates(_hud.selection_choice_rects(1))]
+		menu["choices"] = _rect_coordinates(_hud.difficulty_choice_rects())
 	elif _phase == Phase.TAKEOVER or _phase == Phase.SWITCH:
 		menu["choice_count"] = _hud.takeover_visible_count()
 		menu["choice_start"] = _hud.takeover_index_for_key(1)
@@ -353,9 +360,9 @@ func _reset_round() -> void:
 	_round.name = "Round"
 	add_child(_round)
 
-	_round_tanks = _hud.selected_tanks()
+	_difficulty = _hud.selected_difficulty()
 	var start := _arena.position_on_ground(ALLY_START)
-	_player = _add_tank("Player", start, 0.0, true, TANK_ROSTER[_round_tanks.x], Tank.FRIENDLY_LAYER)
+	_player = _add_tank("Player", start, 0.0, true, TANK_ROSTER[PLAYER_TANK], Tank.FRIENDLY_LAYER)
 	_controlled = _player
 	_ally_brains.append(TankAI.new(_player, _ai_grid, 0.85))
 	_add_team_marker(_player, "坦克 1", Color("#9fd8c4")).hide()
@@ -383,6 +390,8 @@ func _add_tank(tank_name: String, spawn: Vector3, heading: float, is_player: boo
 	tank.rotation.y = heading
 	tank.terrain_height = _arena.ground_height
 	tank.configure(_tank_models[path], is_player, profile, layer)
+	if layer == BattleUnit.HOSTILE_LAYER:
+		Difficulty.apply_to_enemy(tank, _difficulty)
 	_round.add_child(tank)
 	tank.update_hull_pose(1.0)
 	return tank
@@ -423,12 +432,13 @@ func _spawn_allies() -> void:
 
 
 func _deploy_enemy_force(center: Vector2, slots: Vector3i, rank: int, boss_kind := "", landing := false) -> void:
-	var base: Dictionary = TANK_ROSTER[_round_tanks.y]
+	slots = Difficulty.enemy_force(slots, _difficulty)
 	var occupied := _living_friendlies()
 	occupied.append_array(_living_enemies())
 	var attack_scale := 0.88 if landing else 1.0
 	for slot in slots.x:
 		var is_boss := not boss_kind.is_empty() and slot == floori(slots.x * 0.5)
+		var base: Dictionary = TANK_ROSTER[ENEMY_TANK_ORDER[(slot + rank) % ENEMY_TANK_ORDER.size()]]
 		var profile := base.duplicate()
 		profile["health"] = roundi(int(base["health"]) * (0.82 + rank * 0.048))
 		profile["attack"] = roundi(int(base["attack"]) * (0.76 + rank * 0.048) * attack_scale)
@@ -488,15 +498,19 @@ func _add_support(friendly: bool, kind: String, index: int, strength: float, pre
 	unit.rotation.y = 0.0 if friendly else PI
 	unit.terrain_height = _arena.ground_height
 	var layer := BattleUnit.FRIENDLY_LAYER if friendly else BattleUnit.HOSTILE_LAYER
-	var title := ("战机 %d" if is_aircraft else "步兵 %d") % (index + 1)
 	if is_aircraft:
-		(unit as Aircraft).set_flight_bounds(_flight_bounds())
-		(unit as Aircraft).configure(layer, strength, title)
+		var aircraft := unit as Aircraft
+		var frame := Aircraft.Airframe.F35A if index % 2 == 0 else Aircraft.Airframe.PROPELLER
+		var aircraft_name := "F-35A %d" if frame == Aircraft.Airframe.F35A else "战机 %d"
+		aircraft.set_flight_bounds(_flight_bounds())
+		aircraft.configure(layer, strength, aircraft_name % (index + 1), frame)
 	else:
-		(unit as Infantry).configure(layer, strength, title)
+		(unit as Infantry).configure(layer, strength, "步兵 %d" % (index + 1))
+	if not friendly:
+		Difficulty.apply_to_enemy(unit, _difficulty)
 	_round.add_child(unit)
 	var color := Color("#9fd8c4") if friendly else Color("#ffab93")
-	_add_team_marker(unit, title, color, 1.8 if is_aircraft else 2.04)
+	_add_team_marker(unit, unit.display_name, color, 1.8 if is_aircraft else 2.04)
 	occupied.append(unit)
 	return unit
 
@@ -870,7 +884,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if event.ctrl_pressed or event.meta_pressed or event.alt_pressed:
 		return
 	var selecting_unit := _phase == Phase.TAKEOVER or _phase == Phase.SWITCH
-	if selecting_unit and event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_7:
+	if _phase == Phase.INTRO and event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_3:
+		_hud.select_difficulty(event.physical_keycode - KEY_1)
+		_start_round()
+	elif selecting_unit and event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_7:
 		_takeover_unit(_hud.takeover_index_for_key(event.physical_keycode - KEY_1 + 1))
 	elif selecting_unit and event.physical_keycode == KEY_PAGEUP:
 		_hud.turn_takeover_page(-1)
@@ -1110,8 +1127,10 @@ func _advance_bombs(delta: float) -> void:
 func _explode_bomb(at: Vector3, team: int, airstrike := false) -> void:
 	_effects.bomb_blast(at)
 	var radius := BossAbility.STRIKE_RADIUS if airstrike else BOMB_RADIUS
-	_arena.damage_buildings_in_area(at, radius, AIRSTRIKE_BUILDING_DAMAGE if airstrike else BOMB_BUILDING_DAMAGE)
-	var base_damage := AIRSTRIKE_UNIT_DAMAGE if airstrike else BOMB_UNIT_DAMAGE
+	var attack_level := _difficulty if team == BattleUnit.HOSTILE_LAYER else Difficulty.DEFAULT
+	var building_damage := AIRSTRIKE_BUILDING_DAMAGE if airstrike else BOMB_BUILDING_DAMAGE
+	_arena.damage_buildings_in_area(at, radius, Difficulty.enemy_attack(building_damage, attack_level))
+	var base_damage := Difficulty.enemy_attack(AIRSTRIKE_UNIT_DAMAGE if airstrike else BOMB_UNIT_DAMAGE, attack_level)
 	var targets := _living_enemies() if team == BattleUnit.FRIENDLY_LAYER else _living_friendlies()
 	for unit in targets:
 		if airstrike and unit.kind == "aircraft":

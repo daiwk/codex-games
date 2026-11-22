@@ -2,6 +2,7 @@ class_name AircraftUnit
 extends "res://scripts/battle_unit.gd"
 
 const AIRFRAME := preload("res://assets/plane1.glb")
+const F35A_AIRFRAME := preload("res://assets/f35a.glb")
 const DEFAULT_FLIGHT_AREA := Rect2(-39.0, -35.0, 78.0, 70.0)
 const MIN_ALTITUDE := 4.4
 const MAX_ALTITUDE := 11.0
@@ -16,10 +17,12 @@ const AI_FIRE_RANGE := 36.0
 const PASS_END_DISTANCE := 11.0
 const BOMB_PASS_END_DISTANCE := 2.1
 const BOMB_RELEASE_RADIUS := 5.6
-const BOMB_ORIGIN_OFFSET := 1.12
 const BOMB_GROUND_CHECK_DEPTH := 16.0
 const ESCORT_ENGAGEMENT_DISTANCE_SQUARED := 64.0 * 64.0
 
+enum Airframe { PROPELLER, F35A }
+
+var airframe_id := "plane1"
 var bomb_cooldown_left := 0.0:
 	set(seconds):
 		if seconds > 0.0 and bomb_cooldown_left <= 0.0:
@@ -27,6 +30,8 @@ var bomb_cooldown_left := 0.0:
 		bomb_cooldown_left = seconds
 
 var _propeller: Node3D
+var _gun_mount := Vector3(0.0, 0.0, -4.32)
+var _bomb_mount := Vector3(0.0, -1.12, 0.0)
 var _target: BattleUnit
 var _retarget_left := 0.0
 var _exit_left := 0.0
@@ -43,7 +48,7 @@ func set_flight_bounds(bounds: Rect2) -> void:
 	_flight_area = bounds
 
 
-func configure(layer: int, strength: float, title: String) -> void:
+func configure(layer: int, strength: float, title: String, airframe: Airframe = Airframe.PROPELLER) -> void:
 	kind = "aircraft"
 	display_name = title
 	max_health = maxi(1, roundi(88.0 * strength))
@@ -61,12 +66,20 @@ func configure(layer: int, strength: float, title: String) -> void:
 	_hold_height = clampf(position.y - maxf(0.0, ground_height_at(position)), CRUISE_HEIGHT, MAX_ALTITUDE)
 	_turn_side = 1.0 if layer == FRIENDLY_LAYER else -1.0
 
-	var model := AIRFRAME.instantiate() as Node3D
+	var model_scene := F35A_AIRFRAME if airframe == Airframe.F35A else AIRFRAME
+	var model := model_scene.instantiate() as Node3D
 	model.name = "AirframeModel"
 	add_child(model)
-	_propeller = model.get_node("Propeller") as Node3D
-	_add_hitbox(Vector3(1.32, 1.52, 7.4), Vector3(0.0, 0.1, 0.04))
-	_add_hitbox(Vector3(7.1, 0.63, 2.25), Vector3(0.0, -0.38, -1.0))
+	if airframe == Airframe.F35A:
+		airframe_id = "f35a"
+		_gun_mount = Vector3(0.0, 0.0, -4.42)
+		_bomb_mount = Vector3(0.0, -1.0, 0.32)
+		_add_hitbox(Vector3(1.8, 1.55, 7.75), Vector3(0.0, 0.03, -0.12))
+		_add_hitbox(Vector3(6.9, 0.48, 2.25), Vector3(0.0, -0.04, 0.96))
+	else:
+		_propeller = model.get_node("Propeller") as Node3D
+		_add_hitbox(Vector3(1.32, 1.52, 7.4), Vector3(0.0, 0.1, 0.04))
+		_add_hitbox(Vector3(7.1, 0.63, 2.25), Vector3(0.0, -0.38, -1.0))
 
 
 func drive_player(axes: Vector2, yaw: float, pitch: float, delta: float) -> void:
@@ -134,7 +147,7 @@ func update_ai(opponents: Array[BattleUnit], _grid: AStarGrid2D, delta: float) -
 
 
 func bomb_origin() -> Vector3:
-	return global_position - global_basis.y * BOMB_ORIGIN_OFFSET
+	return to_global(_bomb_mount)
 
 
 func wants_bomb(opponents: Array[BattleUnit]) -> bool:
@@ -167,7 +180,7 @@ func wants_bomb(opponents: Array[BattleUnit]) -> bool:
 
 
 func shot_origin() -> Vector3:
-	return global_position + shot_direction() * 4.32
+	return to_global(_gun_mount)
 
 
 func shot_direction() -> Vector3:
@@ -197,7 +210,8 @@ func _advance(desired_velocity: Vector3, delta: float) -> void:
 	bounded_position = _flight_bounds(global_position)
 	if global_position != bounded_position:
 		global_position = bounded_position
-	_propeller.rotate_z(delta * 37.0)
+	if _propeller != null:
+		_propeller.rotate_z(delta * 37.0)
 
 
 func _flight_bounds(at: Vector3) -> Vector3:

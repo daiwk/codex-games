@@ -17,7 +17,7 @@ const ALLIED := Color("9fd8c4")
 const OPPONENT := Color("e59a7e")
 const WARNING := Color("ffc275")
 const BUNDLED_FONT := preload("res://assets/fonts/StonewallSans.otf")
-const TankSelection := preload("res://scripts/tank_selection.gd")
+const DifficultySelection := preload("res://scripts/difficulty_selection.gd")
 const TANK_CONTROLS := "WASD 驾驶   鼠标瞄准   空格开火   Q 切换   Tab 鼠标"
 const INFANTRY_CONTROLS := "WASD 步行   鼠标瞄准   空格开火   Q 切换   Tab 鼠标"
 const AIRCRAFT_CONTROLS := "WASD 飞行   鼠标调航向   空格开火   B 投弹   Q 切换"
@@ -67,7 +67,7 @@ var _takeover_next: Button
 var _takeover_page_label: Label
 var _takeover_candidates: Array[Dictionary] = []
 var _takeover_page := 0
-var _selection: TankSelection
+var _selection: DifficultySelection
 var _heading: Label
 var _description: Label
 var _primary: Button
@@ -108,7 +108,6 @@ var _reload_label: Label
 var _region_name := "平原"
 var _allied_slots := Vector3i(10, 20, 5)
 var _enemy_slots := Vector3i.ZERO
-var _enemy_reinforcements := Vector2i.ZERO
 var _controlled_kind := "tank"
 var _player_down := false
 var _screen := "intro"
@@ -123,6 +122,7 @@ func _ready() -> void:
 	var ui_theme := Theme.new()
 	ui_theme.default_font = _interface_font()
 	_root.theme = ui_theme
+	_selection = DifficultySelection.new()
 	_build_board()
 	_build_menu()
 	show_intro()
@@ -142,16 +142,16 @@ func show_intro() -> void:
 	_menu.show()
 
 
-func configure_roster(roster: Array) -> void:
-	_selection.configure(roster)
-
-
-func selected_tanks() -> Vector2i:
+func selected_difficulty() -> int:
 	return _selection.selection()
 
 
-func selection_choice_rects(side: int) -> Array[Rect2]:
-	return _selection.choice_rects(side)
+func select_difficulty(index: int) -> void:
+	_selection.select(index)
+
+
+func difficulty_choice_rects() -> Array[Rect2]:
+	return _selection.choice_rects()
 
 
 func set_controlled_unit(title: String, kind: String, max_health: int) -> void:
@@ -171,7 +171,7 @@ func set_controlled_unit(title: String, kind: String, max_health: int) -> void:
 
 func set_support_counts(allied_infantry: int, enemy_infantry: int, allied_aircraft: int, enemy_aircraft: int) -> void:
 	_allied_support.text = "步兵 %d / %d\n飞机 %d / %d" % [allied_infantry, _allied_slots.y, allied_aircraft, _allied_slots.z]
-	_enemy_support.text = "步兵 %d / %d\n飞机 %d / %d" % [enemy_infantry, _enemy_slots.y + _enemy_reinforcements.y,
+	_enemy_support.text = "步兵 %d / %d\n飞机 %d / %d" % [enemy_infantry, _enemy_slots.y,
 		enemy_aircraft, _enemy_slots.z]
 
 
@@ -182,7 +182,7 @@ func set_mission_forces(allied_slots: Vector3i, enemy_slots: Vector3i) -> void:
 
 func set_mission(region: String, objective: String, distance_m := -1.0, defense_left := -1.0, defense_total := 0.0) -> void:
 	_region_name = region
-	_region_label.text = region
+	_region_label.text = "%s · %s" % [region, _selection.selection_label()]
 	_objective_title.text = objective
 	if defense_left >= 0.0:
 		_mission_measure.text = "下一波 %d 秒" % ceili(defense_left)
@@ -312,7 +312,7 @@ func update_battle(
 	_player_health.value = player_health
 	_player_number.text = "%d / %d" % [player_health, int(_player_health.max_value)]
 	_ally_count.text = "坦克 %d / %d" % [allied_tanks, _allied_slots.x]
-	_enemy_count.text = "坦克 %d / %d" % [enemy_tanks, _enemy_slots.x + _enemy_reinforcements.x]
+	_enemy_count.text = "坦克 %d / %d" % [enemy_tanks, _enemy_slots.x]
 	var elapsed := maxi(0, floori(seconds))
 	_clock.text = "%02d:%02d" % [floori(elapsed / 60.0), elapsed % 60]
 	_boss_panel.visible = boss_health > 0 and boss_max_health > 0
@@ -333,7 +333,6 @@ func update_battle(
 
 
 func update_boss_ability(info: Dictionary, boss_alive := true) -> void:
-	_enemy_reinforcements = Vector2i(int(info.get("extra_enemy_tanks", 0)), int(info.get("extra_enemy_infantry", 0)))
 	var skill_id := str(info.get("id", ""))
 	var title: String = BOSS_ABILITY_NAMES.get(skill_id, "")
 	var status := str(info.get("status", ""))
@@ -404,8 +403,7 @@ func set_mouse_locked(look_locked: bool) -> void:
 func menu_button_rects() -> Array[Rect2]:
 	var rects: Array[Rect2] = []
 	if _screen == "intro":
-		rects.append(_selection.start_rect())
-		return rects
+		return difficulty_choice_rects()
 	if _screen == "takeover":
 		for button in _takeover_buttons:
 			if button.is_visible_in_tree() and not button.disabled:
@@ -594,12 +592,11 @@ func _build_menu() -> void:
 	_secondary.pressed.connect(func() -> void: restart_requested.emit())
 	actions.add_child(_secondary)
 	var selection_button := _button(false)
-	selection_button.text = "换坦克"
+	selection_button.text = "更换难度"
 	selection_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	selection_button.pressed.connect(func() -> void: selection_requested.emit())
 	actions.add_child(selection_button)
 
-	_selection = TankSelection.new()
 	_selection.confirmed.connect(func() -> void: start_requested.emit())
 	_menu.add_child(_selection)
 	_build_takeover_menu()

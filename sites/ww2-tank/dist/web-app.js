@@ -140,9 +140,10 @@
     } else if (canvasInput && menu) {
       const choosingUnit = isUnitMenu(mode);
       const selectUnit = choosingUnit && /^[1-7]$/.test(event.key) && Number(event.key) <= menu.choice_count;
+      const selectDifficulty = mode === 'intro' && /^Digit[1-3]$/.test(event.code);
       const cancelSwitch = mode === 'switch' && (event.code === 'KeyQ' || event.code === 'Escape');
       const restart = event.code === 'KeyR' && ['paused', 'result', 'takeover', 'switch'].includes(mode);
-      if (restart || (menu.capture !== false && (event.key === 'Enter' || selectUnit || cancelSwitch))) {
+      if (restart || (menu.capture !== false && (event.key === 'Enter' || selectUnit || selectDifficulty || cancelSwitch))) {
         requestGamePointerLock();
       }
     }
