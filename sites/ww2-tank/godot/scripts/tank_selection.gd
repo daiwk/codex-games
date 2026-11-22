@@ -46,7 +46,7 @@ func configure(roster: Array) -> void:
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 16)
 	stack.add_child(footer)
-	var keys := _label("WASD 移动   鼠标瞄准   空格开火   H 休整恢复   Q 切换友军   1–7 选择   Tab 鼠标", 15, MUTED)
+	var keys := _label("WASD 移动   鼠标瞄准   空格开火   B 飞机投弹   H 恢复   Q 切换友军   Tab 鼠标", 15, MUTED)
 	keys.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(keys)
 	_start = _button("开始对战", BRASS, true)

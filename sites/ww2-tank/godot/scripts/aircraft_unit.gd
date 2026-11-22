@@ -14,6 +14,8 @@ const AI_SPEED := 12.0
 const AI_FIRE_RANGE := 36.0
 const PASS_END_DISTANCE := 11.0
 
+var bomb_cooldown_left := 0.0
+
 var _propeller: Node3D
 var _target: BattleUnit
 var _retarget_left := 0.0

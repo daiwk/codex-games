@@ -13,6 +13,7 @@ var _small_shot_sound: AudioStreamWAV
 var _small_tracer: BoxMesh
 var _allied_tracer: StandardMaterial3D
 var _hostile_tracer: StandardMaterial3D
+var _blast_ring_mesh: TorusMesh
 
 
 func _ready() -> void:
@@ -32,6 +33,11 @@ func _ready() -> void:
 	_allied_tracer.albedo_color = Color("#fff09b")
 	_hostile_tracer = _surface(true, false)
 	_hostile_tracer.albedo_color = Color("#ffac72")
+	_blast_ring_mesh = TorusMesh.new()
+	_blast_ring_mesh.inner_radius = 0.81
+	_blast_ring_mesh.outer_radius = 1.0
+	_blast_ring_mesh.rings = 24
+	_blast_ring_mesh.ring_segments = 6
 
 
 func muzzle_flash(at: Vector3, direction: Vector3) -> void:
@@ -133,6 +139,54 @@ func building_collapse(at: Vector3) -> void:
 	dust.color_ramp = _fade(Color(0.67, 0.58, 0.46, 0.80))
 	_emit(dust, at + Vector3.UP * 0.45)
 	_play_sound(_wreck_sound, at, -6.0)
+
+
+func bomb_blast(at: Vector3) -> void:
+	var flash := Node3D.new()
+	add_child(flash)
+	flash.global_position = at + Vector3.UP * 0.42
+	_add_flash_lobe(flash, Color("#ff8c36"), Vector3(2.90, 1.65, 2.90), 0.0)
+	_add_flash_lobe(flash, Color("#fff2a7"), Vector3(1.20, 2.20, 1.20), 0.0)
+	var light := OmniLight3D.new()
+	light.light_color = Color("#ffc373")
+	light.light_energy = 4.0
+	light.omni_range = 9.0
+	flash.add_child(light)
+	var decay := flash.create_tween().set_parallel(true)
+	decay.tween_property(flash, "scale", Vector3.ONE * 0.12, 0.15)
+	decay.tween_property(light, "light_energy", 0.0, 0.15)
+	decay.chain().tween_callback(flash.queue_free)
+
+	var dust_ring := MeshInstance3D.new()
+	dust_ring.mesh = _blast_ring_mesh
+	dust_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var dust_material := _surface(true, false)
+	dust_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dust_material.albedo_color = Color(0.68, 0.59, 0.44, 0.62)
+	dust_ring.material_override = dust_material
+	add_child(dust_ring)
+	dust_ring.global_position = at + Vector3.UP * 0.095
+	dust_ring.scale = Vector3(0.68, 0.58, 0.68)
+	var spread := dust_ring.create_tween().set_parallel(true)
+	spread.tween_property(dust_ring, "scale", Vector3(4.15, 0.76, 4.15), 0.44).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	spread.tween_property(dust_material, "albedo_color:a", 0.0, 0.44)
+	spread.chain().tween_callback(dust_ring.queue_free)
+
+	var dust := _burst(_smoke_mesh, Vector3.UP, 13, 0.79, Vector2(2.8, 7.0), 87.0)
+	dust.gravity = Vector3.UP * 0.43
+	dust.scale_amount_min = 0.65
+	dust.scale_amount_max = 1.42
+	dust.color_ramp = _fade(Color(0.68, 0.59, 0.43, 0.57))
+	_emit(dust, at + Vector3.UP * 0.15)
+
+	var smoke := _burst(_smoke_mesh, Vector3.UP, 17, 1.85, Vector2(0.85, 3.0), 47.0)
+	smoke.explosiveness = 0.69
+	smoke.gravity = Vector3(0.45, 1.25, -0.27)
+	smoke.scale_amount_min = 0.85
+	smoke.scale_amount_max = 1.75
+	smoke.color_ramp = _fade(Color(0.24, 0.21, 0.17, 0.72))
+	_emit(smoke, flash.global_position)
+	_play_sound(_wreck_sound, at, -1.8)
 
 
 func _add_flash_lobe(parent: Node3D, color: Color, size: Vector3, offset: float) -> void:

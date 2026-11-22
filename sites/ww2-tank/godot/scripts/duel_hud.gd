@@ -19,7 +19,7 @@ const BUNDLED_FONT := preload("res://assets/fonts/StonewallSans.otf")
 const TankSelection := preload("res://scripts/tank_selection.gd")
 const TANK_CONTROLS := "WASD 驾驶   鼠标瞄准   空格开火   Q 切换   Tab 鼠标"
 const INFANTRY_CONTROLS := "WASD 步行   鼠标瞄准   空格开火   Q 切换   Tab 鼠标"
-const AIRCRAFT_CONTROLS := "W/S 前后   A/D 横移   鼠标调航向   空格开火   Q 切换"
+const AIRCRAFT_CONTROLS := "WASD 飞行   鼠标调航向   空格开火   B 投弹   Q 切换"
 
 class AimReticle extends Control:
 	var aligned := false
@@ -66,6 +66,8 @@ var _building_panel: PanelContainer
 var _building_title: Label
 var _building_health: ProgressBar
 var _building_number: Label
+var _bomb_panel: PanelContainer
+var _bomb_status: Label
 var _clock: Label
 var _mouse_status: Label
 var _controls: Label
@@ -99,6 +101,7 @@ func show_intro() -> void:
 	_reticle.hide()
 	_intermission_panel.hide()
 	_building_panel.hide()
+	_bomb_panel.hide()
 	_menu_card.hide()
 	_takeover_card.hide()
 	_selection.show()
@@ -121,6 +124,8 @@ func set_controlled_unit(title: String, kind: String, max_health: int) -> void:
 	_controlled_kind = kind
 	_player_title.text = "玩家 · " + title
 	_player_health.max_value = max_health
+	if kind != "aircraft":
+		_bomb_panel.hide()
 	match kind:
 		"infantry":
 			_controls.text = INFANTRY_CONTROLS
@@ -152,6 +157,7 @@ func show_takeover(candidates: Array[Dictionary], voluntary := false) -> void:
 	_reticle.hide()
 	_intermission_panel.hide()
 	_building_panel.hide()
+	_bomb_panel.hide()
 	_selection.hide()
 	_menu_card.hide()
 	_takeover_heading.text = "切换操控单位" if voluntary else "接管友军"
@@ -209,6 +215,8 @@ func update_battle(
 		_boss_health.value = boss_health
 		_boss_number.text = "%d / %d" % [boss_health, boss_max_health]
 	_player_down = player_health <= 0
+	if _player_down:
+		_bomb_panel.hide()
 	_reticle.visible = not _player_down and _screen == "active"
 	_reload.visible = not _player_down
 	_reload_label.visible = not _player_down
@@ -249,6 +257,19 @@ func set_building_target(info: Dictionary) -> void:
 		_building_health.max_value = maximum
 		_building_health.value = health
 		_building_number.text = "%d / %d" % [health, maximum]
+
+
+func set_bomb_status(visible: bool, seconds_remaining: float, available: bool) -> void:
+	_bomb_panel.visible = visible and _controlled_kind == "aircraft" and _screen == "active" and not _player_down
+	if not _bomb_panel.visible:
+		return
+	if available:
+		_bomb_status.text = "可投弹"
+	elif seconds_remaining > 0.0:
+		_bomb_status.text = "冷却 %d 秒" % ceili(seconds_remaining)
+	else:
+		_bomb_status.text = "暂不可投弹"
+	_bomb_status.modulate = ALLIED if available else Color.WHITE
 
 
 func set_mouse_locked(look_locked: bool) -> void:
@@ -355,6 +376,15 @@ func _build_battle_footer() -> void:
 	_building_health = _bar(1.0, BRASS)
 	_building_title = _health_display(_building_panel, "建筑耐久", BRASS, _building_number, _building_health)
 	_building_panel.hide()
+	_bomb_panel = _panel(_board, Control.PRESET_BOTTOM_RIGHT, Rect2(-275, -72, 245, 52))
+	var bomb_row := HBoxContainer.new()
+	_bomb_panel.add_child(bomb_row)
+	var bomb_title := _label("B  投弹", 17, BRASS)
+	bomb_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bomb_row.add_child(bomb_title)
+	_bomb_status = _label("", 15, PAPER)
+	bomb_row.add_child(_bomb_status)
+	_bomb_panel.hide()
 	var footer := _panel(_board, Control.PRESET_CENTER_BOTTOM, Rect2(-307, -72, 614, 52))
 	var footer_row := HBoxContainer.new()
 	footer_row.add_theme_constant_override("separation", 17)
@@ -453,6 +483,7 @@ func _open_menu(screen: String, heading: String, description: String, action: St
 	_secondary.visible = can_restart
 	_reticle.hide()
 	_building_panel.hide()
+	_bomb_panel.hide()
 	_selection.hide()
 	_takeover_card.hide()
 	_menu_card.show()

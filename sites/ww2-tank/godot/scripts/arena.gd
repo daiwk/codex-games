@@ -188,6 +188,18 @@ func damage_building(collider: Object, damage: int) -> bool:
 	return true
 
 
+func damage_buildings_in_area(center: Vector3, radius: float, damage: int) -> void:
+	var blast := Vector2(center.x, center.z)
+	for collider: StaticBody3D in _buildings:
+		var building := _buildings[collider] as Building
+		if building.health == 0:
+			continue
+		var nearest := blast.clamp(building.cover.position, building.cover.end)
+		var distance := blast.distance_to(nearest)
+		if distance < radius:
+			damage_building(collider, roundi(damage * (1.0 - distance / radius)))
+
+
 func building_info(collider: Object) -> Dictionary:
 	var building := _buildings.get(collider) as Building
 	if building == null:

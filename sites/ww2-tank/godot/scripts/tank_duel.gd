@@ -5,6 +5,7 @@ const Tank = preload("res://scripts/duel_tank.gd")
 const TankAI = preload("res://scripts/tank_ai.gd")
 const Infantry = preload("res://scripts/infantry_unit.gd")
 const Aircraft = preload("res://scripts/aircraft_unit.gd")
+const Bomb = preload("res://scripts/aircraft_bomb.gd")
 const DuelHUD = preload("res://scripts/duel_hud.gd")
 const Effects = preload("res://scripts/duel_effects.gd")
 const BOLT_MODEL := preload("res://assets/metal-bolt.glb")
@@ -46,6 +47,10 @@ const SIGHT_FOCUS_DISTANCE := 24.0
 const AI_COVER_CLEARANCE := 3.0
 const SHELL_SPEED := 28.0
 const SHELL_LIFETIME := 1.9
+const BOMB_COOLDOWN := 5.0
+const BOMB_RADIUS := 7.0
+const BOMB_UNIT_DAMAGE := 68
+const BOMB_BUILDING_DAMAGE := 124
 const WEB_LOCK_TIMEOUT_MS := 1250
 const WEB_PHASES := ["intro", "active", "paused", "result", "takeover", "switch"]
 
@@ -79,6 +84,7 @@ var _building_target := {}
 var _tank_models := {}
 var _round_tanks := Vector2i(0, 1)
 var _shells: Array[Shell] = []
+var _bombs: Array[Bomb] = []
 var _wave := 0
 var _repair_left := -1.0
 var _repair_used := false
@@ -139,6 +145,7 @@ func _process(delta: float) -> void:
 	if _web_snapshot_delay <= 0.0:
 		_web_snapshot_delay = 0.1
 		var selected := _hud.selected_tanks()
+		var aircraft := _controlled as Aircraft
 		var player_state := _unit_snapshot(_controlled)
 		player_state.merge({
 			"hull_yaw": _controlled.rotation.y,
@@ -175,6 +182,10 @@ func _process(delta: float) -> void:
 			},
 			"outcome": _outcome,
 			"shells": _shells.size(),
+			"bomb_available": _can_drop_bomb(aircraft),
+			"bombs": _bombs.map(func(bomb: Bomb) -> Dictionary:
+				var at := bomb.global_position
+				return {"x": at.x, "y": at.y, "z": at.z}),
 			"views": {"main": "third_person"},
 			"menu": _web_menu(),
 		}))
@@ -190,6 +201,8 @@ func _unit_snapshot(unit: BattleUnit) -> Dictionary:
 	}
 	if unit is Tank:
 		state["tank"] = (unit as Tank).model_id
+	elif unit is Aircraft:
+		state["bomb_cooldown"] = (unit as Aircraft).bomb_cooldown_left
 	return state
 
 
@@ -281,6 +294,7 @@ func _reset_round() -> void:
 	_arena.reset_buildings()
 	_build_ai_grid()
 	_shells.clear()
+	_bombs.clear()
 	_allies.clear()
 	_enemies.clear()
 	_ally_brains.clear()
@@ -504,6 +518,10 @@ func _update_hud() -> void:
 	_hud.set_support_counts(_count_kind(_allied_support, "infantry"), _count_kind(_enemy_support, "infantry"),
 		_count_kind(_allied_support, "aircraft"), _count_kind(_enemy_support, "aircraft"))
 	_hud.set_intermission(_repair_left, _can_repair(), _repair_used)
+	var aircraft := _controlled as Aircraft
+	var bomb_visible := aircraft != null and aircraft.health > 0
+	_hud.set_bomb_status(bomb_visible, aircraft.bomb_cooldown_left if bomb_visible else 0.0,
+		_can_drop_bomb(aircraft))
 	_building_target = {}
 	if _phase == Phase.ACTIVE and _controlled.health > 0:
 		var start := _camera.global_position
@@ -649,6 +667,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_cancel_switch()
 	elif event.physical_keycode == KEY_H:
 		_repair_player()
+	elif event.physical_keycode == KEY_B:
+		_drop_bomb()
 	elif event.physical_keycode == KEY_R and _phase != Phase.INTRO:
 		_start_round()
 	elif event.is_action_pressed("ui_cancel"):
@@ -678,6 +698,7 @@ func _physics_process(delta: float) -> void:
 	if _controlled.health > 0:
 		_controlled.update_reload(delta)
 		_update_player(delta)
+	_advance_bombs(delta)
 
 	if _repair_left >= 0.0:
 		_repair_left -= delta
@@ -744,6 +765,53 @@ func _clear_shells() -> void:
 	for shell in _shells:
 		shell.queue_free()
 	_shells.clear()
+
+
+func _can_drop_bomb(aircraft: Aircraft) -> bool:
+	return aircraft != null and aircraft.health > 0 and _phase == Phase.ACTIVE \
+		and _repair_left < 0.0 and aircraft.bomb_cooldown_left <= 0.0
+
+
+func _drop_bomb() -> void:
+	var aircraft := _controlled as Aircraft
+	if not _can_drop_bomb(aircraft):
+		return
+	var bomb := Bomb.new()
+	bomb.position = _round.to_local(aircraft.global_position - aircraft.global_basis.y * 1.12)
+	bomb.team = aircraft.collision_layer
+	_round.add_child(bomb)
+	_bombs.append(bomb)
+	aircraft.bomb_cooldown_left = BOMB_COOLDOWN
+	_web_snapshot_delay = 0.0
+	_update_hud()
+
+
+func _advance_bombs(delta: float) -> void:
+	for unit in _allied_support:
+		var aircraft := unit as Aircraft
+		if aircraft != null:
+			aircraft.bomb_cooldown_left = maxf(0.0, aircraft.bomb_cooldown_left - delta)
+	for index in range(_bombs.size() - 1, -1, -1):
+		var bomb := _bombs[index]
+		var hit := bomb.advance(delta)
+		if hit.is_empty() and bomb.position.y > -3.0:
+			continue
+		_bombs.remove_at(index)
+		if not hit.is_empty():
+			_explode_bomb(hit["position"], bomb.team)
+		bomb.queue_free()
+
+
+func _explode_bomb(at: Vector3, team: int) -> void:
+	_effects.bomb_blast(at)
+	_arena.damage_buildings_in_area(at, BOMB_RADIUS, BOMB_BUILDING_DAMAGE)
+	var targets := _living_enemies() if team == BattleUnit.FRIENDLY_LAYER else _living_friendlies()
+	for unit in targets:
+		var distance := at.distance_to(unit.target_point())
+		if distance < BOMB_RADIUS:
+			var damage := roundi(BOMB_UNIT_DAMAGE * lerpf(1.0, 0.28, distance / BOMB_RADIUS))
+			_damage_unit(unit, damage, team)
+	_web_snapshot_delay = 0.0
 
 
 func _update_player(delta: float) -> void:
@@ -922,9 +990,13 @@ func _register_impact(hit: Dictionary, damage: int, shooter_team: int, cannon :=
 	var target := collider as BattleUnit
 	var vehicle := is_instance_valid(target) and target.kind != "infantry"
 	_effects.impact(hit["position"], hit["normal"], vehicle)
+	_damage_unit(target, damage, shooter_team)
+
+
+func _damage_unit(target: BattleUnit, damage: int, shooter_team: int) -> void:
 	if is_instance_valid(target) and target.health > 0 and target.collision_layer != shooter_team:
 		target.take_hit(damage)
-		if target.health == 0 and vehicle:
+		if target.health == 0 and target.kind != "infantry":
 			_effects.wreck(target.target_point())
 
 
@@ -932,5 +1004,8 @@ func _finish_round(outcome: String) -> void:
 	_phase = Phase.RESULT
 	_outcome = outcome
 	_clear_shells()
+	for bomb in _bombs:
+		bomb.queue_free()
+	_bombs.clear()
 	_set_view_lock(false)
 	_hud.show_result(outcome, _wave)
