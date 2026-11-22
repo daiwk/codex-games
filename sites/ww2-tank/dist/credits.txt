@@ -1,0 +1,12 @@
+二战：装甲战线
+
+坦克、石墙、炮弹、步兵和飞机模型由用户提供。
+Godot Engine — MIT License
+licenses/Godot-LICENSE.txt
+licenses/Godot-THIRD-PARTY.txt
+
+Noto Sans CJK SC — SIL Open Font License 1.1
+licenses/NotoSans-LICENSE.txt
+
+Lee Enfield — Lucian Pavel, CC0 1.0
+licenses/LeeEnfield-LICENSE.txt

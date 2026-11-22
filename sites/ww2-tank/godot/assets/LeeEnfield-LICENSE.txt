@@ -1,0 +1,8 @@
+Bolt action Rifle: Lee Enfield
+Original art by Lucian Pavel
+Source: https://opengameart.org/node/68099
+License: CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Adapted for this game as a static GLB prop. The exterior mesh was reoriented and
+scaled for the character rigs, and its textures were resized for Web.
