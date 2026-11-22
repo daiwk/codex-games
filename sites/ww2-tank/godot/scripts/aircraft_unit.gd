@@ -13,8 +13,16 @@ const MOVE_ACCELERATION := 21.0
 const AI_SPEED := 12.0
 const AI_FIRE_RANGE := 36.0
 const PASS_END_DISTANCE := 11.0
+const BOMB_PASS_END_DISTANCE := 2.1
+const BOMB_RELEASE_RADIUS := 5.6
+const BOMB_ORIGIN_OFFSET := 1.12
+const BOMB_GROUND_CHECK_DEPTH := 16.0
 
-var bomb_cooldown_left := 0.0
+var bomb_cooldown_left := 0.0:
+	set(seconds):
+		if seconds > 0.0 and bomb_cooldown_left <= 0.0:
+			_bomb_drop_pending = true
+		bomb_cooldown_left = seconds
 
 var _propeller: Node3D
 var _target: BattleUnit
@@ -23,6 +31,7 @@ var _exit_left := 0.0
 var _exit_course := Vector3.ZERO
 var _turn_side := 1.0
 var _blocked_time := 0.0
+var _bomb_drop_pending := false
 
 
 func configure(layer: int, strength: float, title: String) -> void:
@@ -67,11 +76,15 @@ func resume_ai() -> void:
 	_retarget_left = 0.0
 	_exit_left = 0.0
 	_blocked_time = 0.0
+	_bomb_drop_pending = false
 
 
 func update_ai(opponents: Array[BattleUnit], _grid: AStarGrid2D, delta: float) -> bool:
 	if health <= 0:
 		return false
+	if _bomb_drop_pending:
+		_bomb_drop_pending = false
+		_begin_exit()
 	_choose_target(opponents, delta)
 	if _exit_left > 0.0:
 		_exit_left = maxf(0.0, _exit_left - delta)
@@ -89,7 +102,9 @@ func update_ai(opponents: Array[BattleUnit], _grid: AStarGrid2D, delta: float) -
 	var point := _target.target_point()
 	var toward := point - global_position
 	var range_flat := Vector2(toward.x, toward.z).length()
-	if range_flat < PASS_END_DISTANCE or _blocked_time > 0.22:
+	var bombing_pass := bomb_cooldown_left <= 0.0 and _is_bomb_target(_target)
+	var pass_end_distance := BOMB_PASS_END_DISTANCE if bombing_pass else PASS_END_DISTANCE
+	if range_flat < pass_end_distance or _blocked_time > 0.22:
 		_begin_exit()
 		_follow_course(_exit_course, RECOVERY_HEIGHT, 0.12, delta)
 		return false
@@ -98,6 +113,10 @@ func update_ai(opponents: Array[BattleUnit], _grid: AStarGrid2D, delta: float) -
 	if _target.kind == "aircraft":
 		preferred_height = clampf(point.y, FLIGHT_MIN.y, RECOVERY_HEIGHT)
 	var aim_pitch := clampf(atan2(toward.y, range_flat), -0.65, 0.54)
+	if bombing_pass:
+		var approach := smoothstep(PASS_END_DISTANCE, PASS_END_DISTANCE * 2.0, range_flat)
+		preferred_height = lerpf(RECOVERY_HEIGHT, CRUISE_HEIGHT, approach)
+		aim_pitch *= smoothstep(BOMB_RELEASE_RADIUS, PASS_END_DISTANCE, range_flat)
 	_follow_course(point, preferred_height, aim_pitch, delta)
 	if get_slide_collision_count() > 0:
 		_blocked_time += delta
@@ -106,6 +125,39 @@ func update_ai(opponents: Array[BattleUnit], _grid: AStarGrid2D, delta: float) -
 	if reload_left > 0.0:
 		return false
 	return _shot_has_target(point)
+
+
+func bomb_origin() -> Vector3:
+	return global_position - global_basis.y * BOMB_ORIGIN_OFFSET
+
+
+func wants_bomb(opponents: Array[BattleUnit]) -> bool:
+	if health <= 0 or bomb_cooldown_left > 0.0 or _exit_left > 0.0:
+		return false
+	var origin := bomb_origin()
+	var radius_squared := BOMB_RELEASE_RADIUS * BOMB_RELEASE_RADIUS
+	var impact: Vector3
+	var found_impact := false
+	for opponent in opponents:
+		if not _is_bomb_target(opponent):
+			continue
+		var point := opponent.target_point()
+		var offset := point - origin
+		if offset.y >= 0.0 or Vector2(offset.x, offset.z).length_squared() >= radius_squared:
+			continue
+		if not found_impact:
+			var ground := PhysicsRayQueryParameters3D.create(
+				origin, origin + Vector3.DOWN * BOMB_GROUND_CHECK_DEPTH, WORLD_LAYER
+			)
+			ground.hit_from_inside = true
+			var hit := get_world_3d().direct_space_state.intersect_ray(ground)
+			if hit.is_empty():
+				return false
+			impact = hit["position"]
+			found_impact = true
+		if impact.distance_squared_to(point) < radius_squared:
+			return true
+	return false
 
 
 func shot_origin() -> Vector3:
@@ -187,6 +239,12 @@ func _choose_target(opponents: Array[BattleUnit], delta: float) -> void:
 
 func _can_target(unit: BattleUnit) -> bool:
 	return is_instance_valid(unit) and unit.health > 0 and unit.collision_layer != collision_layer
+
+
+func _is_bomb_target(unit: BattleUnit) -> bool:
+	var opposing_layer := HOSTILE_LAYER if collision_layer == FRIENDLY_LAYER else FRIENDLY_LAYER
+	return is_instance_valid(unit) and unit.health > 0 and unit.collision_layer == opposing_layer \
+		and (unit.kind == "tank" or unit.kind == "infantry")
 
 
 func _begin_exit() -> void:

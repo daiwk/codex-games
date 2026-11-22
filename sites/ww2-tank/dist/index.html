@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#171d17">
-  <meta name="description" content="切换操控坦克、步兵与飞机，在村庄、开阔地和林带间迎击五波敌军。炮弹可以摧毁村里的建筑掩体。">
+  <meta name="description" content="切换操控坦克、步兵与飞机，依次通过平原、山丘和海边三关。每关三波，最后一波有首领坦克。">
   <title>二战：装甲战线</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="web.css?v=5256c5ce3b9a7c86">
@@ -14,12 +14,12 @@
 <body>
   <main id="stage" aria-label="二战：装甲战线">
     <canvas id="canvas" width="1280" height="800" tabindex="0"
-      aria-label="第三人称波次对战。WASD 移动，鼠标瞄准，空格开火，驾驶飞机时按 B 投弹，波次间按 H 恢复，按 Q 打开切换列表，按 1 到 7 选择友军，Tab 锁定或释放鼠标，Esc 暂停，R 重开。"></canvas>
+      aria-label="三关第三人称战役。WASD 移动，鼠标瞄准，空格开火，驾驶飞机时按 B 投弹，波次间按 H 恢复，按 Q 打开切换列表，按 1 到 7 选择友军，Tab 锁定或释放鼠标，Esc 暂停，R 重开本关。"></canvas>
 
     <section id="cover" aria-labelledby="game-title">
       <div class="launch-copy">
         <h1 id="game-title">二战：装甲战线</h1>
-        <p class="intro">与坦克、步兵和飞机并肩迎击 5 波敌军。第 5 波有首领。</p>
+        <p class="intro">依次通过平原、山丘和海边三关。每关迎击 3 波，最后一波有首领坦克。</p>
         <dl class="controls">
           <div><dt><kbd>WASD</kbd></dt><dd>四方向移动</dd></div>
           <div><dt>鼠标 · 空格</dt><dd>鼠标瞄准，空格开火</dd></div>
@@ -27,7 +27,7 @@
           <div><dt><kbd>H</kbd></dt><dd>休整时恢复当前单位</dd></div>
           <div><dt><kbd>Q</kbd><kbd>1–7</kbd></dt><dd>打开列表，选择要接管的友军</dd></div>
           <div><dt><kbd>Tab</kbd></dt><dd>锁定或释放鼠标</dd></div>
-          <div><dt><kbd>Esc</kbd><kbd>R</kbd><kbd>F</kbd></dt><dd>暂停、重开、全屏</dd></div>
+          <div><dt><kbd>Esc</kbd><kbd>R</kbd><kbd>F</kbd></dt><dd>暂停、重开本关、全屏</dd></div>
         </dl>
         <div class="launch-actions">
           <button id="start-btn" type="button" hidden>重新载入</button>

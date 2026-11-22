@@ -3,12 +3,14 @@ extends Node3D
 signal building_destroyed(at: Vector3)
 
 const BuildingRubble = preload("res://scripts/building_rubble.gd")
+const StageTerrain = preload("res://scripts/stage_terrain.gd")
 
 const WALL_MODEL := "res://assets/stone-wall.glb"
 const WALL_SIZE := Vector3(5.5, 1.65, 1.32)
 const ARENA_HALF_SIZE := Vector2(41.0, 38.0)
 const PLAYER_SPAWN := Vector3(-6.0, 0.0, 30.0)
 const ENEMY_SPAWN := Vector3(6.0, 0.0, -30.0)
+const LAND_LIMIT := 32.0
 
 class Building extends RefCounted:
 	var label: String
@@ -23,6 +25,7 @@ const GROUND_SHADER := """
 shader_type spatial;
 render_mode diffuse_lambert, specular_disabled;
 
+uniform int stage_index = 0;
 varying vec2 ground_pos;
 
 float hash_at(vec2 cell) {
@@ -40,19 +43,28 @@ float grain(vec2 p) {
 	);
 }
 
+""" + StageTerrain.COAST_PROFILE + """
 float field_height(vec2 p) {
 	vec2 outside = abs(p) - vec2(41.0, 38.0);
 	float rim = smoothstep(3.0, 42.0, max(outside.x, outside.y));
 	float ridge = grain(vec2(p.x * 0.026 - p.y * 0.013, p.y * 0.033));
 	float loft = grain(p * 0.059);
-	return rim * (0.45 + 8.0 * ridge * ridge + 1.9 * loft);
+	float elevation = rim * (0.45 + 8.0 * ridge * ridge + 1.9 * loft);
+	if (stage_index == 1) {
+		elevation *= 1.36;
+	}
+	if (stage_index == 2) {
+		float shore = coast_distance(p);
+		elevation = elevation * (1.0 - smoothstep(-21.0, -8.0, shore)) - 2.35 * smoothstep(-2.3, 6.1, shore);
+	}
+	return elevation;
 }
 
 void vertex() {
 	ground_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
 	float elevation = field_height(ground_pos);
 	VERTEX.y += elevation;
-	if (elevation > 0.0) {
+	if (abs(elevation) > 0.001) {
 		float slope_x = (field_height(ground_pos + vec2(0.8, 0.0)) - elevation) / 0.8;
 		float slope_z = (field_height(ground_pos + vec2(0.0, 0.8)) - elevation) / 0.8;
 		NORMAL = normalize(vec3(-slope_x, 1.0, -slope_z));
@@ -71,6 +83,17 @@ void fragment() {
 	float village_lane = abs(p.x + 24.6 - 0.7 * sin(p.y * 0.109));
 	float field_lane = abs(p.x - 24.8 + 1.3 * sin(p.y * 0.096));
 	float loop_lane = abs(abs(p.y) - 24.0 + 0.65 * sin(p.x * 0.2));
+	if (stage_index == 1) {
+		main_lane = abs(p.x + 8.9 - 1.8 * sin(p.y * 0.113));
+		cross_lane = abs(abs(p.y) - 16.5 + 0.65 * sin(p.x * 0.17));
+		field_lane = abs(p.x - 20.9 + 1.35 * sin(p.y * 0.12));
+	}
+	if (stage_index == 2) {
+		main_lane = abs(p.x + 3.6 - 2.0 * sin(p.y * 0.072));
+		cross_lane = abs(p.y + 4.7 + 0.9 * sin(p.x * 0.11));
+		field_lane = abs(p.x - 26.2 + 1.04 * sin(p.y * 0.09));
+		village_lane = abs(p.x + 21.1 - 0.7 * sin(p.y * 0.078));
+	}
 	float wheel_way = 1.0 - smoothstep(2.1, 3.75, main_lane + verge);
 	float cross_way = 1.0 - smoothstep(1.65, 3.35, cross_lane + verge);
 	float field_way = (1.0 - smoothstep(1.25, 2.95, field_lane + verge)) * (1.0 - smoothstep(25.0, 32.0, abs(p.y)));
@@ -85,6 +108,9 @@ void fragment() {
 	vec3 meadow = mix(vec3(0.235, 0.265, 0.128), vec3(0.40, 0.407, 0.222), broad);
 	float cropped = smoothstep(8.0, 14.0, p.x + 2.2 * (broad - 0.5)) *
 		(1.0 - smoothstep(31.0, 38.0, p.x)) * (1.0 - smoothstep(27.0, 34.0, abs(p.y)));
+	if (stage_index != 0) {
+		cropped *= 0.27;
+	}
 	float furrow = sin((p.y + p.x * 0.18 + grain(p * 0.14) * 0.15) * 5.4);
 	furrow *= 1.0 - smoothstep(0.24, 0.67, footprint);
 	vec3 stubble = mix(vec3(0.40, 0.359, 0.19), vec3(0.53, 0.466, 0.283), broad);
@@ -97,6 +123,13 @@ void fragment() {
 	float field_zone = grain(vec2(p.x + p.y * 0.42, p.y - p.x * 0.35) * 0.075);
 	vec3 farmland = mix(vec3(0.294, 0.329, 0.207), vec3(0.452, 0.428, 0.271), smoothstep(0.29, 0.68, field_zone));
 	ground = mix(ground, farmland, smoothstep(40.0, 62.0, max(abs(p.x), abs(p.y))));
+	if (stage_index == 2) {
+		float shore = coast_distance(p);
+		float sand_mask = smoothstep(-15.0, -7.2, shore + broad * 2.7);
+		vec3 sand = mix(vec3(0.54, 0.475, 0.345), vec3(0.69, 0.618, 0.477), broad);
+		sand *= 1.0 - 0.25 * smoothstep(-2.0, 1.3, shore);
+		ground = mix(ground, sand, sand_mask);
+	}
 	ALBEDO = ground * (0.91 + 0.12 * fine + 0.04 * grit);
 	ROUGHNESS = 1.0;
 }
@@ -138,17 +171,38 @@ void fragment() {
 """
 
 var cover_rects: Array[Rect2] = []
+var _stage_index := 0
 var _permanent_cover: Array[Rect2] = []
 var _buildings: Dictionary = {}
 var _random := RandomNumberGenerator.new()
 var _wall_scene: PackedScene
 
 
+func configure(stage_index: int) -> void:
+	_stage_index = clampi(stage_index, 0, 2)
+
+
 func _ready() -> void:
-	_random.seed = 527643
+	_random.seed = 527643 + _stage_index * 421
 	if ResourceLoader.exists(WALL_MODEL):
 		_wall_scene = load(WALL_MODEL) as PackedScene
 	_build_ground()
+	match _stage_index:
+		1:
+			_build_hill_cover()
+		2:
+			_build_coast_cover()
+		_:
+			_build_plain_cover()
+	_permanent_cover.assign(cover_rects)
+	_build_village()
+	_build_boundary()
+	_build_grass()
+	_build_hedgerows()
+	_add_farm_buildings()
+
+
+func _build_plain_cover() -> void:
 	_build_cover(Vector2(5.8, 6.2), false)
 	_build_cover(Vector2(-9.5, -7.3), false)
 	_build_cover(Vector2(18.8, -15.5), false)
@@ -156,12 +210,40 @@ func _ready() -> void:
 	_build_cover(Vector2(32.4, 7.9), true)
 	_build_cover(Vector2(-36.0, 17.8), false)
 	_build_cover(Vector2(-12.8, 26.3), true)
-	_permanent_cover.assign(cover_rects)
-	_build_village()
-	_build_boundary()
-	_build_grass()
-	_build_hedgerows()
-	_add_farm_buildings()
+
+
+func _build_hill_cover() -> void:
+	_add_hill(Vector2(6.35, 1.0), Vector2(16.0, 23.8), 9.8, 0.2)
+	_add_hill(Vector2(-27.8, -6.0), Vector2(12.6, 17.6), 8.1, 2.2)
+	_add_hill(Vector2(33.3, -11.5), Vector2(11.8, 17.0), 9.1, 4.1)
+	_build_cover(Vector2(-14.0, 3.0), true)
+	_build_cover(Vector2(-10.8, -16.4), true)
+	_build_cover(Vector2(25.0, 13.4), true)
+	_build_cover(Vector2(-34.0, 6.6), false)
+	_build_cover(Vector2(-10.0, 18.5), true)
+
+
+func _add_hill(center: Vector2, size: Vector2, height: float, phase: float) -> void:
+	add_child(StageTerrain.hill(center, size, height, phase))
+	cover_rects.append(Rect2(center - size * 0.5, size))
+
+
+func _build_coast_cover() -> void:
+	add_child(StageTerrain.sea())
+	var shore_width := ARENA_HALF_SIZE.x - LAND_LIMIT
+	var barrier := _add_static_box(
+		Vector3(LAND_LIMIT + shore_width * 0.5, 0.14, 0.0),
+		Vector3(shore_width, 0.28, ARENA_HALF_SIZE.y * 2.0)
+	)
+	barrier.name = "ShorelineLimit"
+	cover_rects.append(Rect2(LAND_LIMIT, -ARENA_HALF_SIZE.y, shore_width, ARENA_HALF_SIZE.y * 2.0))
+	_build_cover(Vector2(3.0, -7.0), false)
+	_build_cover(Vector2(-13.0, 7.0), true)
+	_build_cover(Vector2(20.0, -9.0), false)
+	_build_cover(Vector2(-30.5, -21.0), true)
+	_build_cover(Vector2(7.2, 13.7), false)
+	_build_cover(Vector2(-26.0, 20.5), false)
+	_build_shore_edge()
 
 
 func damage_building(collider: Object, damage: int) -> bool:
@@ -240,6 +322,7 @@ func _build_ground() -> void:
 	shader.code = GROUND_SHADER
 	var material := ShaderMaterial.new()
 	material.shader = shader
+	material.set_shader_parameter("stage_index", _stage_index)
 	var ground := MeshInstance3D.new()
 	ground.name = "Meadow"
 	ground.mesh = plane
@@ -285,20 +368,43 @@ func _model_bounds(model: Node3D) -> AABB:
 func _build_boundary() -> void:
 	var edge_x := ARENA_HALF_SIZE.x
 	var edge_z := ARENA_HALF_SIZE.y
+	var visible_east := LAND_LIMIT if _stage_index == 2 else edge_x
+	var span := visible_east + edge_x
+	var center := (visible_east - edge_x) * 0.5
 	var fence := _material(Color("#786353"))
 	var posts: Array[Transform3D] = []
 	for side in [-1.0, 1.0]:
 		_add_static_box(Vector3(side * (edge_x + 0.25), 1.0, 0.0), Vector3(0.5, 2.0, edge_z * 2.0 + 1.0))
 		_add_static_box(Vector3(0.0, 1.0, side * (edge_z + 0.25)), Vector3(edge_x * 2.0, 2.0, 0.5))
 		for rail_y in [0.37, 0.76]:
-			_box_visual(self, Vector3(side * edge_x, rail_y, 0), Vector3(0.11, 0.13, edge_z * 2.0), fence)
-			_box_visual(self, Vector3(0, rail_y, side * edge_z), Vector3(edge_x * 2.0, 0.13, 0.11), fence)
+			if _stage_index != 2 or side < 0.0:
+				_box_visual(self, Vector3(side * edge_x, rail_y, 0), Vector3(0.11, 0.13, edge_z * 2.0), fence)
+			_box_visual(self, Vector3(center, rail_y, side * edge_z), Vector3(span, 0.13, 0.11), fence)
 		for index in range(-12, 13):
-			posts.append(_fence_post(Vector3(side * edge_x, 0, index * 3.0)))
-			posts.append(_fence_post(Vector3(index * 3.17, 0, side * edge_z)))
-		for corner_x in [-edge_x, edge_x]:
+			if _stage_index != 2 or side < 0.0:
+				posts.append(_fence_post(Vector3(side * edge_x, 0, index * 3.0)))
+			if index * 3.17 < visible_east - 0.4:
+				posts.append(_fence_post(Vector3(index * 3.17, 0, side * edge_z)))
+		for corner_x in [-edge_x, visible_east]:
 			posts.append(_fence_post(Vector3(corner_x, 0, side * edge_z)))
 	_draw_instances("FencePosts", BoxMesh.new(), fence, posts)
+
+
+func _build_shore_edge() -> void:
+	var frame := _material(Color("#7a6956"))
+	var sun_bleached := _material(Color("#97846b"))
+	var posts: Array[Transform3D] = []
+	for index in range(-12, 13):
+		posts.append(_fence_post(Vector3(LAND_LIMIT, 0.0, index * 3.0)))
+	for height in [0.26, 0.63]:
+		_box_visual(self, Vector3(LAND_LIMIT, height, 0.0), Vector3(0.16, 0.17, ARENA_HALF_SIZE.y * 2.0), sun_bleached)
+	_draw_instances("ShorePosts", BoxMesh.new(), frame, posts)
+	for z in [-21.0, 18.0]:
+		_box_visual(self, Vector3(39.0, 0.12, z), Vector3(10.2, 0.28, 0.46), frame)
+		for index in range(6):
+			var height := 0.63 - 0.075 * index
+			var x := 34.5 + index * 1.75
+			_box_visual(self, Vector3(x, height * 0.17, z), Vector3(0.28, height, 0.34), sun_bleached)
 
 
 func _fence_post(base: Vector3) -> Transform3D:
@@ -333,6 +439,18 @@ func _build_grass() -> void:
 		var cross_center := -0.8 * sin(field.x * 0.14)
 		var village_center := -24.6 + 0.7 * sin(field.y * 0.109)
 		var field_center := 24.8 - 1.3 * sin(field.y * 0.096)
+		match _stage_index:
+			1:
+				road_center = -8.9 + 1.8 * sin(field.y * 0.113)
+				cross_center = signf(field.y) * (16.5 - 0.65 * sin(field.x * 0.17))
+				field_center = 20.9 - 1.35 * sin(field.y * 0.12)
+			2:
+				if field.x > 27.0 or field.y < -37.0:
+					continue
+				road_center = -3.6 + 2.0 * sin(field.y * 0.072)
+				cross_center = -4.7 - 0.9 * sin(field.x * 0.11)
+				village_center = -21.1 + 0.7 * sin(field.y * 0.078)
+				field_center = 26.2 - 1.04 * sin(field.y * 0.09)
 		if absf(field.x - road_center) < 3.55 or absf(field.y - cross_center) < 2.85:
 			continue
 		if absf(field.x - village_center) < 3.65 and absf(field.y) < 28:
@@ -342,7 +460,7 @@ func _build_grass() -> void:
 		if absf(absf(field.y) - 24.0 + 0.65 * sin(field.x * 0.2)) < 2.25 and field.x > 0 and field.x < 28:
 			continue
 		var height := _random.randf_range(0.35, 1.18)
-		var in_crop := field.x > 11 and field.x < 33 and absf(field.y) < 30
+		var in_crop := _stage_index == 0 and field.x > 11 and field.x < 33 and absf(field.y) < 30
 		if in_crop:
 			height *= 0.68
 		var blade_basis := Basis(Vector3.UP, _random.randf_range(0.0, TAU)).scaled(Vector3(height, height, height))
@@ -373,10 +491,11 @@ func _build_hedgerows() -> void:
 	for side in [-1.0, 1.0]:
 		for index in range(22):
 			var base := Vector3(side * _random.randf_range(42.2, 45.4), 0, -36.0 + index * 3.43)
-			_shrub_transforms(base, crowns)
+			if _stage_index != 2 or side < 0.0:
+				_shrub_transforms(base, crowns)
 		for index in range(19):
 			var base := Vector3(-38.0 + index * 4.15, 0, side * _random.randf_range(39.4, 44.0))
-			if absf(base.x + 2.0) > 4.1:
+			if absf(base.x + 2.0) > 4.1 and (_stage_index != 2 or (side > 0.0 and base.x < 25.0)):
 				_shrub_transforms(base, crowns)
 
 	var trees: Array[Vector3] = [
@@ -390,6 +509,8 @@ func _build_hedgerows() -> void:
 		var row := -35.0 + index * 4.75
 		trees.append(Vector3(bank, 0, row + _random.randf_range(-1.1, 1.1)))
 	for base in trees:
+		if _stage_index == 2 and (base.x > 27.0 or base.z < -35.0):
+			continue
 		var height := _random.randf_range(4.4, 7.2)
 		var spread := _random.randf_range(0.8, 1.45)
 		var top := base + Vector3(_random.randf_range(-0.7, 0.7), height, _random.randf_range(-0.7, 0.7))
@@ -482,6 +603,22 @@ func _build_village() -> void:
 	var slate := _building_material(shader, Color("#4e5355"), true)
 	var tile := _building_material(shader, Color("#735849"), true)
 	var timber := _material(Color("#51483b"))
+	if _stage_index == 1:
+		_add_barn(Vector3(-26.0, 0, 16.5), 0.0, Vector2(6.2, 7.3), rubble, slate, timber, 3.2, 96, "谷地农舍")
+		_add_barn(Vector3(-29.0, 0, -22.0), 0.0, Vector2(7.2, 7.8), limestone, tile, timber, 4.6, 104, "山北民居")
+		_add_barn(Vector3(1.5, 0, -20.3), 0.0, Vector2(5.6, 6.8), plaster, slate, timber, 3.5, 94, "山路仓房")
+		_add_barn(Vector3(32.0, 0, -29.0), 0.0, Vector2(6.4, 6.1), rubble, slate, timber, 3.6, 96, "山坡谷仓")
+		_add_barn(Vector3(29.0, 0, 17.0), 0.0, Vector2(6.4, 8.0), limestone, tile, timber, 4.0, 102, "东侧石屋")
+		_add_barn(Vector3(8.9, 0, 22.2), 0.0, Vector2(5.4, 5.8), plaster, tile, timber, 2.8, 88, "山南工棚")
+		return
+	if _stage_index == 2:
+		_add_barn(Vector3(-28.0, 0, -5.0), 0.0, Vector2(8.0, 8.1), limestone, slate, timber, 4.7, 104, "西湾仓库")
+		_add_barn(Vector3(-21.6, 0, 11.1), 0.0, Vector2(7.0, 9.4), plaster, tile, timber, 4.2, 102, "盐场民居")
+		_add_barn(Vector3(-12.0, 0, -21.0), 0.0, Vector2(5.8, 7.4), rubble, tile, timber, 3.3, 94, "海湾小屋")
+		_add_barn(Vector3(9.0, 0, -19.0), 0.0, Vector2(5.8, 6.6), plaster, slate, timber, 4.5, 98, "北岸农舍")
+		_add_barn(Vector3(20.6, 0, 7.1), 0.0, Vector2(5.8, 8.4), limestone, tile, timber, 3.5, 96, "岸边仓房")
+		_add_barn(Vector3(18.0, 0, 20.7), 0.0, Vector2(4.6, 5.2), rubble, slate, timber, 2.7, 88, "沙地工棚")
+		return
 	_add_barn(Vector3(-34.0, 0, -13.0), 0.0, Vector2(7.6, 10.0), limestone, slate, timber, 4.9, 104, "石砌农舍")
 	_add_barn(Vector3(-34.5, 0, 8.3), 0.0, Vector2(7.0, 9.4), rubble, tile, timber, 3.2, 94, "西侧牲口棚")
 	_add_barn(Vector3(-31.9, 0, 24.5), 0.0, Vector2(6.2, 7.5), plaster, slate, timber, 3.6, 92, "南侧民居")
@@ -502,7 +639,8 @@ func _add_farm_buildings() -> void:
 	var plaster := _material(Color("#a29a82"))
 	var slate := _material(Color("#5b5550"))
 	var timber := _material(Color("#625344"))
-	_add_barn(Vector3(51, 0, -40), 0.38, Vector2(7.6, 8.5), plaster, slate, timber, 3.5)
+	if _stage_index != 2:
+		_add_barn(Vector3(51, 0, -40), 0.38, Vector2(7.6, 8.5), plaster, slate, timber, 3.5)
 	_add_barn(Vector3(-46, 0, 48), -0.76, Vector2(7.0, 8.0), plaster, slate, timber, 3.2)
 
 

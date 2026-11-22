@@ -6,6 +6,7 @@ signal resume_requested
 signal selection_requested
 signal takeover_requested(index: int)
 signal switch_cancelled
+signal next_stage_requested
 
 const INK := Color("18201b")
 const SURFACE := Color("202920f5")
@@ -50,10 +51,12 @@ var _heading: Label
 var _description: Label
 var _primary: Button
 var _secondary: Button
+var _selection_button: Button
 var _reticle: AimReticle
 var _player_title: Label
 var _player_health: ProgressBar
 var _player_number: Label
+var _stage_label: Label
 var _wave_title: Label
 var _ally_count: Label
 var _enemy_count: Label
@@ -76,6 +79,11 @@ var _reload_label: Label
 var _intermission_panel: PanelContainer
 var _intermission_title: Label
 var _repair_status: Label
+var _stage_name := "平原"
+var _stage_total := 3
+var _wave_total := 3
+var _allied_slots := Vector3i(4, 1, 1)
+var _enemy_slots := Vector3i(2, 1, 1)
 var _controlled_kind := "tank"
 var _player_down := false
 var _screen := "intro"
@@ -136,8 +144,21 @@ func set_controlled_unit(title: String, kind: String, max_health: int) -> void:
 
 
 func set_support_counts(allied_infantry: int, enemy_infantry: int, allied_aircraft: int, enemy_aircraft: int) -> void:
-	_allied_support.text = "步兵 %d / 2\n飞机 %d / 1" % [allied_infantry, allied_aircraft]
-	_enemy_support.text = "步兵 %d / 2\n飞机 %d / 1" % [enemy_infantry, enemy_aircraft]
+	_allied_support.text = "步兵 %d / %d\n飞机 %d / %d" % [allied_infantry, _allied_slots.y, allied_aircraft, _allied_slots.z]
+	_enemy_support.text = "步兵 %d / %d\n飞机 %d / %d" % [enemy_infantry, _enemy_slots.y, enemy_aircraft, _enemy_slots.z]
+
+
+func set_stage(index: int, total_stages: int, title: String, waves: int, allied_slots: Vector3i, enemy_slots: Vector3i) -> void:
+	_stage_name = title
+	_stage_total = total_stages
+	_wave_total = waves
+	_allied_slots = allied_slots
+	_enemy_slots = enemy_slots
+	_stage_label.text = "第 %d / %d 关 · %s" % [index, total_stages, title]
+	_wave_title.text = "第 1 / %d 波" % _wave_total
+	_ally_count.text = "坦克 %d / %d" % [_allied_slots.x, _allied_slots.x]
+	_enemy_count.text = "坦克 %d / %d" % [_enemy_slots.x, _enemy_slots.x]
+	set_support_counts(_allied_slots.y, _enemy_slots.y, _allied_slots.z, _enemy_slots.z)
 
 
 func show_active() -> void:
@@ -149,7 +170,7 @@ func show_active() -> void:
 
 
 func show_pause() -> void:
-	_open_menu("pause", "对战暂停", "可以继续当前对战，或从头再来一局。", "继续对战", true)
+	_open_menu("pause", "对战暂停", "可以继续当前对战，或从本关第 1 波重开。", "继续对战", true)
 
 
 func show_takeover(candidates: Array[Dictionary], voluntary := false) -> void:
@@ -187,15 +208,20 @@ func show_takeover(candidates: Array[Dictionary], voluntary := false) -> void:
 	_menu.show()
 
 
+func show_stage_clear(title: String, next_title: String) -> void:
+	_intermission_panel.hide()
+	_open_menu("stage_clear", "关卡完成", "已通过「%s」。下一关是「%s」。" % [title, next_title], "进入下一关")
+
+
 func show_result(outcome: String, wave: int) -> void:
 	_intermission_panel.hide()
 	match outcome:
 		"win":
-			_open_menu("result", "胜利", "已击退全部 5 波敌军，首领已被击毁。", "再打一局")
+			_open_menu("result", "战役胜利", "已完成全部 %d 关战役。" % _stage_total, "重开战役")
 		"loss":
-			_open_menu("result", "战败", "第 %d 波，己方全部单位已退出战斗。" % wave, "再打一局")
+			_open_menu("result", "战败", "%s · 第 %d 波，己方全部单位已退出战斗。" % [_stage_name, wave], "重试本关")
 		_:
-			_open_menu("result", "平局", "第 %d 波，双方最后的单位同时倒下。" % wave, "再打一局")
+			_open_menu("result", "平局", "%s · 第 %d 波，双方最后的单位同时倒下。" % [_stage_name, wave], "重试本关")
 
 
 func update_battle(
@@ -204,9 +230,9 @@ func update_battle(
 ) -> void:
 	_player_health.value = player_health
 	_player_number.text = "%d / %d" % [player_health, int(_player_health.max_value)]
-	_wave_title.text = "第 %d / 5 波" % wave
-	_ally_count.text = "坦克 %d / 5" % allied_tanks
-	_enemy_count.text = "坦克 %d / 3" % enemy_tanks
+	_wave_title.text = "第 %d / %d 波" % [wave, _wave_total]
+	_ally_count.text = "坦克 %d / %d" % [allied_tanks, _allied_slots.x]
+	_enemy_count.text = "坦克 %d / %d" % [enemy_tanks, _enemy_slots.x]
 	var elapsed := maxi(0, floori(seconds))
 	_clock.text = "%02d:%02d" % [floori(elapsed / 60.0), elapsed % 60]
 	_boss_panel.visible = boss_health > 0 and boss_max_health > 0
@@ -312,11 +338,14 @@ func _build_board() -> void:
 
 
 func _build_wave_panels() -> void:
-	var center := _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-120, 24, 240, 74))
+	var center := _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-128, 24, 256, 102))
 	var center_stack := VBoxContainer.new()
 	center_stack.add_theme_constant_override("separation", 2)
 	center.add_child(center_stack)
-	_wave_title = _label("第 1 / 5 波", 22, BRASS)
+	_stage_label = _label("", 16, PAPER)
+	_stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	center_stack.add_child(_stage_label)
+	_wave_title = _label("", 21, BRASS)
 	_wave_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	center_stack.add_child(_wave_title)
 	var wave_details := HBoxContainer.new()
@@ -339,25 +368,25 @@ func _build_wave_panels() -> void:
 	allies.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	unit_counts.add_child(allies)
 	unit_counts.add_child(_label("敌军", 17, OPPONENT))
-	_ally_count = _label("坦克 5 / 5", 16, PAPER)
+	_ally_count = _label("", 16, PAPER)
 	_ally_count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	unit_counts.add_child(_ally_count)
-	_enemy_count = _label("坦克 3 / 3", 16, PAPER)
+	_enemy_count = _label("", 16, PAPER)
 	_enemy_count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	unit_counts.add_child(_enemy_count)
 	_allied_support = _label("", 16, SUBTLE)
 	unit_counts.add_child(_allied_support)
 	_enemy_support = _label("", 16, SUBTLE)
 	unit_counts.add_child(_enemy_support)
-	set_support_counts(2, 2, 1, 1)
+	set_stage(1, _stage_total, _stage_name, _wave_total, _allied_slots, _enemy_slots)
 
-	_boss_panel = _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-185, 111, 370, 66))
+	_boss_panel = _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-185, 137, 370, 66))
 	_boss_number = _label("", 16, PAPER)
 	_boss_health = _bar(1.0, OPPONENT)
 	_health_display(_boss_panel, "敌军首领", OPPONENT, _boss_number, _boss_health)
 	_boss_panel.hide()
 
-	_intermission_panel = _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-202, 190, 404, 88))
+	_intermission_panel = _panel(_board, Control.PRESET_CENTER_TOP, Rect2(-202, 215, 404, 88))
 	var intermission_stack := VBoxContainer.new()
 	intermission_stack.add_theme_constant_override("separation", 5)
 	_intermission_panel.add_child(intermission_stack)
@@ -428,7 +457,7 @@ func _build_menu() -> void:
 	_description = _label("", 17, SUBTLE)
 	_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	stack.add_child(_description)
-	var keys := _label("WASD 移动　 鼠标瞄准　 空格开火\nQ 切换单位　 H 休整恢复　 Tab 鼠标\nEsc 暂停　 R 从第一波重开", 15, SUBTLE)
+	var keys := _label("WASD 移动　 鼠标瞄准　 空格开火\nQ 切换单位　 H 休整恢复　 Tab 鼠标\nEsc 暂停　 R 重开本关", 15, SUBTLE)
 	keys.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	keys.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	stack.add_child(keys)
@@ -439,15 +468,15 @@ func _build_menu() -> void:
 	actions.add_theme_constant_override("separation", 9)
 	stack.add_child(actions)
 	_secondary = _button(false)
-	_secondary.text = "重新开始"
+	_secondary.text = "重开本关"
 	_secondary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_secondary.pressed.connect(func() -> void: restart_requested.emit())
 	actions.add_child(_secondary)
-	var select_tanks := _button(false)
-	select_tanks.text = "换坦克"
-	select_tanks.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	select_tanks.pressed.connect(func() -> void: selection_requested.emit())
-	actions.add_child(select_tanks)
+	_selection_button = _button(false)
+	_selection_button.text = "换坦克"
+	_selection_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_selection_button.pressed.connect(func() -> void: selection_requested.emit())
+	actions.add_child(_selection_button)
 
 	_selection = TankSelection.new()
 	_selection.confirmed.connect(func() -> void: start_requested.emit())
@@ -481,6 +510,7 @@ func _open_menu(screen: String, heading: String, description: String, action: St
 	_description.text = description
 	_primary.text = action
 	_secondary.visible = can_restart
+	_selection_button.visible = screen != "stage_clear"
 	_reticle.hide()
 	_building_panel.hide()
 	_bomb_panel.hide()
@@ -494,6 +524,8 @@ func _on_primary() -> void:
 	match _screen:
 		"pause":
 			resume_requested.emit()
+		"stage_clear":
+			next_stage_requested.emit()
 		"result":
 			restart_requested.emit()
 

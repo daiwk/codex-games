@@ -35,7 +35,7 @@ func configure(roster: Array) -> void:
 	frame.add_child(stack)
 
 	stack.add_child(_label("二战：装甲战线", 40, PAPER))
-	stack.add_child(_label("带领坦克、步兵和飞机迎击 5 波敌军。敌军逐波增强，第 5 波有首领。", 16, MUTED))
+	stack.add_child(_label("依次通过平原、山丘和海边。每关 3 波，最后一波由首领坦克带队。", 16, MUTED))
 	var gallery := HBoxContainer.new()
 	gallery.add_theme_constant_override("separation", 16)
 	gallery.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -49,7 +49,7 @@ func configure(roster: Array) -> void:
 	var keys := _label("WASD 移动   鼠标瞄准   空格开火   B 飞机投弹   H 恢复   Q 切换友军   Tab 鼠标", 15, MUTED)
 	keys.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(keys)
-	_start = _button("开始对战", BRASS, true)
+	_start = _button("开始战役", BRASS, true)
 	_start.custom_minimum_size = Vector2(214, 47)
 	_start.pressed.connect(confirmed.emit)
 	footer.add_child(_start)
