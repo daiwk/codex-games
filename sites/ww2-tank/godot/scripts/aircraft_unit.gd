@@ -75,7 +75,7 @@ func configure(layer: int, strength: float, title: String, airframe: Airframe = 
 		_gun_mount = Vector3(0.0, 0.0, -4.42)
 		_bomb_mount = Vector3(0.0, -1.0, 0.32)
 		_add_hitbox(Vector3(1.8, 1.55, 7.75), Vector3(0.0, 0.03, -0.12))
-		_add_hitbox(Vector3(6.9, 0.48, 2.25), Vector3(0.0, -0.04, 0.96))
+		_add_hitbox(Vector3(6.1, 0.48, 2.25), Vector3(0.0, 0.05, 1.85))
 	else:
 		_propeller = model.get_node("Propeller") as Node3D
 		_add_hitbox(Vector3(1.32, 1.52, 7.4), Vector3(0.0, 0.1, 0.04))
