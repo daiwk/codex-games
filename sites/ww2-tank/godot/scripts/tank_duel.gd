@@ -26,9 +26,24 @@ const TANK_ROSTER := [
 		"attack": 30, "defense": 14, "health": 108},
 	{"id": "m1a2_sepv3", "name": "M1A2 SEP v3", "model": "res://assets/tank-m1a2-sepv3.glb",
 		"attack": 30, "defense": 18, "health": 110},
+	{"id": "m1a2_sepv2", "name": "M1A2 SEP v2", "model": "res://assets/tank-abrams-sepv2.glb",
+		"attack": 30, "defense": 16, "health": 108},
+	{"id": "leopard_2a7v", "name": "豹 2A7V", "model": "res://assets/tank-leopard-2a7v.glb",
+		"attack": 30, "defense": 14, "health": 105},
+	{"id": "m2a3_bradley", "name": "M2A3 Bradley", "model": "res://assets/armor-m2a3-bradley.glb",
+		"attack": 25, "defense": 10, "health": 96},
+	{"id": "m1126_stryker", "name": "M1126 Stryker", "model": "res://assets/armor-m1126-stryker.glb",
+		"attack": 23, "defense": 12, "health": 96},
 ]
 const PLAYER_TANK := 4
-const ENEMY_TANK_ORDER := [5, 1, 4, 2, 0, 3]
+const ALLIED_TANK_ORDER := [6, 7, 8, 9, 0, 1, 2, 3, 5]
+const ENEMY_TANK_ORDER := [5, 1, 4, 6, 7, 8, 9, 2, 0, 3]
+const AIRCRAFT_ROSTER := [Aircraft.Airframe.APACHE, Aircraft.Airframe.F35A, Aircraft.Airframe.PROPELLER]
+const AIRCRAFT_TITLES := {
+	Aircraft.Airframe.APACHE: "AH-64E %d",
+	Aircraft.Airframe.F35A: "F-35A %d",
+	Aircraft.Airframe.PROPELLER: "战机 %d",
+}
 
 const BOSS_PROFILES := {
 	"plains": {"model": 1, "health": 150, "attack": 35},
@@ -410,7 +425,7 @@ func _spawn_allies() -> void:
 	var slots := Mission.ALLIED_FORCE
 	var occupied := _living_friendlies()
 	for index in range(slots.x - 1):
-		var profile: Dictionary = TANK_ROSTER[index % TANK_ROSTER.size()].duplicate()
+		var profile: Dictionary = TANK_ROSTER[ALLIED_TANK_ORDER[index]].duplicate()
 		profile["health"] = roundi(int(profile["health"]) * 1.56)
 		var column := float(index % 6) - 2.5
 		var preferred := Vector3(column * 13.0, 0.0, 33.0 - floorf(index / 6.0) * 8.0)
@@ -482,7 +497,7 @@ func _deploy_enemy_force(center: Vector2, slots: Vector3i, rank: int, boss_kind 
 	for index in slots.z:
 		var offset := (index - (slots.z - 1.0) * 0.5) * 23.0 + 7.0
 		var preferred := Vector3(center.x + offset, 9.5, center.y - 4.0 + index * 2.5)
-		var unit := _add_support(false, "aircraft", index, strength, preferred, occupied)
+		var unit := _add_support(false, "aircraft", index, strength, preferred, occupied, rank)
 		_enemy_support.append(unit)
 		if landing:
 			_landing_members.append(unit)
@@ -490,7 +505,7 @@ func _deploy_enemy_force(center: Vector2, slots: Vector3i, rank: int, boss_kind 
 
 
 func _add_support(friendly: bool, kind: String, index: int, strength: float, preferred: Vector3,
-		occupied: Array[BattleUnit]) -> BattleUnit:
+		occupied: Array[BattleUnit], airframe_offset := 0) -> BattleUnit:
 	var is_aircraft := kind == "aircraft"
 	var spawn := _air_spawn(preferred, occupied) if is_aircraft else _ground_spawn(preferred, occupied, kind)
 	var unit: BattleUnit = Aircraft.new() if is_aircraft else Infantry.new()
@@ -500,10 +515,9 @@ func _add_support(friendly: bool, kind: String, index: int, strength: float, pre
 	var layer := BattleUnit.FRIENDLY_LAYER if friendly else BattleUnit.HOSTILE_LAYER
 	if is_aircraft:
 		var aircraft := unit as Aircraft
-		var frame := Aircraft.Airframe.F35A if index % 2 == 0 else Aircraft.Airframe.PROPELLER
-		var aircraft_name := "F-35A %d" if frame == Aircraft.Airframe.F35A else "战机 %d"
+		var frame: Aircraft.Airframe = AIRCRAFT_ROSTER[(index + airframe_offset) % AIRCRAFT_ROSTER.size()]
 		aircraft.set_flight_bounds(_flight_bounds())
-		aircraft.configure(layer, strength, aircraft_name % (index + 1), frame)
+		aircraft.configure(layer, strength, AIRCRAFT_TITLES[frame] % (index + 1), frame)
 	else:
 		(unit as Infantry).configure(layer, strength, "步兵 %d" % (index + 1))
 	if not friendly:

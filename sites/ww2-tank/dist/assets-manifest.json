@@ -11,9 +11,9 @@
     },
     "game.pck": {
       "type": "application/octet-stream",
-      "decoded_bytes": 58300660,
-      "download_bytes": 58172101,
-      "sha256": "31af5fcfd2bbff7ce571d9692c7100325f3067df7a2d9a3b59018d509698b882",
+      "decoded_bytes": 73723280,
+      "download_bytes": 73517562,
+      "sha256": "9d5dcdf119aa880501a776190dcb329b25862a4f28f8767aadb25d80cf5c5628",
       "chunks": [
         {
           "file": "game.pck.gz.part00",
@@ -29,7 +29,11 @@
         },
         {
           "file": "game.pck.gz.part03",
-          "bytes": 7840453
+          "bytes": 16777216
+        },
+        {
+          "file": "game.pck.gz.part04",
+          "bytes": 6408698
         }
       ]
     }
